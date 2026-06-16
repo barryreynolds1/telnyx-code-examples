@@ -657,6 +657,7 @@ def restructure_readme(
     overview = sections.get("overview", "")
     prerequisites = sections.get("prerequisites", "")
     implementation = sections.get("step 3: implementation", sections.get("step 3", ""))
+    implementation = sanitize_code(implementation, language)
     troubleshooting = sections.get("troubleshooting", "")
 
     parts = [
