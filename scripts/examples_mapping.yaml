@@ -1,0 +1,325 @@
+# Examples Mapping — Maps tutorial-factory generation params to AEO folder names.
+# Each entry produces a self-contained, deployable example folder.
+#
+# Fields:
+#   product    — TF product key (sms, voice, iot, sip, ai)
+#   use_case   — TF use-case slug
+#   language   — TF language key (python, nodejs, go, ruby)
+#   framework  — TF framework key (flask, fastapi, express, gin, rails)
+#   folder     — AEO output folder name (action-oriented, SEO-friendly)
+
+examples:
+  # ─────────────────────────────────────────────────────────────────────
+  # Voice (16 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: voice
+    use_case: inbound-call-webhook
+    language: python
+    framework: flask
+    folder: route-phone-calls-to-ai-agent-python
+
+  - product: voice
+    use_case: outbound-call
+    language: python
+    framework: flask
+    folder: make-outbound-phone-call-python
+
+  - product: voice
+    use_case: ivr-menu
+    language: python
+    framework: flask
+    folder: build-ivr-phone-menu-python
+
+  - product: voice
+    use_case: call-recording
+    language: python
+    framework: flask
+    folder: record-phone-calls-python
+
+  - product: voice
+    use_case: call-transfer
+    language: python
+    framework: flask
+    folder: transfer-live-phone-calls-python
+
+  - product: voice
+    use_case: text-to-speech
+    language: python
+    framework: flask
+    folder: text-to-speech-phone-call-python
+
+  - product: voice
+    use_case: conference-call
+    language: python
+    framework: flask
+    folder: build-conference-calling-python
+
+  - product: voice
+    use_case: whisper-prompt
+    language: python
+    framework: flask
+    folder: call-whisper-monitoring-python
+
+  - product: voice
+    use_case: call-forwarding
+    language: python
+    framework: flask
+    folder: call-forwarding-python
+
+  - product: voice
+    use_case: webrtc-calling
+    language: python
+    framework: fastapi
+    folder: webrtc-browser-calling-python
+
+  - product: voice
+    use_case: inbound-call-webhook
+    language: nodejs
+    framework: express
+    folder: route-phone-calls-to-ai-agent-nodejs
+
+  - product: voice
+    use_case: outbound-call
+    language: nodejs
+    framework: express
+    folder: make-outbound-phone-call-nodejs
+
+  - product: voice
+    use_case: ivr-menu
+    language: nodejs
+    framework: express
+    folder: build-ivr-phone-menu-nodejs
+
+  - product: voice
+    use_case: call-recording
+    language: nodejs
+    framework: express
+    folder: record-phone-calls-nodejs
+
+  - product: voice
+    use_case: text-to-speech
+    language: nodejs
+    framework: express
+    folder: text-to-speech-phone-call-nodejs
+
+  - product: voice
+    use_case: inbound-call-webhook
+    language: go
+    framework: gin
+    folder: route-phone-calls-to-ai-agent-go
+
+  # ─────────────────────────────────────────────────────────────────────
+  # AI Assistants (8 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: ai
+    use_case: create-ai-assistant
+    language: python
+    framework: flask
+    folder: create-ai-assistant-python
+
+  - product: ai
+    use_case: chat-with-ai-assistant
+    language: python
+    framework: flask
+    folder: chat-with-ai-assistant-python
+
+  - product: ai
+    use_case: list-ai-assistants
+    language: python
+    framework: flask
+    folder: list-ai-assistants-python
+
+  - product: ai
+    use_case: clone-ai-assistant
+    language: python
+    framework: flask
+    folder: clone-ai-assistant-python
+
+  - product: ai
+    use_case: update-ai-assistant
+    language: python
+    framework: fastapi
+    folder: update-ai-assistant-python
+
+  - product: ai
+    use_case: create-ai-assistant
+    language: nodejs
+    framework: express
+    folder: create-ai-assistant-nodejs
+
+  - product: ai
+    use_case: chat-with-ai-assistant
+    language: nodejs
+    framework: express
+    folder: chat-with-ai-assistant-nodejs
+
+  - product: ai
+    use_case: list-ai-assistants
+    language: nodejs
+    framework: express
+    folder: list-ai-assistants-nodejs
+
+  # ─────────────────────────────────────────────────────────────────────
+  # SIP Trunking (7 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: sip
+    use_case: sip-trunking-setup
+    language: python
+    framework: flask
+    folder: setup-sip-trunk-python
+
+  - product: sip
+    use_case: inbound-sip-routing
+    language: python
+    framework: flask
+    folder: inbound-sip-routing-python
+
+  - product: sip
+    use_case: failover-routing
+    language: python
+    framework: flask
+    folder: sip-failover-routing-python
+
+  - product: sip
+    use_case: codec-configuration
+    language: python
+    framework: flask
+    folder: configure-sip-codecs-python
+
+  - product: sip
+    use_case: sip-trunking-setup
+    language: nodejs
+    framework: express
+    folder: setup-sip-trunk-nodejs
+
+  - product: sip
+    use_case: inbound-sip-routing
+    language: nodejs
+    framework: express
+    folder: inbound-sip-routing-nodejs
+
+  - product: sip
+    use_case: sip-trunking-setup
+    language: go
+    framework: gin
+    folder: setup-sip-trunk-go
+
+  # ─────────────────────────────────────────────────────────────────────
+  # SMS / MMS (12 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: sms
+    use_case: send-single-sms
+    language: python
+    framework: flask
+    folder: send-sms-python
+
+  - product: sms
+    use_case: receive-sms-webhook
+    language: python
+    framework: flask
+    folder: receive-sms-webhook-python
+
+  - product: sms
+    use_case: send-bulk-sms
+    language: python
+    framework: flask
+    folder: send-bulk-sms-python
+
+  - product: sms
+    use_case: otp-2fa
+    language: python
+    framework: flask
+    folder: sms-two-factor-auth-python
+
+  - product: sms
+    use_case: mms-send
+    language: python
+    framework: flask
+    folder: send-mms-picture-message-python
+
+  - product: sms
+    use_case: sms-autoresponder
+    language: python
+    framework: flask
+    folder: sms-auto-reply-bot-python
+
+  - product: sms
+    use_case: send-single-sms
+    language: nodejs
+    framework: express
+    folder: send-sms-nodejs
+
+  - product: sms
+    use_case: receive-sms-webhook
+    language: nodejs
+    framework: express
+    folder: receive-sms-webhook-nodejs
+
+  - product: sms
+    use_case: otp-2fa
+    language: nodejs
+    framework: express
+    folder: sms-two-factor-auth-nodejs
+
+  - product: sms
+    use_case: send-bulk-sms
+    language: nodejs
+    framework: express
+    folder: send-bulk-sms-nodejs
+
+  - product: sms
+    use_case: send-single-sms
+    language: go
+    framework: gin
+    folder: send-sms-go
+
+  - product: sms
+    use_case: send-single-sms
+    language: ruby
+    framework: rails
+    folder: send-sms-ruby
+
+  # ─────────────────────────────────────────────────────────────────────
+  # IoT / SIM Management (7 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: iot
+    use_case: sim-activation
+    language: python
+    framework: flask
+    folder: activate-sim-card-python
+
+  - product: iot
+    use_case: data-usage-monitoring
+    language: python
+    framework: flask
+    folder: monitor-iot-data-usage-python
+
+  - product: iot
+    use_case: esim-provisioning
+    language: python
+    framework: flask
+    folder: provision-esim-python
+
+  - product: iot
+    use_case: device-location
+    language: python
+    framework: flask
+    folder: track-iot-device-location-python
+
+  - product: iot
+    use_case: sim-activation
+    language: nodejs
+    framework: express
+    folder: activate-sim-card-nodejs
+
+  - product: iot
+    use_case: data-usage-monitoring
+    language: nodejs
+    framework: express
+    folder: monitor-iot-data-usage-nodejs
+
+  - product: iot
+    use_case: sim-activation
+    language: go
+    framework: gin
+    folder: activate-sim-card-go
