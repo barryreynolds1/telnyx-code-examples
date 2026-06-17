@@ -70,7 +70,7 @@ def transcribe_audio(audio_url: str) -> str:
         
         return transcript_response.text
     except Exception as e:
-        return f"Transcription failed: {str(e)}"
+        return "Transcription failed"
 
 
 def generate_prompt_response(transcript: str) -> str:
@@ -89,7 +89,7 @@ def generate_prompt_response(transcript: str) -> str:
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Response generation failed: {str(e)}"
+        return "Response generation failed"
 
 
 def speak_response(call_control_id: str, text: str) -> dict:
@@ -103,7 +103,7 @@ def speak_response(call_control_id: str, text: str) -> dict:
         )
         return {"status": "speaking", "call_control_id": call_control_id}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": "Internal server error"}
 
 
 @app.route("/calls/initiate", methods=["POST"])
