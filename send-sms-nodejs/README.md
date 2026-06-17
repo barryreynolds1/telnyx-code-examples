@@ -57,7 +57,7 @@ See the [Implementation Details](#implementation-details) section below for step
 
 ## Implementation Details
 
-Create `server.js` and initialize the Telnyx client using the new pattern. Define a helper function to handle message creation with proper validation:
+Create `app.js` and initialize the Telnyx client using the new pattern. Define a helper function to handle message creation with proper validation:
 
 ```javascript
 const Telnyx = require("telnyx");
@@ -112,7 +112,7 @@ See [`server.js`](./server.js) for the full implementation.
 |-------|---------|----------|
 | Authentication Error (401) | The endpoint returns `{"error": "Invalid API key"}` with HTTP 401. | Verify your `TELNYX_API_KEY` in the `.env` file matches the key shown in the [Telnyx Portal](https://portal.telnyx.com). Ensure there are no trailing spaces or quotes. If the key was regenerated recently, update your environment file and restart the Express server. |
 | Invalid Phone Number Format | You receive a 400 error stating "Phone number must be in E.164 format" or a Telnyx API error about invalid destination. | Ensure all phone numbers use E.164 format: start with `+`, followed by country code and number without spaces or dashes. Example: `+15551234567` (US) or `+447700900123` (UK). Update your test curl command to use properly formatted numbers. |
-| Environment Variable Not Set | The application raises an error about `TELNYX_PHONE_NUMBER` or `TELNYX_API_KEY` not being set. | Confirm your `.env` file exists in the same directory as `server.js` and contains both variables. Ensure the file is named exactly `.env` (not `.env.txt` or `env`). The `require("dotenv").config()` call must execute before `process.env` is accessed—verify this import order at the top of your code. |
+| Environment Variable Not Set | The application raises an error about `TELNYX_PHONE_NUMBER` or `TELNYX_API_KEY` not being set. | Confirm your `.env` file exists in the same directory as `app.js` and contains both variables. Ensure the file is named exactly `.env` (not `.env.txt` or `env`). The `require("dotenv").config()` call must execute before `process.env` is accessed—verify this import order at the top of your code. |
 
 ## FAQ
 
@@ -135,6 +135,15 @@ Telnyx is an AI Communications Infrastructure platform with a private global net
 **Q: Where do I get a Telnyx phone number?**
 
 Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
+
+## Resources
+
+- [Messaging Overview](https://developers.telnyx.com/docs/messaging)
+- [Send an SMS — Quickstart](https://developers.telnyx.com/docs/messaging/messages/send-message)
+- [Messaging API Reference](https://developers.telnyx.com/api-reference/messages/send-a-message)
+- [Node.js SDK](https://developers.telnyx.com/development/sdk/node)
+- [Telnyx SMS API](https://telnyx.com/products/sms-api)
+- [Messaging Pricing](https://telnyx.com/pricing/messaging)
 
 ## Related Examples
 

@@ -80,6 +80,69 @@ PRODUCT_LABELS = {
     "iot": "IoT",
 }
 
+PRODUCT_LINKS = {
+    "sms": {
+        "docs": [
+            ("Messaging Overview", "https://developers.telnyx.com/docs/messaging"),
+            ("Send an SMS — Quickstart", "https://developers.telnyx.com/docs/messaging/messages/send-message"),
+            ("Messaging API Reference", "https://developers.telnyx.com/api-reference/messages/send-a-message"),
+        ],
+        "dotcom": [
+            ("Telnyx SMS API", "https://telnyx.com/products/sms-api"),
+            ("Messaging Pricing", "https://telnyx.com/pricing/messaging"),
+        ],
+    },
+    "voice": {
+        "docs": [
+            ("Voice API Overview", "https://developers.telnyx.com/docs/voice"),
+            ("Voice API Commands", "https://developers.telnyx.com/docs/voice/programmable-voice/voice-api-commands-and-resources"),
+            ("AI Assistant Start", "https://developers.telnyx.com/docs/voice/programmable-voice/ai-assistant-start"),
+            ("Call Control API Reference", "https://developers.telnyx.com/api-reference/call-commands/dial"),
+        ],
+        "dotcom": [
+            ("Telnyx Voice API", "https://telnyx.com/products/voice-api"),
+            ("Voice AI Agents", "https://telnyx.com/products/voice-ai-agents"),
+        ],
+    },
+    "ai": {
+        "docs": [
+            ("AI Assistants Guide", "https://developers.telnyx.com/docs/inference/ai-assistants/no-code-voice-assistant"),
+            ("Assistants API Reference", "https://developers.telnyx.com/api-reference/assistants/create-an-assistant"),
+        ],
+        "dotcom": [
+            ("Telnyx AI Assistants", "https://telnyx.com/ai-assistants"),
+            ("Voice AI Agents", "https://telnyx.com/products/voice-ai-agents"),
+        ],
+    },
+    "sip": {
+        "docs": [
+            ("SIP Trunking Get Started", "https://developers.telnyx.com/docs/voice/sip-trunking/get-started"),
+            ("SIP Configuration Guides", "https://developers.telnyx.com/docs/voice/sip-trunking/configuration-guides"),
+        ],
+        "dotcom": [
+            ("Telnyx SIP Trunks", "https://telnyx.com/products/sip-trunks"),
+            ("SIP Trunking Pricing", "https://telnyx.com/pricing/elastic-sip"),
+        ],
+    },
+    "iot": {
+        "docs": [
+            ("IoT SIM Get Started", "https://developers.telnyx.com/docs/iot-sim/get-started"),
+            ("SIM Card API Reference", "https://developers.telnyx.com/api-reference/sim-cards/get-all-sim-cards"),
+        ],
+        "dotcom": [
+            ("Telnyx IoT SIM Cards", "https://telnyx.com/products/iot-sim-card"),
+            ("IoT Data Plans Pricing", "https://telnyx.com/pricing/iot-data-plans"),
+        ],
+    },
+}
+
+LANG_SDK_URL = {
+    "python": ("Python SDK", "https://developers.telnyx.com/development/sdk/python"),
+    "nodejs": ("Node.js SDK", "https://developers.telnyx.com/development/sdk/node"),
+    "ruby":   ("Ruby SDK", "https://developers.telnyx.com/development/sdk/ruby"),
+    "go":     ("Go SDK", "https://developers.telnyx.com/development/sdk/go"),
+}
+
 # Code block language tags for extraction
 LANG_CODE_TAGS = {
     "python": ["python"],
@@ -632,6 +695,23 @@ def _get_version_answer(language: str) -> str:
     return versions.get(language, "See the Prerequisites section.")
 
 
+def build_resources(product: str, language: str) -> str:
+    """Generate a Resources section with links to Dev Docs, SDK, and product pages."""
+    links = PRODUCT_LINKS.get(product, {})
+    sdk = LANG_SDK_URL.get(language)
+    items = []
+    for label, url in links.get("docs", []):
+        items.append(f"- [{label}]({url})")
+    if sdk:
+        items.append(f"- [{sdk[0]}]({sdk[1]})")
+    for label, url in links.get("dotcom", []):
+        items.append(f"- [{label}]({url})")
+    lines = ["## Resources", ""]
+    lines.extend(items)
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build_related_examples(sections: dict, product: str, language: str) -> str:
     """Build the Related Examples section from TF Next Steps."""
     next_steps = sections.get("next steps", "")
@@ -687,6 +767,7 @@ def restructure_readme(
         troubleshooting,
         "",
         build_faq(title, product, language, framework),
+        build_resources(product, language),
         build_related_examples(sections, product, language),
     ]
 

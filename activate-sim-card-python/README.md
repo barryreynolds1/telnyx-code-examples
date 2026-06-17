@@ -218,6 +218,14 @@ Telnyx is an AI Communications Infrastructure platform with a private global net
 
 Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
 
+## Resources
+
+- [IoT SIM Get Started](https://developers.telnyx.com/docs/iot-sim/get-started)
+- [SIM Card API Reference](https://developers.telnyx.com/api-reference/sim-cards/get-all-sim-cards)
+- [Python SDK](https://developers.telnyx.com/development/sdk/python)
+- [Telnyx IoT SIM Cards](https://telnyx.com/products/iot-sim-card)
+- [IoT Data Plans Pricing](https://telnyx.com/pricing/iot-data-plans)
+
 ## Related Examples
 
 - [Monitor SIM Card Data Usage](/tutorials/iot/python/data-usage-monitoring).

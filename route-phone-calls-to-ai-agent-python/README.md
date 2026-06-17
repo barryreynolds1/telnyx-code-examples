@@ -144,6 +144,16 @@ Telnyx is an AI Communications Infrastructure platform with a private global net
 
 Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
 
+## Resources
+
+- [Voice API Overview](https://developers.telnyx.com/docs/voice)
+- [Voice API Commands](https://developers.telnyx.com/docs/voice/programmable-voice/voice-api-commands-and-resources)
+- [AI Assistant Start](https://developers.telnyx.com/docs/voice/programmable-voice/ai-assistant-start)
+- [Call Control API Reference](https://developers.telnyx.com/api-reference/call-commands/dial)
+- [Python SDK](https://developers.telnyx.com/development/sdk/python)
+- [Telnyx Voice API](https://telnyx.com/products/voice-api)
+- [Voice AI Agents](https://telnyx.com/products/voice-ai-agents)
+
 ## Related Examples
 
 - [Make an Outbound Call with Python](/tutorials/voice/python/outbound-call).

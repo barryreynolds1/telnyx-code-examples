@@ -189,6 +189,14 @@ Telnyx is an AI Communications Infrastructure platform with a private global net
 
 Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
 
+## Resources
+
+- [SIP Trunking Get Started](https://developers.telnyx.com/docs/voice/sip-trunking/get-started)
+- [SIP Configuration Guides](https://developers.telnyx.com/docs/voice/sip-trunking/configuration-guides)
+- [Python SDK](https://developers.telnyx.com/development/sdk/python)
+- [Telnyx SIP Trunks](https://telnyx.com/products/sip-trunks)
+- [SIP Trunking Pricing](https://telnyx.com/pricing/elastic-sip)
+
 ## Related Examples
 
 - [Configure SIP Authentication Methods](/tutorials/sip/python/sip-authentication).

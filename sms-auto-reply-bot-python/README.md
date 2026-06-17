@@ -182,6 +182,15 @@ Telnyx is an AI Communications Infrastructure platform with a private global net
 
 Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
 
+## Resources
+
+- [Messaging Overview](https://developers.telnyx.com/docs/messaging)
+- [Send an SMS — Quickstart](https://developers.telnyx.com/docs/messaging/messages/send-message)
+- [Messaging API Reference](https://developers.telnyx.com/api-reference/messages/send-a-message)
+- [Python SDK](https://developers.telnyx.com/development/sdk/python)
+- [Telnyx SMS API](https://telnyx.com/products/sms-api)
+- [Messaging Pricing](https://telnyx.com/pricing/messaging)
+
 ## Related Examples
 
 - [Receive SMS Webhooks with Python](/tutorials/sms/python/receive-sms-webhook)
