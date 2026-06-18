@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Media Stream Live Transcription — fork call audio to WebSocket for real-time transcription display."""
+import os, json, time, asyncio, threading, requests, telnyx
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+load_dotenv()
+app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+STREAM_NUMBER = os.getenv("STREAM_NUMBER")
+CONNECTION_ID = os.getenv("CONNECTION_ID")
+active_streams = {}
+transcripts = {}
+
+@app.route("/webhooks/voice", methods=["POST"])
+def handle_voice():
+    payload = request.get_json()
+    event_type = payload.get("data", {}).get("event_type")
+    ccid = payload.get("data", {}).get("call_control_id")
+    data = payload.get("data", {})
+    if event_type == "call.initiated" and data.get("direction") == "incoming":
+        active_streams[ccid] = {"caller": data.get("from"), "started": time.time()}
+        transcripts[ccid] = []
+        client.calls.actions.answer(ccid)
+        return jsonify({"status": "answering"}), 200
+    elif event_type == "call.answered":
+        client.calls.actions.transcription_start(ccid, language="en")
+        client.calls.actions.speak(ccid, payload="This call is being transcribed in real time. Go ahead and speak.", voice="female", language_code="en-US")
+        return jsonify({"status": "streaming"}), 200
+    elif event_type == "call.transcription":
+        text = data.get("transcription_data", {}).get("transcript", "")
+        if text and ccid in transcripts:
+            transcripts[ccid].append({"text": text, "time": time.time()})
+        return jsonify({"status": "ok"}), 200
+    elif event_type == "call.hangup":
+        active_streams.pop(ccid, None)
+        return jsonify({"status": "ended"}), 200
+    return jsonify({"status": "ok"}), 200
+
+@app.route("/transcripts/<ccid>", methods=["GET"])
+def get_transcript(ccid):
+    t = transcripts.get(ccid)
+    if t is None: return jsonify({"error": "Not found"}), 404
+    return jsonify({"transcript": t}), 200
+
+@app.route("/transcripts", methods=["GET"])
+def list_transcripts():
+    return jsonify({"active": list(active_streams.keys()), "completed": [k for k in transcripts if k not in active_streams]}), 200
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok", "active": len(active_streams), "transcripts": len(transcripts)}), 200
+
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""AI Language Learning Phone Tutor — call a number, practice a foreign language with AI."""
+import os, json, time, requests, telnyx
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+load_dotenv()
+app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
+TUTOR_NUMBER = os.getenv("TUTOR_NUMBER")
+INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
+active_calls = {}
+session_history = []
+
+LANGUAGES = {"1": {"name": "Spanish", "code": "es"}, "2": {"name": "French", "code": "fr"}, "3": {"name": "Japanese", "code": "ja"}, "4": {"name": "Mandarin", "code": "zh"}}
+
+def call_inference(messages, max_tokens=200):
+    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+        json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.7}, timeout=15)
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
+
+@app.route("/webhooks/voice", methods=["POST"])
+def handle_voice():
+    payload = request.get_json()
+    event_type = payload.get("data", {}).get("event_type")
+    ccid = payload.get("data", {}).get("call_control_id")
+    data = payload.get("data", {})
+    call = active_calls.get(ccid)
+    if event_type == "call.initiated" and data.get("direction") == "incoming":
+        active_calls[ccid] = {"caller": data.get("from"), "state": "language_select", "conversation": []}
+        client.calls.actions.answer(ccid)
+        return jsonify({"status": "answering"}), 200
+    elif event_type == "call.answered":
+        client.calls.actions.speak(ccid, payload="Welcome to Language Tutor! Press 1 for Spanish, 2 for French, 3 for Japanese, 4 for Mandarin.", voice="female", language_code="en-US")
+        return jsonify({"status": "greeting"}), 200
+    elif event_type == "call.speak.ended" and call:
+        if call["state"] == "language_select":
+            client.calls.actions.gather(ccid, input_type="dtmf speech", timeout_secs=10, min_digits=1, max_digits=1)
+        else:
+            client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=3, timeout_secs=20, language_code="en-US")
+        return jsonify({"status": "listening"}), 200
+    elif event_type == "call.gather.ended" and call:
+        digits = data.get("digits", "")
+        speech = data.get("speech", {}).get("result", "")
+        if call["state"] == "language_select":
+            lang_key = digits or speech.strip()[:1]
+            lang = LANGUAGES.get(lang_key, LANGUAGES["1"])
+            call["language"] = lang
+            call["state"] = "tutoring"
+            call["conversation"] = [{"role": "system", "content": f"You are a {lang['name']} language tutor. Start with a simple greeting in {lang['name']}, then English translation. Gradually increase difficulty. Correct mistakes gently. Mix {lang['name']} and English. Keep each response short for phone conversation."}]
+            intro = call_inference(call["conversation"] + [{"role": "user", "content": "Start the lesson."}])
+            call["conversation"].append({"role": "assistant", "content": intro})
+            client.calls.actions.speak(ccid, payload=intro, voice="female", language_code="en-US")
+        elif call["state"] == "tutoring" and speech:
+            call["conversation"].append({"role": "user", "content": speech})
+            response = call_inference(call["conversation"])
+            call["conversation"].append({"role": "assistant", "content": response})
+            client.calls.actions.speak(ccid, payload=response, voice="female", language_code="en-US")
+        else:
+            client.calls.actions.speak(ccid, payload="Try again! Say something in the language you're learning.", voice="female", language_code="en-US")
+        return jsonify({"status": "processing"}), 200
+    elif event_type == "call.hangup":
+        call = active_calls.pop(ccid, None)
+        if call and call.get("conversation"):
+            session_history.append({"caller": call["caller"], "language": call.get("language", {}).get("name"), "exchanges": len(call["conversation"]) // 2})
+        return jsonify({"status": "ended"}), 200
+    return jsonify({"status": "ok"}), 200
+
+@app.route("/sessions", methods=["GET"])
+def list_sessions():
+    return jsonify({"sessions": session_history[-50:]}), 200
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok", "active": len(active_calls), "sessions": len(session_history)}), 200
+
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
