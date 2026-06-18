@@ -1,46 +1,27 @@
-# Track Iot Device Location
+# Production-ready Flask application for device location tracking via Telnyx IoT API.
 
 Production-ready Flask application for device location tracking via Telnyx IoT API.
 
-## Telnyx Products Used
-
-- Verify API
-
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,37 +31,42 @@ docker build -t track-iot-device-location .
 docker run --env-file .env -p 5000:5000 track-iot-device-location
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
+### `GET /devices`
 
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/devices` | List all devices |
-| `GET` | `/devices/<sim_card_id>` | List all device location |
-| `GET` | `/devices/<sim_card_id>/location` | List all location only |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all devices.
 
 ```bash
 curl http://localhost:5000/devices
 ```
 
-**Health check:**
+### `GET /devices/<sim_card_id>`
+
+```bash
+curl http://localhost:5000/devices/<sim_card_id>
+```
+
+### `GET /devices/<sim_card_id>/location`
+
+```bash
+curl http://localhost:5000/devices/<sim_card_id>/location
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

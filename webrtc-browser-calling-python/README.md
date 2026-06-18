@@ -1,46 +1,38 @@
-# Webrtc Browser Calling
+# Production-ready WebRTC calling application with Telnyx Voice API and FastAPI.
 
 Production-ready WebRTC calling application with Telnyx Voice API and FastAPI.
 
-## Telnyx Products Used
+## Webhook Events Handled
 
-- Voice Call Control
+```
+call.initiated
+call.answered
+call.hangup
+call.gather.ended (DTMF)
+```
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
+| `TELNYX_CONNECTION_ID` | string | `-` | **yes** | telnyx connection id |
+| `WEBHOOK_URL` | string | `https://...` | **yes** | webhook url |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,25 +42,8 @@ docker build -t webrtc-browser-calling .
 docker run --env-file .env -p 5000:5000 webrtc-browser-calling
 ```
 
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `TELNYX_PHONE_NUMBER` | Phone number in E.164 format | Yes |
-| `TELNYX_CONNECTION_ID` | Telnyx Connection Id | Yes |
-| `WEBHOOK_URL` | Webhook URL for external notifications | Yes |
-
-## Testing
-
-**Health check:**
-
-```bash
-curl http://localhost:5000/health
-```
-
-## Learn More
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

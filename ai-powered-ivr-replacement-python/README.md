@@ -1,42 +1,34 @@
-# Ai Powered Ivr Replacement
+# AI-Powered IVR Replacement — natural language routing with A/B testing and structured insights.
 
 AI-Powered IVR Replacement — natural language routing with A/B testing and structured insights.
 
+## Webhook Events Handled
+
+```
+call.initiated
+```
+
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `ASSISTANT_ID` | string | `-` | **yes** | assistant id |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,37 +38,9 @@ docker build -t ai-powered-ivr-replacement .
 docker run --env-file .env -p 5000:5000 ai-powered-ivr-replacement
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `ASSISTANT_ID` | Assistant Id | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/assistant` | External webhook handler |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/setup` | `POST` /setup |
-| `GET` | `/analytics` | List all analytics |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
-
-```bash
-curl http://localhost:5000/analytics
-```
-
-**Trigger action:**
+### `POST /setup`
 
 ```bash
 curl -X POST http://localhost:5000/setup \
@@ -84,13 +48,32 @@ curl -X POST http://localhost:5000/setup \
   -d '{}'
 ```
 
-**Health check:**
+### `GET /analytics`
+
+```bash
+curl http://localhost:5000/analytics
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Webhook Endpoints
+
+### `POST /webhooks/assistant`
+
+Receives external webhook events.
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

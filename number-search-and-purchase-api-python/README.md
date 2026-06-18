@@ -1,42 +1,26 @@
-# Number Search And Purchase Api
+# Number Search and Purchase API — search, filter, and buy phone numbers programmatically.
 
 Number Search and Purchase API — search, filter, and buy phone numbers programmatically.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,44 +30,46 @@ docker build -t number-search-and-purchase-api .
 docker run --env-file .env -p 5000:5000 number-search-and-purchase-api
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/numbers/search` | `GET` /numbers/search |
-| `POST` | `/numbers/purchase` | `POST` /numbers/purchase |
-| `GET` | `/numbers/inventory` | List all inventory |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+### `GET /numbers/search`
 
 ```bash
 curl http://localhost:5000/numbers/search
 ```
 
-**Trigger action:**
+### `POST /numbers/purchase`
 
 ```bash
 curl -X POST http://localhost:5000/numbers/purchase \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "phone_numbers": "+12125551234"
+}'
 ```
 
-**Health check:**
+### `GET /numbers/inventory`
+
+Returns all inventory.
+
+```bash
+curl http://localhost:5000/numbers/inventory
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

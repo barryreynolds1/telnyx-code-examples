@@ -1,52 +1,56 @@
-# Isv Notification Engine
+# ISV Notification Engine
 
 SaaS platform sends alerts via SMS/voice/WhatsApp based on customer preference and urgency. Multi-channel with fallback cascade and delivery tracking.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- SMS/MMS Messaging
-- Text-to-Speech
-- Voice Call Control
-- WhatsApp Business API
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Call Control: Speak | `POST /v2/calls/{id}/actions/speak` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+
+## Webhook Events Handled
+
+```
+call.answered
+```
 
 ## How It Works
 
-1. Customer **calls** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (call)                                     │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound Call ──► Telnyx ──► POST /webhooks/voice
+                                    │
+                               call.initiated → answer
+                               call.answered  → speak greeting
+                               call.speak.ended → gather (listen)
+                               call.gather.ended → process → speak response
+                               call.hangup → cleanup
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `MAIN_NUMBER` | string | `+E.164` | **yes** | Telnyx phone number ([get it](https://portal.telnyx.com/numbers)) |
+| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
+| `WHATSAPP_NUMBER` | string | `+E.164` | no | WhatsApp-enabled Telnyx number ([get it](https://portal.telnyx.com/numbers)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-- A [Call Control Application](https://portal.telnyx.com/app#/call-control/applications) configured with your webhook URL
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control App** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/voice`
 
 ### Docker
 
@@ -55,70 +59,97 @@ docker build -t isv-notification-engine .
 docker run --env-file .env -p 5000:5000 isv-notification-engine
 ```
 
-### Expose Your Webhook
+## API Reference
 
-For local development, use [ngrok](https://ngrok.com) to expose your server:
+### `POST /notify`
 
 ```bash
-ngrok http 5000
+curl -X POST http://localhost:5000/notify \
+  -H "Content-Type: application/json" \
+  -d '{
+  "customer_id": "abc-123",
+  "message": "Hello, this is a test",
+  "urgency": "normal"
+}'
 ```
 
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
+### `POST /notify/bulk`
 
-- **Voice:** `https://<your-ngrok>.ngrok.io/webhooks/voice`
+```bash
+curl -X POST http://localhost:5000/notify/bulk \
+  -H "Content-Type: application/json" \
+  -d '{
+  "customer_ids": "abc-123",
+  "message": "Hello, this is a test",
+  "urgency": "normal"
+}'
+```
 
-## Environment Variables
+### `GET /customers`
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `MAIN_NUMBER` | Telnyx phone number in E.164 format (e.g., `+12345678901`) | Yes |
-| `CONNECTION_ID` | Telnyx Call Control connection ID | Yes |
-| `WHATSAPP_NUMBER` | WhatsApp-enabled Telnyx number | Yes |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/voice` | Telnyx voice webhook handler (call lifecycle events) |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/notify` | `POST` /notify |
-| `POST` | `/notify/bulk` | `POST` /notify/bulk |
-| `GET` | `/customers` | List all customers |
-| `PUT` | `/customers/<cid>/preference` | Update status |
-| `GET` | `/notifications` | List all notifications |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all customers.
 
 ```bash
 curl http://localhost:5000/customers
 ```
 
-**Trigger action:**
+### `PUT /customers/<cid>/preference`
+
+Update record status.
 
 ```bash
-curl -X POST http://localhost:5000/notify \
+curl -X PUT http://localhost:5000/customers/<cid>/preference \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "preference": "customers[cid][\"preference\"]",
+  "fallback": "customers[cid].get(\"fallback\", []"
+}'
 ```
 
-**Health check:**
+### `GET /notifications`
+
+Returns all notifications.
+
+```bash
+curl http://localhost:5000/notifications
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [WhatsApp Guide](https://developers.telnyx.com/docs/messaging/whatsapp)
+## Webhook Endpoints
+
+### `POST /webhooks/voice`
+
+Receives Telnyx Call Control webhook events.
+
+Events handled: `call.answered`
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "call.initiated",
+    "call_control_id": "v3:abc-123",
+    "direction": "incoming",
+    "from": "+12125551234",
+    "to": "+13105559876"
+  }
+}
+```
+
+## Resources
+
+- [Call Control: Speak](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

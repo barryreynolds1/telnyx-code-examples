@@ -1,50 +1,34 @@
-# Missions Ai Task Runner
+# Missions AI Task Runner — AI-driven task execution within the Telnyx Missions framework. AI decides next steps based on task results.
 
 Missions AI Task Runner — AI-driven task execution within the Telnyx Missions framework. AI decides next steps based on task results.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- SMS/MMS Messaging
-- Voice Call Control
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+| Number Lookup API | `GET /v2/number_lookup/{number}` | [docs](https://developers.telnyx.com/docs/numbers) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -54,48 +38,53 @@ docker build -t missions-ai-task-runner .
 docker run --env-file .env -p 5000:5000 missions-ai-task-runner
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
+### `POST /run`
 
-## API Endpoints
+Trigger the workflow.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/run` | Trigger workflow execution |
-| `GET` | `/runs` | List all runs |
-| `GET` | `/actions` | List all actions |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/run \
+  -H "Content-Type: application/json" \
+  -d '{
+  "objective": "value",
+  "context": "Hello, this is a test",
+  "max_steps": "5"
+}'
+```
 
-## Testing
+### `GET /runs`
 
-**List records:**
+Returns all runs.
 
 ```bash
 curl http://localhost:5000/runs
 ```
 
-**Trigger action:**
+### `GET /actions`
+
+Returns all actions.
 
 ```bash
-curl -X POST http://localhost:5000/run \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/actions
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
+- [Number Lookup API](https://developers.telnyx.com/docs/numbers)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

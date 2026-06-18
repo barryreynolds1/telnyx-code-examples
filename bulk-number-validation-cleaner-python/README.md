@@ -1,42 +1,32 @@
-# Bulk Number Validation Cleaner
+# Bulk Number Validation & Cleaner — validate and clean phone number lists via Telnyx Number Lookup API.
 
 Bulk Number Validation & Cleaner — validate and clean phone number lists via Telnyx Number Lookup API.
 
+## Telnyx APIs
+
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Number Lookup API | `GET /v2/number_lookup/{number}` | [docs](https://developers.telnyx.com/docs/numbers) |
+
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,44 +36,46 @@ docker build -t bulk-number-validation-cleaner .
 docker run --env-file .env -p 5000:5000 bulk-number-validation-cleaner
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /validate`
 
-## API Endpoints
+```bash
+curl -X POST http://localhost:5000/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+  "numbers": "+12125551234"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/validate` | `POST` /validate |
-| `GET` | `/validate/single/<number>` | `GET` /validate/single/<number> |
-| `GET` | `/jobs` | List all jobs |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+### `GET /validate/single/<number>`
 
 ```bash
 curl http://localhost:5000/validate/single/<number>
 ```
 
-**Trigger action:**
+### `GET /jobs`
+
+Returns all jobs.
 
 ```bash
-curl -X POST http://localhost:5000/validate \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/jobs
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
+## Resources
+
+- [Number Lookup API](https://developers.telnyx.com/docs/numbers)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

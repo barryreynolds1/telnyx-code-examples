@@ -1,46 +1,33 @@
-# Number Porting Status Tracker
+# Number Porting Status Tracker — track porting orders with status webhooks and SMS alerts.
 
 Number Porting Status Tracker — track porting orders with status webhooks and SMS alerts.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- SMS/MMS Messaging
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `ALERT_NUMBER` | string | `+E.164` | **yes** | alert number |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,52 +37,54 @@ docker build -t number-porting-status-tracker .
 docker run --env-file .env -p 5000:5000 number-porting-status-tracker
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `ALERT_NUMBER` | Phone number in E.164 format | Yes |
+### `GET /ports/list`
 
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/porting` | External webhook handler |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/ports/list` | List all ports |
-| `POST` | `/ports/create` | Create new record |
-| `GET` | `/ports/<order_id>` | List all port |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all ports.
 
 ```bash
 curl http://localhost:5000/ports/list
 ```
 
-**Trigger action:**
+### `POST /ports/create`
+
+Create a new record.
 
 ```bash
 curl -X POST http://localhost:5000/ports/create \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "phone_numbers": "+12125551234"
+}'
 ```
 
-**Health check:**
+### `GET /ports/<order_id>`
+
+```bash
+curl http://localhost:5000/ports/<order_id>
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
+## Webhook Endpoints
+
+### `POST /webhooks/porting`
+
+Receives external webhook events.
+
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

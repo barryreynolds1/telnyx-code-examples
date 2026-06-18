@@ -1,42 +1,30 @@
-# Configure Sip Codecs
+# Production-ready Flask application for SIP codec configuration via Telnyx.
 
 Production-ready Flask application for SIP codec configuration via Telnyx.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `SIP_USERNAME` | string | `-` | **yes** | sip username |
+| `SIP_PASSWORD` | string | `-` | **yes** | sip password |
+| `SIP_ENDPOINT` | string | `-` | **yes** | sip endpoint |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,47 +34,40 @@ docker build -t configure-sip-codecs .
 docker run --env-file .env -p 5000:5000 configure-sip-codecs
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `SIP_USERNAME` | Sip Username | Yes |
-| `SIP_PASSWORD` | Sip Password | Yes |
-| `SIP_ENDPOINT` | Sip Endpoint | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
+### `GET /sip/connections`
 
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/sip/connections` | List all connections |
-| `POST` | `/sip/connections` | Create new record |
-| `GET` | `/sip/connections/<connection_id>` | List all connection |
-
-## Testing
-
-**List records:**
+Returns all connections.
 
 ```bash
 curl http://localhost:5000/sip/connections
 ```
 
-**Trigger action:**
+### `POST /sip/connections`
+
+Create a new record.
 
 ```bash
 curl -X POST http://localhost:5000/sip/connections \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "name": "Jane Doe",
+  "codecs": "[\"G.711\"]",
+  "username": "Jane Doe",
+  "password": "value",
+  "sip_endpoint": "value"
+}'
 ```
 
-**Health check:**
+### `GET /sip/connections/<connection_id>`
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5000/sip/connections/<connection_id>
 ```
 
-## Learn More
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

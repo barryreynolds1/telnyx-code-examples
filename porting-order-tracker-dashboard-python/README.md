@@ -1,42 +1,27 @@
-# Porting Order Tracker Dashboard
+# Porting Order Tracker Dashboard â submit, track, and manage porting orders with SLA monitoring, timeline visualization, and bulk operations.
 
 Porting Order Tracker Dashboard â submit, track, and manage porting orders with SLA monitoring, timeline visualization, and bulk operations.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `ALERT_WEBHOOK` | string | `https://...` | **yes** | alert webhook |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,53 +31,74 @@ docker build -t porting-order-tracker-dashboard .
 docker run --env-file .env -p 5000:5000 porting-order-tracker-dashboard
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `ALERT_WEBHOOK` | Webhook URL for external notifications | Yes |
+### `POST /porting/orders`
 
-## Webhook Endpoints
+```bash
+curl -X POST http://localhost:5000/porting/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_numbers": "+12125551234",
+  "authorized_person": "value",
+  "current_provider": "abc-123",
+  "billing_phone_number": "+12125551234",
+  "reference": "value"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/porting` | External webhook handler |
+### `POST /porting/bulk`
 
-## API Endpoints
+```bash
+curl -X POST http://localhost:5000/porting/bulk \
+  -H "Content-Type: application/json" \
+  -d '{
+  "batches": "value"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/porting/orders` | `POST` /porting/orders |
-| `POST` | `/porting/bulk` | `POST` /porting/bulk |
-| `GET` | `/porting/orders` | List all orders |
-| `GET` | `/porting/sla-check` | `GET` /porting/sla-check |
-| `GET` | `/porting/dashboard` | Dashboard / analytics view |
-| `GET` | `/health` | Health check and service status |
+### `GET /porting/orders`
 
-## Testing
-
-**List records:**
+Returns all orders.
 
 ```bash
 curl http://localhost:5000/porting/orders
 ```
 
-**Trigger action:**
+### `GET /porting/sla-check`
 
 ```bash
-curl -X POST http://localhost:5000/porting/orders \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/porting/sla-check
 ```
 
-**Health check:**
+### `GET /porting/dashboard`
+
+Dashboard/analytics view.
+
+```bash
+curl http://localhost:5000/porting/dashboard
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Webhook Endpoints
+
+### `POST /webhooks/porting`
+
+Receives external webhook events.
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

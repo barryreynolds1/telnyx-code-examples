@@ -1,53 +1,61 @@
-# Multi Language Customer Survey
+# Multi-Language Customer Survey — outbound voice surveys in the caller's language with AI analysis.
 
 Multi-Language Customer Survey — outbound voice surveys in the caller's language with AI analysis.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- Speech Recognition / DTMF
-- Voice Call Control
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Call Control API | `POST /v2/calls` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+
+## Webhook Events Handled
+
+```
+call.answered
+call.speak.ended
+call.gather.ended
+call.hangup
+call.gather.ended (speech)
+```
 
 ## How It Works
 
-1. Customer **calls** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (call)                                     │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound Call ──► Telnyx ──► POST /webhooks/voice
+                                    │
+                               call.initiated → answer
+                               call.answered  → speak greeting
+                               call.speak.ended → gather (listen)
+                               call.gather.ended → AI inference → speak response
+                               call.hangup → cleanup
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `SURVEY_NUMBER` | string | `+E.164` | **yes** | survey number |
+| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-- A [Call Control Application](https://portal.telnyx.com/app#/call-control/applications) configured with your webhook URL
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control App** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/voice`
 
 ### Docker
 
@@ -56,66 +64,61 @@ docker build -t multi-language-customer-survey .
 docker run --env-file .env -p 5000:5000 multi-language-customer-survey
 ```
 
-### Expose Your Webhook
+## API Reference
 
-For local development, use [ngrok](https://ngrok.com) to expose your server:
+### `POST /survey/start`
 
 ```bash
-ngrok http 5000
+curl -X POST http://localhost:5000/survey/start \
+  -H "Content-Type: application/json" \
+  -d '{
+  "contacts": "value"
+}'
 ```
 
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
-
-- **Voice:** `https://<your-ngrok>.ngrok.io/webhooks/voice`
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `SURVEY_NUMBER` | Phone number in E.164 format | Yes |
-| `CONNECTION_ID` | Telnyx Call Control connection ID | Yes |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/voice` | Telnyx voice webhook handler (call lifecycle events) |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/survey/start` | `POST` /survey/start |
-| `GET` | `/survey/results` | List all results |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+### `GET /survey/results`
 
 ```bash
 curl http://localhost:5000/survey/results
 ```
 
-**Trigger action:**
+### `GET /health`
 
-```bash
-curl -X POST http://localhost:5000/survey/start \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**Health check:**
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Webhook Endpoints
+
+### `POST /webhooks/voice`
+
+Receives Telnyx Call Control webhook events.
+
+Events handled: `call.answered`, `call.speak.ended`, `call.gather.ended`, `call.hangup`, `call.gather.ended (speech)`
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "call.initiated",
+    "call_control_id": "v3:abc-123",
+    "direction": "incoming",
+    "from": "+12125551234",
+    "to": "+13105559876"
+  }
+}
+```
+
+## Resources
+
+- [Call Control API](https://developers.telnyx.com/docs/voice/call-control)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

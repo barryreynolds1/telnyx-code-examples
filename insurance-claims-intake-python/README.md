@@ -1,75 +1,73 @@
 # Insurance Claims Intake
 
-policyholder calls, AI collects incident details, accepts photos via MMS, creates claim, assigns adjuster, texts status updates. Adjuster reviews AI-prepared claim.
+Policyholder calls, AI collects incident details, accepts photos via MMS, creates claim, assigns adjuster, texts status updates. Adjuster reviews AI-prepared claim.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- MMS Media Handling
-- SMS/MMS Messaging
-- Speech Recognition / DTMF
-- Text-to-Speech
-- Voice Call Control
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Call Control: Answer | `POST /v2/calls/{id}/actions/answer` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| Call Control: Speak | `POST /v2/calls/{id}/actions/speak` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| Call Control: Gather | `POST /v2/calls/{id}/actions/gather` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
-## Integrations
+## Webhook Events Handled
 
-| Service | Purpose |
-|---------|---------|
-| **Slack** | Team notifications and approval workflows |
+```
+call.initiated
+call.answered
+call.speak.ended
+call.gather.ended
+call.hangup
+call.gather.ended (speech)
+```
 
-## Human-in-the-Loop
+## External Integrations
 
-This example includes human oversight at key decision points:
-
-- **Manual assignment**
-- **Manual review queues**
+| Service | APIs Used |
+|---------|-----------|
+| Slack | Incoming Webhooks |
 
 ## How It Works
 
-1. Customer **calls or texts** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Human reviews** via dashboard, Slack, or SMS reply
-6. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (call/SMS)                                 │
-                                          ├──► Telnyx AI Inference
-                                          ├──► Slack
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound Call/SMS ──► Telnyx ──► POST /webhooks/voice or /webhooks/sms
+                                        │
+                                        ├── Telnyx AI Inference
+                                        ├── Slack
+                                        │
+                                        ▼
+                                  Response / Action
+                                  (speak, SMS, dispatch)
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `MAIN_NUMBER` | string | `+E.164` | **yes** | Telnyx phone number ([get it](https://portal.telnyx.com/numbers)) |
+| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `ADJUSTER_SLACK_WEBHOOK` | string | `https://hooks.slack.com/services/...` | no | Slack webhook for adjuster alerts ([get it](https://api.slack.com/messaging/webhooks)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-- A [Call Control Application](https://portal.telnyx.com/app#/call-control/applications) configured with your webhook URL
-- A Slack account (for slack integration)
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control App** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/voice`
+- **Messaging Profile** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/sms`
 
 ### Docker
 
@@ -78,70 +76,91 @@ docker build -t insurance-claims-intake .
 docker run --env-file .env -p 5000:5000 insurance-claims-intake
 ```
 
-### Expose Your Webhook
+## API Reference
 
-For local development, use [ngrok](https://ngrok.com) to expose your server:
+### `GET /claims`
 
-```bash
-ngrok http 5000
-```
-
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
-
-- **Voice:** `https://<your-ngrok>.ngrok.io/webhooks/voice`
-- **Messaging:** `https://<your-ngrok>.ngrok.io/webhooks/sms`
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `MAIN_NUMBER` | Telnyx phone number in E.164 format (e.g., `+12345678901`) | Yes |
-| `CONNECTION_ID` | Telnyx Call Control connection ID | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `ADJUSTER_SLACK_WEBHOOK` | Slack incoming webhook URL for adjuster notifications | No |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/voice` | Telnyx voice webhook handler (call lifecycle events) |
-| `POST` | `/webhooks/sms` | Telnyx SMS/MMS webhook handler (inbound messages) |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/claims` | List all claims |
-| `POST` | `/claims/<claim_id>/assign` | Assign to a team member (triggers notifications) |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all claims.
 
 ```bash
 curl http://localhost:5000/claims
 ```
 
-**Trigger action:**
+### `POST /claims/<claim_id>/assign`
+
+Assign to team member. Notifies both parties.
 
 ```bash
 curl -X POST http://localhost:5000/claims/<claim_id>/assign \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "adjuster": "value"
+}'
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Webhook Endpoints
+
+### `POST /webhooks/voice`
+
+Receives Telnyx Call Control webhook events.
+
+Events handled: `call.initiated`, `call.answered`, `call.speak.ended`, `call.gather.ended`, `call.hangup`, `call.gather.ended (speech)`
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "call.initiated",
+    "call_control_id": "v3:abc-123",
+    "direction": "incoming",
+    "from": "+12125551234",
+    "to": "+13105559876"
+  }
+}
+```
+
+### `POST /webhooks/sms`
+
+Receives Telnyx Messaging webhook events.
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "message.received",
+    "payload": {
+      "from": {
+        "phone_number": "+12125551234"
+      },
+      "to": [
+        {
+          "phone_number": "+13105559876"
+        }
+      ],
+      "text": "Hello",
+      "media": []
+    }
+  }
+}
+```
+
+## Resources
+
+- [Call Control: Answer](https://developers.telnyx.com/docs/voice/call-control)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

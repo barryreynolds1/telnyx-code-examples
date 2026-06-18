@@ -1,48 +1,33 @@
-# Video Webinar Recording Manager
+# Video Webinar Recording Manager — manage video room webinars with automatic recording, transcription, and clip extraction.
 
 Video Webinar Recording Manager — manage video room webinars with automatic recording, transcription, and clip extraction.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -52,48 +37,69 @@ docker build -t video-webinar-recording-manager .
 docker run --env-file .env -p 5000:5000 video-webinar-recording-manager
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
+### `POST /webinars`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webinars` | Create new record |
-| `GET` | `/webinars/<room_id>/recordings` | List all recordings |
-| `POST` | `/recordings/<recording_id>/transcribe` | `POST` /recordings/<recording_id>/transcribe |
-| `GET` | `/webinars` | List all webinars |
-| `GET` | `/recordings` | List all processed |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/webinars \
+  -H "Content-Type: application/json" \
+  -d '{
+  "title": "value",
+  "max_participants": "100",
+  "host": "value",
+  "scheduled": "value"
+}'
+```
 
-## Testing
-
-**List records:**
+### `GET /webinars/<room_id>/recordings`
 
 ```bash
 curl http://localhost:5000/webinars/<room_id>/recordings
 ```
 
-**Trigger action:**
+### `POST /recordings/<recording_id>/transcribe`
 
 ```bash
-curl -X POST http://localhost:5000/webinars \
+curl -X POST http://localhost:5000/recordings/<recording_id>/transcribe \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "transcript": "value"
+}'
 ```
 
-**Health check:**
+### `GET /webinars`
+
+Returns all webinars.
+
+```bash
+curl http://localhost:5000/webinars
+```
+
+### `GET /recordings`
+
+Returns all processed.
+
+```bash
+curl http://localhost:5000/recordings
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

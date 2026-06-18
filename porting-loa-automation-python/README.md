@@ -1,42 +1,26 @@
-# Porting Loa Automation
+# Porting LOA Automation — automate Letter of Authorization generation and porting order submission.
 
 Porting LOA Automation — automate Letter of Authorization generation and porting order submission.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,46 +30,78 @@ docker build -t porting-loa-automation .
 docker run --env-file .env -p 5000:5000 porting-loa-automation
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /loa/generate`
 
-## API Endpoints
+```bash
+curl -X POST http://localhost:5000/loa/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+  "authorized_person": "value",
+  "current_provider": "abc-123",
+  "phone_numbers": "+12125551234",
+  "billing_number": "+12125551234",
+  "account_number": "+12125551234",
+  "service_address": "value",
+  "title": "value",
+  "company": "value"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/loa/generate` | `POST` /loa/generate |
-| `POST` | `/loa/submit-and-port` | `POST` /loa/submit-and-port |
-| `POST` | `/loa/check-portability` | `POST` /loa/check-portability |
-| `GET` | `/loa` | List all loas |
-| `GET` | `/pipeline` | Update status |
-| `GET` | `/health` | Health check and service status |
+### `POST /loa/submit-and-port`
 
-## Testing
+```bash
+curl -X POST http://localhost:5000/loa/submit-and-port \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_numbers": "+12125551234",
+  "authorized_person": "value",
+  "current_provider": "abc-123",
+  "billing_number": "+12125551234"
+}'
+```
 
-**List records:**
+### `POST /loa/check-portability`
+
+```bash
+curl -X POST http://localhost:5000/loa/check-portability \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_numbers": "+12125551234"
+}'
+```
+
+### `GET /loa`
+
+Returns all loas.
 
 ```bash
 curl http://localhost:5000/loa
 ```
 
-**Trigger action:**
+### `GET /pipeline`
+
+Update record status.
 
 ```bash
-curl -X POST http://localhost:5000/loa/generate \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/pipeline
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

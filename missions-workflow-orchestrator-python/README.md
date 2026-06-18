@@ -1,47 +1,26 @@
-# Missions Workflow Orchestrator
+# Missions Workflow Orchestrator — create and manage multi-step mission workflows using the Telnyx Missions API.
 
 Missions Workflow Orchestrator — create and manage multi-step mission workflows using the Telnyx Missions API.
 
-## Telnyx Products Used
-
-- SMS/MMS Messaging
-- Verify API
-
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -51,49 +30,89 @@ docker build -t missions-workflow-orchestrator .
 docker run --env-file .env -p 5000:5000 missions-workflow-orchestrator
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /missions`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/missions` | Create new record |
-| `GET` | `/missions` | List all missions |
-| `GET` | `/missions/<mission_id>` | List all mission |
-| `POST` | `/missions/<mission_id>/tasks` | Create new record |
-| `POST` | `/missions/<mission_id>/run` | Trigger workflow execution |
-| `GET` | `/missions/<mission_id>/runs` | List all runs |
-| `GET` | `/templates` | `GET` /templates |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/missions \
+  -H "Content-Type: application/json" \
+  -d '{
+  "name": "Jane Doe",
+  "description": "value",
+  "tasks": "value"
+}'
+```
 
-## Testing
+### `GET /missions`
 
-**List records:**
+Returns all missions.
 
 ```bash
 curl http://localhost:5000/missions
 ```
 
-**Trigger action:**
+### `GET /missions/<mission_id>`
 
 ```bash
-curl -X POST http://localhost:5000/missions \
+curl http://localhost:5000/missions/<mission_id>
+```
+
+### `POST /missions/<mission_id>/tasks`
+
+Create a new record.
+
+```bash
+curl -X POST http://localhost:5000/missions/<mission_id>/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+  "name": "Jane Doe",
+  "type": "action",
+  "config": "value",
+  "depends_on": "value"
+}'
+```
+
+### `POST /missions/<mission_id>/run`
+
+Trigger the workflow.
+
+```bash
+curl -X POST http://localhost:5000/missions/<mission_id>/run \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
 
-**Health check:**
+### `GET /missions/<mission_id>/runs`
+
+Returns all runs.
+
+```bash
+curl http://localhost:5000/missions/<mission_id>/runs
+```
+
+### `GET /templates`
+
+```bash
+curl http://localhost:5000/templates
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

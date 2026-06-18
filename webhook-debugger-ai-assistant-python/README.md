@@ -1,48 +1,33 @@
-# Webhook Debugger Ai Assistant
+# Webhook Debugger AI Assistant — catch, inspect, and debug Telnyx webhooks with AI explanations.
 
 Webhook Debugger AI Assistant — catch, inspect, and debug Telnyx webhooks with AI explanations.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -52,35 +37,15 @@ docker build -t webhook-debugger-ai-assistant .
 docker run --env-file .env -p 5000:5000 webhook-debugger-ai-assistant
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/catch/<path:subpath>` | `GET POST PUT DELETE` /catch/<path:subpath> |
-| `POST` | `/catch/<path:subpath>` | `GET POST PUT DELETE` /catch/<path:subpath> |
-| `PUT` | `/catch/<path:subpath>` | `GET POST PUT DELETE` /catch/<path:subpath> |
-| `DELETE` | `/catch/<path:subpath>` | `GET POST PUT DELETE` /catch/<path:subpath> |
-| `GET` | `/analyze/<int:index>` | `GET` /analyze/<int:index> |
-| `GET` | `/analyze/recent` | `GET` /analyze/recent |
-| `GET` | `/log` | `GET` /log |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+### `GET /catch/<path:subpath>`
 
 ```bash
 curl http://localhost:5000/catch/<path:subpath>
 ```
 
-**Trigger action:**
+### `POST /catch/<path:subpath>`
 
 ```bash
 curl -X POST http://localhost:5000/catch/<path:subpath> \
@@ -88,14 +53,48 @@ curl -X POST http://localhost:5000/catch/<path:subpath> \
   -d '{}'
 ```
 
-**Health check:**
+### `PUT /catch/<path:subpath>`
+
+```bash
+curl -X PUT http://localhost:5000/catch/<path:subpath> \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### `DELETE /catch/<path:subpath>`
+
+### `GET /analyze/<int:index>`
+
+```bash
+curl http://localhost:5000/analyze/<int:index>
+```
+
+### `GET /analyze/recent`
+
+```bash
+curl http://localhost:5000/analyze/recent
+```
+
+### `GET /log`
+
+```bash
+curl http://localhost:5000/log
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

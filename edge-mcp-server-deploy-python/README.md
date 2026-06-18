@@ -1,46 +1,34 @@
-# Edge Mcp Server Deploy
+# Edge MCP Server Deploy — deploy an MCP (Model Context Protocol) server to Telnyx edge for AI tool hosting.
 
 Edge MCP Server Deploy — deploy an MCP (Model Context Protocol) server to Telnyx edge for AI tool hosting.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- SMS/MMS Messaging
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+| Call Control API | `POST /v2/calls` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| Number Lookup API | `GET /v2/number_lookup/{number}` | [docs](https://developers.telnyx.com/docs/numbers) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,47 +38,69 @@ docker build -t edge-mcp-server-deploy .
 docker run --env-file .env -p 5000:5000 edge-mcp-server-deploy
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `GET /mcp/tools`
 
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/mcp/tools` | List all tools |
-| `POST` | `/mcp/tools/register` | `POST` /mcp/tools/register |
-| `POST` | `/mcp/call` | `POST` /mcp/call |
-| `GET` | `/mcp/deploy-info` | `GET` /mcp/deploy-info |
-| `GET` | `/calls` | List all calls |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all tools.
 
 ```bash
 curl http://localhost:5000/mcp/tools
 ```
 
-**Trigger action:**
+### `POST /mcp/tools/register`
 
 ```bash
 curl -X POST http://localhost:5000/mcp/tools/register \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "name": "Jane Doe",
+  "description": "value",
+  "input_schema": "value"
+}'
 ```
 
-**Health check:**
+### `POST /mcp/call`
+
+```bash
+curl -X POST http://localhost:5000/mcp/call \
+  -H "Content-Type: application/json" \
+  -d '{
+  "tool": "value",
+  "params": "value"
+}'
+```
+
+### `GET /mcp/deploy-info`
+
+```bash
+curl http://localhost:5000/mcp/deploy-info
+```
+
+### `GET /calls`
+
+Returns all calls.
+
+```bash
+curl http://localhost:5000/calls
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
+- [Call Control API](https://developers.telnyx.com/docs/voice/call-control)
+- [Number Lookup API](https://developers.telnyx.com/docs/numbers)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

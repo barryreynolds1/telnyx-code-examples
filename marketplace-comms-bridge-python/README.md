@@ -1,69 +1,54 @@
 # Marketplace Comms Bridge
 
-buyer texts about a listing, AI responds with details, facilitates anonymous buyer-seller connection via masked numbers, handles scheduling. Ops reviews flagged conversations.
+Buyer texts about a listing, AI responds with details, facilitates anonymous buyer-seller connection via masked numbers, handles scheduling. Ops reviews flagged conversations.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- SMS/MMS Messaging
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
-## Integrations
+## External Integrations
 
-| Service | Purpose |
-|---------|---------|
-| **Slack** | Team notifications and approval workflows |
-
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Manual review queues**
+| Service | APIs Used |
+|---------|-----------|
+| Slack | Incoming Webhooks |
 
 ## How It Works
 
-1. Customer **texts** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Human reviews** via dashboard, Slack, or SMS reply
-6. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (SMS)                                      │
-                                          ├──► Telnyx AI Inference
-                                          ├──► Slack
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound SMS ──► Telnyx ──► POST /webhooks/sms
+                                   │
+                                   ├── AI categorizes/responds
+                                   ├── Takes action
+                                   └── Sends reply SMS
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `MAIN_NUMBER` | string | `+E.164` | **yes** | Telnyx phone number ([get it](https://portal.telnyx.com/numbers)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `OPS_SLACK_WEBHOOK` | string | `https://hooks.slack.com/services/...` | no | Slack webhook for ops alerts ([get it](https://api.slack.com/messaging/webhooks)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-- A Slack account (for slack integration)
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Messaging Profile** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/sms`
 
 ### Docker
 
@@ -72,59 +57,74 @@ docker build -t marketplace-comms-bridge .
 docker run --env-file .env -p 5000:5000 marketplace-comms-bridge
 ```
 
-### Expose Your Webhook
+## API Reference
 
-For local development, use [ngrok](https://ngrok.com) to expose your server:
+### `GET /listings`
 
-```bash
-ngrok http 5000
-```
-
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
-
-- **Messaging:** `https://<your-ngrok>.ngrok.io/webhooks/sms`
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `MAIN_NUMBER` | Telnyx phone number in E.164 format (e.g., `+12345678901`) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `OPS_SLACK_WEBHOOK` | Slack incoming webhook URL for ops notifications | No |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/sms` | Telnyx SMS/MMS webhook handler (inbound messages) |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/listings` | List all listings |
-| `GET` | `/conversations` | List all conversations |
-| `GET` | `/flagged` | List all flagged |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all listings.
 
 ```bash
 curl http://localhost:5000/listings
 ```
 
-**Health check:**
+### `GET /conversations`
+
+Returns all conversations.
+
+```bash
+curl http://localhost:5000/conversations
+```
+
+### `GET /flagged`
+
+Returns all flagged.
+
+```bash
+curl http://localhost:5000/flagged
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Webhook Endpoints
+
+### `POST /webhooks/sms`
+
+Receives Telnyx Messaging webhook events.
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "message.received",
+    "payload": {
+      "from": {
+        "phone_number": "+12125551234"
+      },
+      "to": [
+        {
+          "phone_number": "+13105559876"
+        }
+      ],
+      "text": "Hello",
+      "media": []
+    }
+  }
+}
+```
+
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

@@ -1,44 +1,45 @@
-# Receive Sms Webhook
+# Production-ready Flask webhook endpoint for receiving inbound SMS via Telnyx.
 
 Production-ready Flask webhook endpoint for receiving inbound SMS via Telnyx.
 
+## Webhook Events Handled
+
+```
+message.received
+```
+
 ## How It Works
 
-1. Customer **texts** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (SMS)                                      │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound SMS ──► Telnyx ──► POST /webhooks/sms
+                                   │
+                                   ├── Takes action
+                                   └── Sends reply SMS
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Messaging Profile** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/sms`
 
 ### Docker
 
@@ -47,40 +48,36 @@ docker build -t receive-sms-webhook .
 docker run --env-file .env -p 5000:5000 receive-sms-webhook
 ```
 
-### Expose Your Webhook
-
-For local development, use [ngrok](https://ngrok.com) to expose your server:
-
-```bash
-ngrok http 5000
-```
-
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
-
-- **Messaging:** `https://<your-ngrok>.ngrok.io/webhooks/sms`
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
-
 ## Webhook Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/sms` | Telnyx SMS/MMS webhook handler (inbound messages) |
+### `POST /webhooks/sms`
 
-## Testing
+Receives Telnyx Messaging webhook events.
 
-**Health check:**
+Example payload:
 
-```bash
-curl http://localhost:5000/health
+```json
+{
+  "data": {
+    "event_type": "message.received",
+    "payload": {
+      "from": {
+        "phone_number": "+12125551234"
+      },
+      "to": [
+        {
+          "phone_number": "+13105559876"
+        }
+      ],
+      "text": "Hello",
+      "media": []
+    }
+  }
+}
 ```
 
-## Learn More
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

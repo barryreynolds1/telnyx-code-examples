@@ -1,46 +1,34 @@
-# Send Mms Picture Message
+# Production-ready Flask endpoint for sending MMS via Telnyx.
 
 Production-ready Flask endpoint for sending MMS via Telnyx.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- MMS Media Handling
+| API | Endpoint | Docs |
+|-----|----------|------|
+| MMS Media | `via Messaging API` | [docs](https://developers.telnyx.com/docs/messaging) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,37 +38,23 @@ docker build -t send-mms-picture-message .
 docker run --env-file .env -p 5000:5000 send-mms-picture-message
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `TELNYX_PHONE_NUMBER` | Phone number in E.164 format | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
+### `POST /mms/send`
 
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/mms/send` | Trigger workflow execution |
-
-## Testing
-
-**Trigger action:**
+Trigger the workflow.
 
 ```bash
 curl -X POST http://localhost:5000/mms/send \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "message": "Hello, this is a test",
+  "media_urls": "value"
+}'
 ```
 
-**Health check:**
+## Resources
 
-```bash
-curl http://localhost:5000/health
-```
-
-## Learn More
-
-- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [MMS Media](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

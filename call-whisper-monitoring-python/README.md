@@ -1,46 +1,38 @@
-# Call Whisper Monitoring
+# Production-ready Flask application for Whisper-based call prompts via Telnyx.
 
 Production-ready Flask application for Whisper-based call prompts via Telnyx.
 
-## Telnyx Products Used
+## Webhook Events Handled
 
-- Voice Call Control
+```
+call.answered
+call.hangup
+call.gather.ended (speech)
+```
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `OPENAI_API_KEY` | string | `token` | **yes** | openai api key |
+| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
+| `TELNYX_CONNECTION_ID` | string | `-` | **yes** | telnyx connection id |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,38 +42,9 @@ docker build -t call-whisper-monitoring .
 docker run --env-file .env -p 5000:5000 call-whisper-monitoring
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `OPENAI_API_KEY` | API key | Yes |
-| `TELNYX_PHONE_NUMBER` | Phone number in E.164 format | Yes |
-| `TELNYX_CONNECTION_ID` | Telnyx Connection Id | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/call` | External webhook handler |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/calls/initiate` | `POST` /calls/initiate |
-| `GET` | `/calls/<call_control_id>/status` | List all call status |
-
-## Testing
-
-**List records:**
-
-```bash
-curl http://localhost:5000/calls/<call_control_id>/status
-```
-
-**Trigger action:**
+### `POST /calls/initiate`
 
 ```bash
 curl -X POST http://localhost:5000/calls/initiate \
@@ -89,14 +52,22 @@ curl -X POST http://localhost:5000/calls/initiate \
   -d '{}'
 ```
 
-**Health check:**
+### `GET /calls/<call_control_id>/status`
+
+Update record status.
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5000/calls/<call_control_id>/status
 ```
 
-## Learn More
+## Webhook Endpoints
+
+### `POST /webhooks/call`
+
+Receives external webhook events.
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

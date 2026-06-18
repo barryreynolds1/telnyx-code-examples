@@ -1,42 +1,28 @@
-# Monitor Iot Data Usage
+# Production-ready Flask application for monitoring SIM card data usage via Telnyx IoT API.
 
 Production-ready Flask application for monitoring SIM card data usage via Telnyx IoT API.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `DATA_LIMIT_THRESHOLD_MB` | integer | `-` | no | data limit threshold mb |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,40 +32,53 @@ docker build -t monitor-iot-data-usage .
 docker run --env-file .env -p 5000:5000 monitor-iot-data-usage
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `DATA_LIMIT_THRESHOLD_MB` | Threshold value | No |
-| `FLASK_DEBUG` | Flask Debug | No |
+### `GET /health`
 
-## Webhook Endpoints
+Health check and service status.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/sim-events` | External webhook handler |
+```bash
+curl http://localhost:5000/health
+```
 
-## API Endpoints
+```json
+{"status": "ok"}
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check and service status |
-| `GET` | `/sim-cards` | List all sims |
-| `GET` | `/sim-cards/<sim_card_id>` | List all sim |
-| `GET` | `/sim-cards/<sim_card_id>/usage` | List all usage |
-| `GET` | `/sim-cards/<sim_card_id>/health` | Health check and service status |
-| `POST` | `/sim-cards/<sim_card_id>/activate` | `POST` /sim-cards/<sim_card_id>/activate |
+### `GET /sim-cards`
 
-## Testing
-
-**List records:**
+Returns all sims.
 
 ```bash
 curl http://localhost:5000/sim-cards
 ```
 
-**Trigger action:**
+### `GET /sim-cards/<sim_card_id>`
+
+```bash
+curl http://localhost:5000/sim-cards/<sim_card_id>
+```
+
+### `GET /sim-cards/<sim_card_id>/usage`
+
+```bash
+curl http://localhost:5000/sim-cards/<sim_card_id>/usage
+```
+
+### `GET /sim-cards/<sim_card_id>/health`
+
+Health check and service status.
+
+```bash
+curl http://localhost:5000/sim-cards/<sim_card_id>/health
+```
+
+```json
+{"status": "ok"}
+```
+
+### `POST /sim-cards/<sim_card_id>/activate`
 
 ```bash
 curl -X POST http://localhost:5000/sim-cards/<sim_card_id>/activate \
@@ -87,13 +86,14 @@ curl -X POST http://localhost:5000/sim-cards/<sim_card_id>/activate \
   -d '{}'
 ```
 
-**Health check:**
+## Webhook Endpoints
 
-```bash
-curl http://localhost:5000/health
-```
+### `POST /webhooks/sim-events`
 
-## Learn More
+Receives external webhook events.
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

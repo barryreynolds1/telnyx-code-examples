@@ -1,46 +1,34 @@
-# Cloud Storage Media Cdn
+# Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets.
 
 Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- MMS Media Handling
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Cloud Storage API | `S3-compatible` | [docs](https://developers.telnyx.com/docs/storage) |
+| MMS Media | `via Messaging API` | [docs](https://developers.telnyx.com/docs/messaging) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `BUCKET_NAME` | string | `-` | no | bucket name |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,33 +38,9 @@ docker build -t cloud-storage-media-cdn .
 docker run --env-file .env -p 5000:5000 cloud-storage-media-cdn
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `BUCKET_NAME` | Bucket Name | No |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/setup` | `POST` /setup |
-| `POST` | `/upload` | `POST` /upload |
-| `GET` | `/media` | List all media |
-| `GET` | `/media/<category>/<name>` | List all media url |
-| `GET` | `/ivr-config` | `GET` /ivr-config |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
-
-```bash
-curl http://localhost:5000/media
-```
-
-**Trigger action:**
+### `POST /setup`
 
 ```bash
 curl -X POST http://localhost:5000/setup \
@@ -84,13 +48,53 @@ curl -X POST http://localhost:5000/setup \
   -d '{}'
 ```
 
-**Health check:**
+### `POST /upload`
+
+```bash
+curl -X POST http://localhost:5000/upload \
+  -H "Content-Type: application/json" \
+  -d '{
+  "category": "ivr_prompts",
+  "name": "Jane Doe",
+  "url": "value"
+}'
+```
+
+### `GET /media`
+
+Returns all media.
+
+```bash
+curl http://localhost:5000/media
+```
+
+### `GET /media/<category>/<name>`
+
+```bash
+curl http://localhost:5000/media/<category>/<name>
+```
+
+### `GET /ivr-config`
+
+```bash
+curl http://localhost:5000/ivr-config
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
+## Resources
+
+- [Cloud Storage API](https://developers.telnyx.com/docs/storage)
+- [MMS Media](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

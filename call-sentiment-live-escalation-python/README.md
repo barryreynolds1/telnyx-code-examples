@@ -1,59 +1,36 @@
-# Call Sentiment Live Escalation
+# Call Sentiment Live Escalation — monitor call transcripts in real-time. When negative sentiment or distress is detected, auto-escalate to a supervisor.
 
 Call Sentiment Live Escalation — monitor call transcripts in real-time. When negative sentiment or distress is detected, auto-escalate to a supervisor.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- SMS/MMS Messaging
-
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Escalation to human agents**
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Human reviews** via dashboard, Slack, or SMS reply
-6. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `SUPERVISOR_NUMBER` | string | `+E.164` | **yes** | supervisor number |
+| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -63,50 +40,61 @@ docker build -t call-sentiment-live-escalation .
 docker run --env-file .env -p 5000:5000 call-sentiment-live-escalation
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `SUPERVISOR_NUMBER` | Phone number in E.164 format | Yes |
-| `CONNECTION_ID` | Telnyx Call Control connection ID | Yes |
+### `POST /monitor`
 
-## API Endpoints
+```bash
+curl -X POST http://localhost:5000/monitor \
+  -H "Content-Type: application/json" \
+  -d '{
+  "call_id": "abc-123",
+  "agent": "value",
+  "customer": "value"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/monitor` | `POST` /monitor |
-| `POST` | `/transcript` | `POST` /transcript |
-| `GET` | `/calls/<call_id>/sentiment` | `GET` /calls/<call_id>/sentiment |
-| `GET` | `/escalations` | List all escalations |
-| `GET` | `/health` | Health check and service status |
+### `POST /transcript`
 
-## Testing
+```bash
+curl -X POST http://localhost:5000/transcript \
+  -H "Content-Type: application/json" \
+  -d '{
+  "call_id": "abc-123",
+  "text": "Hello, this is a test",
+  "speaker": "customer"
+}'
+```
 
-**List records:**
+### `GET /calls/<call_id>/sentiment`
 
 ```bash
 curl http://localhost:5000/calls/<call_id>/sentiment
 ```
 
-**Trigger action:**
+### `GET /escalations`
+
+Returns all escalations.
 
 ```bash
-curl -X POST http://localhost:5000/monitor \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/escalations
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

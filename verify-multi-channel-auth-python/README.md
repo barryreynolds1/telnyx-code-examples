@@ -1,57 +1,26 @@
-# Verify Multi Channel Auth
+# Verify Multi-Channel Auth — multi-channel verification: SMS first, fallback to voice call, then WhatsApp. Cascading 2FA.
 
 Verify Multi-Channel Auth — multi-channel verification: SMS first, fallback to voice call, then WhatsApp. Cascading 2FA.
 
-## Telnyx Products Used
-
-- Verify API
-- WhatsApp Business API
-
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Escalation to human agents**
-
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Human reviews** via dashboard, Slack, or SMS reply
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -61,47 +30,71 @@ docker build -t verify-multi-channel-auth .
 docker run --env-file .env -p 5000:5000 verify-multi-channel-auth
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /verify/start`
 
-## API Endpoints
+```bash
+curl -X POST http://localhost:5000/verify/start \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_number": "+12125551234",
+  "channel": "sms",
+  "timeout": "300"
+}'
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/verify/start` | `POST` /verify/start |
-| `POST` | `/verify/check` | `POST` /verify/check |
-| `POST` | `/verify/escalate/<vid>` | `POST` /verify/escalate/<vid> |
-| `POST` | `/verify/cascade` | `POST` /verify/cascade |
-| `GET` | `/verifications` | List all verifications |
-| `GET` | `/health` | Health check and service status |
+### `POST /verify/check`
 
-## Testing
+```bash
+curl -X POST http://localhost:5000/verify/check \
+  -H "Content-Type: application/json" \
+  -d '{
+  "verification_id": "abc-123",
+  "code": "value"
+}'
+```
 
-**List records:**
+### `POST /verify/escalate/<vid>`
+
+```bash
+curl -X POST http://localhost:5000/verify/escalate/<vid> \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### `POST /verify/cascade`
+
+```bash
+curl -X POST http://localhost:5000/verify/cascade \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_number": "+12125551234"
+}'
+```
+
+### `GET /verifications`
+
+Returns all verifications.
 
 ```bash
 curl http://localhost:5000/verifications
 ```
 
-**Trigger action:**
+### `GET /health`
 
-```bash
-curl -X POST http://localhost:5000/verify/start \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**Health check:**
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
-- [WhatsApp Guide](https://developers.telnyx.com/docs/messaging/whatsapp)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

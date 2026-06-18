@@ -1,42 +1,26 @@
-# Wireguard Private Voice Network
+# WireGuard Private Voice Network — create WireGuard mesh network for private SIP trunking with encrypted voice traffic.
 
 WireGuard Private Voice Network — create WireGuard mesh network for private SIP trunking with encrypted voice traffic.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,47 +30,81 @@ docker build -t wireguard-private-voice-network .
 docker run --env-file .env -p 5000:5000 wireguard-private-voice-network
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /networks`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/networks` | Create new record |
-| `GET` | `/networks` | List all networks |
-| `POST` | `/interfaces` | Create new record |
-| `POST` | `/peers` | Create new record |
-| `GET` | `/interfaces/<iface_id>/config` | List all config |
-| `GET` | `/topology` | `GET` /topology |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/networks \
+  -H "Content-Type: application/json" \
+  -d '{
+  "name": "f\"voice-net-{int(time.time("
+}'
+```
 
-## Testing
+### `GET /networks`
 
-**List records:**
+Returns all networks.
 
 ```bash
 curl http://localhost:5000/networks
 ```
 
-**Trigger action:**
+### `POST /interfaces`
+
+Create a new record.
 
 ```bash
-curl -X POST http://localhost:5000/networks \
+curl -X POST http://localhost:5000/interfaces \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "network_id": "abc-123",
+  "region": "ashburn-va"
+}'
 ```
 
-**Health check:**
+### `POST /peers`
+
+Create a new record.
+
+```bash
+curl -X POST http://localhost:5000/peers \
+  -H "Content-Type: application/json" \
+  -d '{
+  "interface_id": "abc-123",
+  "public_key": "value",
+  "name": "sip-endpoint"
+}'
+```
+
+### `GET /interfaces/<iface_id>/config`
+
+```bash
+curl http://localhost:5000/interfaces/<iface_id>/config
+```
+
+### `GET /topology`
+
+```bash
+curl http://localhost:5000/topology
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

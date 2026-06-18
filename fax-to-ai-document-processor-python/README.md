@@ -1,60 +1,37 @@
-# Fax To Ai Document Processor
+# Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary.
 
 Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- MMS Media Handling
-- SMS/MMS Messaging
-
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Manual review queues**
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+| MMS Media | `via Messaging API` | [docs](https://developers.telnyx.com/docs/messaging) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Human reviews** via dashboard, Slack, or SMS reply
-6. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `FAX_NUMBER` | string | `+E.164` | **yes** | fax number |
+| `FORWARD_EMAIL` | string | `-` | **yes** | forward email |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -64,45 +41,37 @@ docker build -t fax-to-ai-document-processor .
 docker run --env-file .env -p 5000:5000 fax-to-ai-document-processor
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `FAX_NUMBER` | Phone number in E.164 format | Yes |
-| `FORWARD_EMAIL` | Forward Email | Yes |
+### `GET /faxes`
 
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/fax` | External webhook handler |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/faxes` | List all faxes |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+Returns all faxes.
 
 ```bash
 curl http://localhost:5000/faxes
 ```
 
-**Health check:**
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Webhook Endpoints
+
+### `POST /webhooks/fax`
+
+Receives external webhook events.
+
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

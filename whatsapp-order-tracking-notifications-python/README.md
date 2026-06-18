@@ -1,51 +1,55 @@
-# Whatsapp Order Tracking Notifications
+# WhatsApp Order Tracking Notifications — proactive shipping updates and AI-powered order inquiries.
 
 WhatsApp Order Tracking Notifications — proactive shipping updates and AI-powered order inquiries.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- SMS/MMS Messaging
-- WhatsApp Business API
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+
+## Webhook Events Handled
+
+```
+message.received
+```
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound SMS ──► Telnyx ──► POST /webhooks/sms
+                                   │
+                                   ├── AI categorizes/responds
+                                   ├── Takes action
+                                   └── Sends reply SMS
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `WHATSAPP_NUMBER` | string | `+E.164` | no | WhatsApp-enabled Telnyx number ([get it](https://portal.telnyx.com/numbers)) |
+| `MESSAGING_PROFILE_ID` | string | `uuid` | no | Telnyx messaging profile ID ([get it](https://portal.telnyx.com/messaging/profiles)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Messaging Profile** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/sms`
 
 ### Docker
 
@@ -54,49 +58,76 @@ docker build -t whatsapp-order-tracking-notifications .
 docker run --env-file .env -p 5000:5000 whatsapp-order-tracking-notifications
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `WHATSAPP_NUMBER` | WhatsApp-enabled Telnyx number | Yes |
-| `MESSAGING_PROFILE_ID` | Messaging Profile Id | Yes |
+### `POST /orders`
 
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/messaging` | External webhook handler |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/orders` | Create new record |
-| `PUT` | `/orders/<order_id>/status` | Update status |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**Trigger action:**
+Create a new record.
 
 ```bash
 curl -X POST http://localhost:5000/orders \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "order_id": "f\"ORD-{int(time.time(",
+  "customer_phone": "+12125551234"
+}'
 ```
 
-**Health check:**
+### `PUT /orders/<order_id>/status`
+
+Update record status.
+
+```bash
+curl -X PUT http://localhost:5000/orders/<order_id>/status \
+  -H "Content-Type: application/json" \
+  -d '{
+  "tracking_number": "+12125551234"
+}'
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
-- [WhatsApp Guide](https://developers.telnyx.com/docs/messaging/whatsapp)
+## Webhook Endpoints
+
+### `POST /webhooks/messaging`
+
+Receives Telnyx Messaging webhook events.
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "message.received",
+    "payload": {
+      "from": {
+        "phone_number": "+12125551234"
+      },
+      "to": [
+        {
+          "phone_number": "+13105559876"
+        }
+      ],
+      "text": "Hello",
+      "media": []
+    }
+  }
+}
+```
+
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

@@ -1,48 +1,34 @@
-# Run Llm Inference
+# Run LLM inference on Telnyx — OpenAI-compatible chat completions API.
 
 Run LLM inference on Telnyx — OpenAI-compatible chat completions API.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -52,40 +38,44 @@ docker build -t run-llm-inference .
 docker run --env-file .env -p 5000:5000 run-llm-inference
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `FLASK_DEBUG` | Flask Debug | No |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/inference/chat` | `POST` /inference/chat |
-| `POST` | `/inference/ask` | `POST` /inference/ask |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**Trigger action:**
+### `POST /inference/chat`
 
 ```bash
 curl -X POST http://localhost:5000/inference/chat \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "model": "value",
+  "max_tokens": "500",
+  "temperature": "0.7"
+}'
 ```
 
-**Health check:**
+### `POST /inference/ask`
+
+```bash
+curl -X POST http://localhost:5000/inference/ask \
+  -H "Content-Type: application/json" \
+  -d '{
+  "system_prompt": "value"
+}'
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

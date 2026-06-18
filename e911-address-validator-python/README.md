@@ -1,52 +1,26 @@
-# E911 Address Validator
+# E911 Address Validator — validate and provision E911 addresses via API.
 
 E911 Address Validator — validate and provision E911 addresses via API.
 
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Manual assignment**
-
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Human reviews** via dashboard, Slack, or SMS reply
-5. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -56,44 +30,61 @@ docker build -t e911-address-validator .
 docker run --env-file .env -p 5000:5000 e911-address-validator
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /e911/validate`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/e911/validate` | Create new record |
-| `POST` | `/e911/assign` | Assign to a team member (triggers notifications) |
-| `GET` | `/e911/addresses` | List all addresses |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/e911/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+  "street": "value",
+  "street2": "value",
+  "city": "value",
+  "state": "value",
+  "zip": "value",
+  "country": "US",
+  "business_name": "Jane Doe"
+}'
+```
 
-## Testing
+### `POST /e911/assign`
 
-**List records:**
+Assign to team member. Notifies both parties.
+
+```bash
+curl -X POST http://localhost:5000/e911/assign \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_number": "+12125551234",
+  "address_id": "abc-123"
+}'
+```
+
+### `GET /e911/addresses`
+
+Returns all addresses.
 
 ```bash
 curl http://localhost:5000/e911/addresses
 ```
 
-**Trigger action:**
+### `GET /health`
 
-```bash
-curl -X POST http://localhost:5000/e911/validate \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**Health check:**
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

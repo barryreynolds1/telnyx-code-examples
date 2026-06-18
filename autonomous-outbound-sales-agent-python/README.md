@@ -1,55 +1,64 @@
-# Autonomous Outbound Sales Agent
+# Autonomous Outbound Sales Agent — AI-driven lead qualification, objection handling, and meeting booking.
 
 Autonomous Outbound Sales Agent — AI-driven lead qualification, objection handling, and meeting booking.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-- SMS/MMS Messaging
-- Speech Recognition / DTMF
-- Verify API
-- Voice Call Control
+| API | Endpoint | Docs |
+|-----|----------|------|
+| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+| Call Control API | `POST /v2/calls` | [docs](https://developers.telnyx.com/docs/voice/call-control) |
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+| Number Lookup API | `GET /v2/number_lookup/{number}` | [docs](https://developers.telnyx.com/docs/numbers) |
+
+## Webhook Events Handled
+
+```
+call.answered
+call.speak.ended
+call.gather.ended
+call.hangup
+call.gather.ended (speech)
+```
 
 ## How It Works
 
-1. Customer **calls** your Telnyx number
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Customer notified** of outcome via SMS
-
 ```
-Customer ──► Telnyx Number ──► Webhook ──► Your App
-  (call)                                     │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+Inbound Call ──► Telnyx ──► POST /webhooks/voice
+                                    │
+                               call.initiated → answer
+                               call.answered  → speak greeting
+                               call.speak.ended → gather (listen)
+                               call.gather.ended → AI inference → speak response
+                               call.hangup → cleanup
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+| `FROM_NUMBER` | string | `+E.164` | **yes** | from number |
+| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-- A Telnyx phone number with voice and/or messaging enabled
-- A [Call Control Application](https://portal.telnyx.com/app#/call-control/applications) configured with your webhook URL
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
+
+### Webhook URL
+
+Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+
+Configure in [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control App** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/voice`
 
 ### Docker
 
@@ -58,69 +67,73 @@ docker build -t autonomous-outbound-sales-agent .
 docker run --env-file .env -p 5000:5000 autonomous-outbound-sales-agent
 ```
 
-### Expose Your Webhook
+## API Reference
 
-For local development, use [ngrok](https://ngrok.com) to expose your server:
+### `POST /leads`
+
+Create a new record.
 
 ```bash
-ngrok http 5000
+curl -X POST http://localhost:5000/leads \
+  -H "Content-Type: application/json" \
+  -d '{
+  "leads": "value"
+}'
 ```
 
-Then set your Telnyx webhook URL to the ngrok HTTPS URL:
+### `POST /campaign/start`
 
-- **Voice:** `https://<your-ngrok>.ngrok.io/webhooks/voice`
+```bash
+curl -X POST http://localhost:5000/campaign/start \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
 
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `AI_MODEL` | AI model for inference (default: `moonshotai/Kimi-K2.6`) | No |
-| `FROM_NUMBER` | Phone number in E.164 format | Yes |
-| `CONNECTION_ID` | Telnyx Call Control connection ID | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
-
-## Webhook Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/voice` | Telnyx voice webhook handler (call lifecycle events) |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/leads` | Create new record |
-| `POST` | `/campaign/start` | `POST` /campaign/start |
-| `GET` | `/results` | List all results |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
+### `GET /results`
 
 ```bash
 curl http://localhost:5000/results
 ```
 
-**Trigger action:**
+### `GET /health`
 
-```bash
-curl -X POST http://localhost:5000/leads \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**Health check:**
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
-- [SMS & MMS Guide](https://developers.telnyx.com/docs/messaging)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Webhook Endpoints
+
+### `POST /webhooks/voice`
+
+Receives Telnyx Call Control webhook events.
+
+Events handled: `call.answered`, `call.speak.ended`, `call.gather.ended`, `call.hangup`, `call.gather.ended (speech)`
+
+Example payload:
+
+```json
+{
+  "data": {
+    "event_type": "call.initiated",
+    "call_control_id": "v3:abc-123",
+    "direction": "incoming",
+    "from": "+12125551234",
+    "to": "+13105559876"
+  }
+}
+```
+
+## Resources
+
+- [Messaging API](https://developers.telnyx.com/docs/messaging)
+- [Call Control API](https://developers.telnyx.com/docs/voice/call-control)
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
+- [Number Lookup API](https://developers.telnyx.com/docs/numbers)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

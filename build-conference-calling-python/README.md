@@ -1,42 +1,37 @@
-# Build Conference Calling
+# Production-ready Flask application for managing conference calls via Telnyx.
 
 Production-ready Flask application for managing conference calls via Telnyx.
 
+## Webhook Events Handled
+
+```
+call.initiated
+call.answered
+call.hangup
+```
+
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
+| `TELNYX_CONNECTION_ID` | string | `-` | **yes** | telnyx connection id |
+| `FLASK_DEBUG` | string | `-` | no | flask debug |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,54 +41,69 @@ docker build -t build-conference-calling .
 docker run --env-file .env -p 5000:5000 build-conference-calling
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-| `TELNYX_PHONE_NUMBER` | Phone number in E.164 format | Yes |
-| `TELNYX_CONNECTION_ID` | Telnyx Connection Id | Yes |
-| `FLASK_DEBUG` | Flask Debug | No |
+### `POST /conference/create`
 
-## Webhook Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/webhooks/call-events` | External webhook handler |
+```bash
+curl -X POST http://localhost:5000/conference/create \
+  -H "Content-Type: application/json" \
+  -d '{
+  "conference_name": "Jane Doe",
+  "participants": "value"
+}'
+```
 
-## API Endpoints
+### `POST /conference/<conference_name>/add-participant`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/conference/create` | Create new record |
-| `POST` | `/conference/<conference_name>/add-participant` | Create new record |
-| `POST` | `/conference/<conference_name>/end` | `POST` /conference/<conference_name>/end |
-| `GET` | `/conference/<conference_name>/status` | List all conference status endpoint |
-| `GET` | `/health` | Health check and service status |
+Create a new record.
 
-## Testing
+```bash
+curl -X POST http://localhost:5000/conference/<conference_name>/add-participant \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_number": "+12125551234"
+}'
+```
 
-**List records:**
+### `POST /conference/<conference_name>/end`
+
+```bash
+curl -X POST http://localhost:5000/conference/<conference_name>/end \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### `GET /conference/<conference_name>/status`
+
+Update record status.
 
 ```bash
 curl http://localhost:5000/conference/<conference_name>/status
 ```
 
-**Trigger action:**
+### `GET /health`
 
-```bash
-curl -X POST http://localhost:5000/conference/create \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**Health check:**
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Webhook Endpoints
+
+### `POST /webhooks/call-events`
+
+Receives external webhook events.
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

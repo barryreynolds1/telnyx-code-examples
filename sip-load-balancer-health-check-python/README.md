@@ -1,42 +1,26 @@
-# Sip Load Balancer Health Check
+# SIP Load Balancer Health Check — monitor SIP trunk health across multiple endpoints, auto-failover to healthy trunks, track uptime metrics.
 
 SIP Load Balancer Health Check — monitor SIP trunk health across multiple endpoints, auto-failover to healthy trunks, track uptime metrics.
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -46,32 +30,9 @@ docker build -t sip-load-balancer-health-check .
 docker run --env-file .env -p 5000:5000 sip-load-balancer-health-check
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/check` | `POST` /check |
-| `GET` | `/route` | List all route |
-| `GET` | `/endpoints` | List all endpoints |
-| `POST` | `/endpoints` | Create new record |
-| `GET` | `/log` | List all log |
-| `GET` | `/health` | Health check and service status |
-
-## Testing
-
-**List records:**
-
-```bash
-curl http://localhost:5000/route
-```
-
-**Trigger action:**
+### `POST /check`
 
 ```bash
 curl -X POST http://localhost:5000/check \
@@ -79,13 +40,55 @@ curl -X POST http://localhost:5000/check \
   -d '{}'
 ```
 
-**Health check:**
+### `GET /route`
+
+```bash
+curl http://localhost:5000/route
+```
+
+### `GET /endpoints`
+
+Returns all endpoints.
+
+```bash
+curl http://localhost:5000/endpoints
+```
+
+### `POST /endpoints`
+
+Create a new record.
+
+```bash
+curl -X POST http://localhost:5000/endpoints \
+  -H "Content-Type: application/json" \
+  -d '{
+  "name": "Jane Doe",
+  "host": "value",
+  "port": "5060",
+  "weight": "10"
+}'
+```
+
+### `GET /log`
+
+```bash
+curl http://localhost:5000/log
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

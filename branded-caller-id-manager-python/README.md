@@ -1,46 +1,26 @@
-# Branded Caller Id Manager
+# Branded Caller ID Manager — register, manage, and verify branded calling profiles with STIR/SHAKEN attestation for higher answer rates.
 
 Branded Caller ID Manager — register, manage, and verify branded calling profiles with STIR/SHAKEN attestation for higher answer rates.
 
-## Telnyx Products Used
-
-- Verify API
-
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. App **takes action** (creates record, dispatches, notifies)
-4. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -50,47 +30,97 @@ docker build -t branded-caller-id-manager .
 docker run --env-file .env -p 5000:5000 branded-caller-id-manager
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /brands`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/brands` | Create new record |
-| `GET` | `/brands` | List all brands |
-| `POST` | `/campaigns` | Create new record |
-| `PUT` | `/numbers/<number>/caller-id` | Update status |
-| `GET` | `/stir-shaken/status` | Update status |
-| `GET` | `/campaigns` | List all campaigns |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/brands \
+  -H "Content-Type: application/json" \
+  -d '{
+  "entity_type": "PRIVATE_PROFIT",
+  "display_name": "Jane Doe",
+  "company_name": "Jane Doe",
+  "ein": "value",
+  "phone": "+12125551234",
+  "street": "value",
+  "city": "value",
+  "state": "value",
+  "postal_code": "value",
+  "country": "US",
+  "vertical": "TECHNOLOGY",
+  "website": "value"
+}'
+```
 
-## Testing
+### `GET /brands`
 
-**List records:**
+Returns all brands.
 
 ```bash
 curl http://localhost:5000/brands
 ```
 
-**Trigger action:**
+### `POST /campaigns`
+
+Create a new record.
 
 ```bash
-curl -X POST http://localhost:5000/brands \
+curl -X POST http://localhost:5000/campaigns \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{
+  "brand_id": "abc-123",
+  "usecase": "MIXED",
+  "description": "value",
+  "sample_message": "[\"Your appointment is tomorrow at 2pm. Reply CONFIRM.\"]",
+  "phone_numbers": "+12125551234"
+}'
 ```
 
-**Health check:**
+### `PUT /numbers/<number>/caller-id`
+
+Update record status.
+
+```bash
+curl -X PUT http://localhost:5000/numbers/<number>/caller-id \
+  -H "Content-Type: application/json" \
+  -d '{
+  "business_name": "Jane Doe"
+}'
+```
+
+### `GET /stir-shaken/status`
+
+Update record status.
+
+```bash
+curl http://localhost:5000/stir-shaken/status
+```
+
+### `GET /campaigns`
+
+Returns all campaigns.
+
+```bash
+curl http://localhost:5000/campaigns
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
+
+## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)

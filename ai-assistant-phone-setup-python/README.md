@@ -1,58 +1,32 @@
-# Ai Assistant Phone Setup
+# AI Assistant Phone Setup — create and configure a managed Telnyx AI Assistant and wire it to a phone number.
 
 AI Assistant Phone Setup — create and configure a managed Telnyx AI Assistant and wire it to a phone number.
 
-## Telnyx Products Used
+## Telnyx APIs
 
-- AI Inference
-
-## Human-in-the-Loop
-
-This example includes human oversight at key decision points:
-
-- **Manual assignment**
+| API | Endpoint | Docs |
+|-----|----------|------|
+| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
 
 ## How It Works
 
-1. **API call** triggers the workflow
-2. Telnyx **webhook** delivers the event to your app
-3. **AI processes** the request using Telnyx Inference
-4. App **takes action** (creates record, dispatches, notifies)
-5. **Human reviews** via dashboard, Slack, or SMS reply
-6. **Customer notified** of outcome via SMS
-
 ```
-API Trigger ──────────────────────────► Your App
-                                          │
-                                          ├──► Telnyx AI Inference
-                                          │
-                                          ▼
-                                     Human Review
-                                          │
-                                          ▼
-                                  Customer Notification
-                                      (SMS/Voice)
+API Call ──► Your App ──► Telnyx APIs ──► Customer
 ```
 
-## Quick Start
+## Environment Variables
 
-### Prerequisites
+| Variable | Type | Format | Required | Description |
+|----------|------|--------|----------|-------------|
+| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
 
-- Python 3.8+
-- A [Telnyx account](https://portal.telnyx.com/sign-up) with API key
-
-### Install & Run
+## Setup
 
 ```bash
-# Configure
 cp .env.example .env
-# Edit .env with your real credentials
-
-# Install
 pip install -r requirements.txt
-
-# Run
 python app.py
+# Server starts on http://localhost:5000
 ```
 
 ### Docker
@@ -62,49 +36,87 @@ docker build -t ai-assistant-phone-setup .
 docker run --env-file .env -p 5000:5000 ai-assistant-phone-setup
 ```
 
-## Environment Variables
+## API Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TELNYX_API_KEY` | Your Telnyx API key from [portal.telnyx.com](https://portal.telnyx.com) | Yes |
+### `POST /assistants`
 
-## API Endpoints
+Create a new record.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/assistants` | Create new record |
-| `GET` | `/assistants` | List all assistants |
-| `GET` | `/assistants/<assistant_id>` | List all assistant |
-| `PATCH` | `/assistants/<assistant_id>` | Update status |
-| `POST` | `/assistants/<assistant_id>/wire` | `POST` /assistants/<assistant_id>/wire |
-| `POST` | `/assistants/<assistant_id>/test` | `POST` /assistants/<assistant_id>/test |
-| `GET` | `/models` | List all models |
-| `GET` | `/health` | Health check and service status |
+```bash
+curl -X POST http://localhost:5000/assistants \
+  -H "Content-Type: application/json" \
+  -d '{
+  "name": "My Assistant",
+  "instructions": "You are a helpful assistant. Be friendly and concise.",
+  "model": "meta-llama/Llama-3.3-70B-Instruct",
+  "voice_provider": "telnyx",
+  "voice_id": "en-US-Neural2-F",
+  "speed": "1.0",
+  "greeting": "Hello! How can I help you today?",
+  "hold_music_url": "value"
+}'
+```
 
-## Testing
+### `GET /assistants`
 
-**List records:**
+Returns all assistants.
 
 ```bash
 curl http://localhost:5000/assistants
 ```
 
-**Trigger action:**
+### `GET /assistants/<assistant_id>`
 
 ```bash
-curl -X POST http://localhost:5000/assistants \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl http://localhost:5000/assistants/<assistant_id>
 ```
 
-**Health check:**
+### `PATCH /assistants/<assistant_id>`
+
+Update record status.
+
+### `POST /assistants/<assistant_id>/wire`
+
+```bash
+curl -X POST http://localhost:5000/assistants/<assistant_id>/wire \
+  -H "Content-Type: application/json" \
+  -d '{
+  "phone_number": "+12125551234"
+}'
+```
+
+### `POST /assistants/<assistant_id>/test`
+
+```bash
+curl -X POST http://localhost:5000/assistants/<assistant_id>/test \
+  -H "Content-Type: application/json" \
+  -d '{
+  "message": "Hello"
+}'
+```
+
+### `GET /models`
+
+Returns all models.
+
+```bash
+curl http://localhost:5000/models
+```
+
+### `GET /health`
+
+Health check and service status.
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-## Learn More
+```json
+{"status": "ok"}
+```
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+## Resources
+
+- [AI Inference API](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+- [API Reference](https://developers.telnyx.com/api)
