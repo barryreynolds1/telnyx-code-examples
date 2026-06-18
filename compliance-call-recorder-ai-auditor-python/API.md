@@ -18,7 +18,7 @@ Get audit results.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

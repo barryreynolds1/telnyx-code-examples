@@ -18,7 +18,7 @@ Initiate call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -40,7 +40,7 @@ Start recording endpoint.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -62,7 +62,7 @@ Stop recording endpoint.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -84,7 +84,7 @@ Hangup endpoint.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -118,7 +118,7 @@ Get call status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

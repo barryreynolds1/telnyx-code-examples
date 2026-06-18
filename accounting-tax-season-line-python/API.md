@@ -93,7 +93,7 @@ Doc received.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -115,7 +115,7 @@ Readiness dashboard.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

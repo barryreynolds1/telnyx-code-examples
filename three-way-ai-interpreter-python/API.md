@@ -6,7 +6,10 @@ Start session.
 
 ```json
 {
-  "error": "invalid request body"
+  "party_a": "+12125551234",
+  "party_b": "+34612345678",
+  "language_a": "English",
+  "language_b": "Spanish"
 }
 ```
 
@@ -21,7 +24,7 @@ Start session.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -30,7 +33,7 @@ Start session.
 ```bash
 curl -X POST http://localhost:5000/interpret/start \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -64,7 +67,7 @@ List all sessions.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -84,7 +87,7 @@ Get a specific transcript by ID.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

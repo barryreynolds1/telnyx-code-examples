@@ -18,7 +18,7 @@ Get call status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

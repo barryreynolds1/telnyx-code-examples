@@ -18,7 +18,7 @@ Start collection.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -52,7 +52,7 @@ Get a specific logs by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -26,7 +26,7 @@ Create a new appointment.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -48,7 +48,7 @@ Send confirmation.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -70,7 +70,7 @@ Escalate to voice.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

@@ -29,7 +29,9 @@ Set cloak.
 ### Response `200`
 
 ```json
-{"error": f"Unknown effect. Available: {"<string>")}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -68,7 +70,7 @@ List all active.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -88,7 +90,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

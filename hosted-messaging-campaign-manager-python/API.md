@@ -20,7 +20,7 @@ Create a new campaign.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -76,7 +76,7 @@ Send campaign.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -85,7 +85,7 @@ Send campaign.
 ```bash
 curl -X POST http://localhost:5000/campaigns/example-id/send \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -110,7 +110,7 @@ List all subscribers.
 
 ```json
 {
-  "error": "Campaign not found"
+  "status": "ok"
 }
 ```
 
@@ -148,7 +148,7 @@ Analytics.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

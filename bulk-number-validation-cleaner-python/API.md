@@ -20,7 +20,7 @@ Validate numbers.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -42,7 +42,7 @@ Validate single.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

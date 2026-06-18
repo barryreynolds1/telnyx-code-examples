@@ -20,7 +20,7 @@ Send sms.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

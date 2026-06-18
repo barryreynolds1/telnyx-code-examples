@@ -87,7 +87,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 

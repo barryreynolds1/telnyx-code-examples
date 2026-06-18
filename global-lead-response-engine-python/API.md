@@ -18,7 +18,7 @@ Get a specific leads by ID.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

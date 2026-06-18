@@ -6,7 +6,8 @@ Create conference endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "conference_name": "Jane Smith",
+  "participants": "participants_value"
 }
 ```
 
@@ -19,7 +20,7 @@ Create conference endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +29,7 @@ Create conference endpoint.
 ```bash
 curl -X POST http://localhost:5000/conference/create \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -55,7 +56,7 @@ Add participant endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -77,7 +78,7 @@ End conference endpoint.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -99,7 +100,7 @@ Get conference status endpoint.
 
 ```json
 {
-  "error": "Resource not found"
+  "status": "ok"
 }
 ```
 

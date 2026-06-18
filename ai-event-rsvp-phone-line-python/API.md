@@ -18,7 +18,7 @@ List all rsvps.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

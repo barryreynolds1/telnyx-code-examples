@@ -46,7 +46,7 @@ Upload media.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

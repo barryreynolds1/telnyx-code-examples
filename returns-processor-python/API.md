@@ -18,7 +18,7 @@ List all returns.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ Manual approve.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

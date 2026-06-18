@@ -5,7 +5,9 @@ Replace voiceover.
 ### Response `200`
 
 ```json
-{"error": "Upload audio file as "audio""}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -26,7 +28,7 @@ Get a specific job by ID.
 
 ```json
 {
-  "error": "Upload audio file as 'audio"
+  "status": "ok"
 }
 ```
 
@@ -46,7 +48,7 @@ Compare scripts.
 
 ```json
 {
-  "error": "Job not found"
+  "status": "ok"
 }
 ```
 
@@ -66,7 +68,7 @@ List all modes.
 
 ```json
 {
-  "error": "Job not found"
+  "status": "ok"
 }
 ```
 

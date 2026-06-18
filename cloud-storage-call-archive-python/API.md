@@ -6,7 +6,7 @@ Create a new bucket.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +28,7 @@ List all buckets.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +64,7 @@ Archive recording.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -134,7 +134,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

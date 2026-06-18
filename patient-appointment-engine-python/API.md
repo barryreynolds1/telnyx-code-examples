@@ -28,7 +28,7 @@ List all appointments.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -83,7 +83,7 @@ Reject appointment.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -105,7 +105,11 @@ Create a new copay.
 
 ```json
 {
-  "error": "Not found"
+  "event_type": "event_type_value",
+  "call_control_id": "call_control-abc123",
+  "from": "from_value",
+  "direction": "direction_value",
+  "speech": "speech_value"
 }
 ```
 

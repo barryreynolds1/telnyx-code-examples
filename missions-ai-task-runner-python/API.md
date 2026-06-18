@@ -42,7 +42,7 @@ List all runs.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

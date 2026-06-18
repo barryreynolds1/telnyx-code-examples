@@ -6,7 +6,9 @@ Create a new room.
 
 ```json
 {
-  "error": "example-value"
+  "name": "Team Standup",
+  "max_participants": 10,
+  "enable_recording": true
 }
 ```
 
@@ -22,7 +24,7 @@ Create a new room.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -44,7 +46,7 @@ List all rooms.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +66,7 @@ Create a new token.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -86,7 +88,9 @@ Moderate message.
 
 ```json
 {
-  "error": "invalid request body"
+  "room_id": "room-abc123",
+  "message": "Hello from the API",
+  "sender": "unknown"
 }
 ```
 
@@ -107,7 +111,7 @@ Moderate message.
 ```bash
 curl -X POST http://localhost:5000/moderate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -120,7 +124,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

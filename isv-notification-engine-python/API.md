@@ -6,7 +6,9 @@ Notify.
 
 ```json
 {
-  "error": "invalid request body"
+  "customer_id": "customer-abc123",
+  "message": "Hello from the API",
+  "urgency": "normal"
 }
 ```
 
@@ -27,7 +29,7 @@ Notify.
 ```bash
 curl -X POST http://localhost:5000/notify \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -40,7 +42,9 @@ Bulk notify.
 
 ```json
 {
-  "error": "invalid request body"
+  "customer_id": "customer-abc123",
+  "message": "Hello from the API",
+  "urgency": "normal"
 }
 ```
 
@@ -61,7 +65,7 @@ Bulk notify.
 ```bash
 curl -X POST http://localhost:5000/notify/bulk \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -124,7 +128,7 @@ Update preference.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

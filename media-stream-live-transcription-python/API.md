@@ -18,7 +18,7 @@ Get a specific transcript by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -38,7 +38,7 @@ List all transcripts.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

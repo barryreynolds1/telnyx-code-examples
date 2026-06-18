@@ -49,7 +49,11 @@ Override severity.
 
 ```json
 {
-  "error": "invalid request body"
+  "event_type": "event_type_value",
+  "call_control_id": "call_control-abc123",
+  "from": "from_value",
+  "direction": "direction_value",
+  "speech": "speech_value"
 }
 ```
 
@@ -63,7 +67,7 @@ Override severity.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -72,7 +76,7 @@ Override severity.
 ```bash
 curl -X POST http://localhost:5000/triage/<int:idx>/override \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

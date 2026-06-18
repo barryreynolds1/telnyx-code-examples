@@ -6,7 +6,7 @@ Start verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -18,7 +18,7 @@ Start verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -27,7 +27,7 @@ Start verification.
 ```bash
 curl -X POST http://localhost:5000/verify/start \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -40,7 +40,7 @@ Voice fallback.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -52,7 +52,7 @@ Voice fallback.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -61,7 +61,7 @@ Voice fallback.
 ```bash
 curl -X POST http://localhost:5000/verify/voice-fallback \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -74,7 +74,7 @@ Check verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -96,7 +96,7 @@ Check verification.
 ```bash
 curl -X POST http://localhost:5000/verify/check \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

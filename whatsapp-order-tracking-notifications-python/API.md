@@ -6,7 +6,8 @@ Create a new order.
 
 ```json
 {
-  "error": "invalid request body"
+  "order_id": "f\"ORD-{int(time.time(",
+  "customer_phone": "+12125559999"
 }
 ```
 
@@ -19,7 +20,7 @@ Create a new order.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +29,7 @@ Create a new order.
 ```bash
 curl -X POST http://localhost:5000/orders \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -61,7 +62,7 @@ Update status.
 
 ```json
 {
-  "error": "Order not found"
+  "status": "ok"
 }
 ```
 

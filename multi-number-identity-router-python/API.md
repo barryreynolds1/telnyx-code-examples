@@ -6,7 +6,11 @@ Add identity.
 
 ```json
 {
-  "error": "invalid request body"
+  "number": "+12125559999",
+  "name": "Sales Line",
+  "greeting": "Thanks for calling sales!",
+  "forward_to": "+13105551234",
+  "hours": "9-17"
 }
 ```
 
@@ -29,7 +33,7 @@ Add identity.
 ```bash
 curl -X POST http://localhost:5000/identities \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -72,7 +76,7 @@ List all calls.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

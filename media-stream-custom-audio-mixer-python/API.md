@@ -33,7 +33,7 @@ Inject audio.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -55,7 +55,7 @@ List all streams.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

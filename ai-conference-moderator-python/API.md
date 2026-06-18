@@ -6,7 +6,11 @@ Create a new meeting.
 
 ```json
 {
-  "error": "invalid request body"
+  "topic": "Team Meeting",
+  "agenda": "agenda_value",
+  "time_limit": 30,
+  "per_speaker_seconds": 120,
+  "participants": "participants_value"
 }
 ```
 
@@ -23,7 +27,7 @@ Create a new meeting.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -32,7 +36,7 @@ Create a new meeting.
 ```bash
 curl -X POST http://localhost:5000/meetings/create \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -66,7 +70,7 @@ Advance agenda.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -75,7 +79,7 @@ Advance agenda.
 ```bash
 curl -X POST http://localhost:5000/meetings/example-id/advance \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -88,7 +92,7 @@ Mute participant.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 
@@ -110,7 +114,7 @@ List all meetings.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 
@@ -130,7 +134,7 @@ Get a specific meeting by ID.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

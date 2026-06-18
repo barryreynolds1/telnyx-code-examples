@@ -18,7 +18,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

@@ -6,7 +6,9 @@ Start deposition.
 
 ```json
 {
-  "error": "invalid request body"
+  "case_name": "Jane Smith",
+  "deponent": "deponent_value",
+  "participants": "participants_value"
 }
 ```
 
@@ -20,7 +22,7 @@ Start deposition.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -29,7 +31,7 @@ Start deposition.
 ```bash
 curl -X POST http://localhost:5000/depositions/start \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -63,7 +65,7 @@ Get a specific deposition by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -83,7 +85,7 @@ Get dep transcript.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 
@@ -124,7 +126,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

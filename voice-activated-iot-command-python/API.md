@@ -36,7 +36,7 @@ List all commands.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

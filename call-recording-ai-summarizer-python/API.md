@@ -30,7 +30,7 @@ Summarize recording.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

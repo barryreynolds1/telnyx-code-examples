@@ -23,7 +23,9 @@ Narrate book.
 ### Response `200`
 
 ```json
-{"error": "Provide "text" to narrate"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -44,7 +46,7 @@ Get a specific book by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +66,7 @@ List all books.
 
 ```json
 {
-  "error": "Book not found"
+  "status": "ok"
 }
 ```
 

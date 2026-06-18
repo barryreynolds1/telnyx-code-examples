@@ -18,7 +18,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

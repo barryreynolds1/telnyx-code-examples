@@ -6,7 +6,19 @@ Generate prompts.
 
 ```json
 {
-  "error": "invalid request body"
+  "business_name": "Jane Smith",
+  "business_type": "business_type_value",
+  "hours": "Monday-Friday 9am-5pm",
+  "departments": [
+    "Sales",
+    "Support",
+    "Billing"
+  ],
+  "voice": "nova",
+  "prompt_types": "list(PROMPT_TYPES.keys(",
+  "script": "script_value",
+  "type": "inbound",
+  "estimated_seconds": "estimated_seconds_value"
 }
 ```
 
@@ -23,7 +35,7 @@ Generate prompts.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -32,7 +44,7 @@ Generate prompts.
 ```bash
 curl -X POST http://localhost:5000/prompts/generate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -59,7 +71,7 @@ Preview prompt.
 
 ```json
 {
-  "error": "Prompt set not found"
+  "status": "ok"
 }
 ```
 
@@ -93,7 +105,7 @@ Get prompt set.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -113,7 +125,7 @@ Get prompt types.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

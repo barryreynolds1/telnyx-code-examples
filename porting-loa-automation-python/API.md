@@ -6,7 +6,14 @@ Generate loa.
 
 ```json
 {
-  "error": "invalid request body"
+  "authorized_person": "authorized_person_value",
+  "current_provider": "current_provider_value",
+  "phone_numbers": "+12125559999",
+  "billing_number": "+12125559999",
+  "account_number": "+12125559999",
+  "service_address": "service_address_value",
+  "title": "title_value",
+  "company": "company_value"
 }
 ```
 
@@ -28,7 +35,7 @@ Generate loa.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -37,7 +44,7 @@ Generate loa.
 ```bash
 curl -X POST http://localhost:5000/loa/generate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -50,7 +57,14 @@ Submit and port.
 
 ```json
 {
-  "error": "invalid request body"
+  "authorized_person": "authorized_person_value",
+  "current_provider": "current_provider_value",
+  "phone_numbers": "+12125559999",
+  "billing_number": "+12125559999",
+  "account_number": "+12125559999",
+  "service_address": "service_address_value",
+  "title": "title_value",
+  "company": "company_value"
 }
 ```
 
@@ -66,7 +80,7 @@ Submit and port.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -75,7 +89,7 @@ Submit and port.
 ```bash
 curl -X POST http://localhost:5000/loa/submit-and-port \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -88,7 +102,14 @@ Check portability.
 
 ```json
 {
-  "error": "invalid request body"
+  "authorized_person": "authorized_person_value",
+  "current_provider": "current_provider_value",
+  "phone_numbers": "+12125559999",
+  "billing_number": "+12125559999",
+  "account_number": "+12125559999",
+  "service_address": "service_address_value",
+  "title": "title_value",
+  "company": "company_value"
 }
 ```
 
@@ -107,7 +128,7 @@ Check portability.
 ```bash
 curl -X POST http://localhost:5000/loa/check-portability \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -120,7 +141,7 @@ List all loas.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

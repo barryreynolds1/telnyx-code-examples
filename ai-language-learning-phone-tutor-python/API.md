@@ -18,7 +18,7 @@ List all sessions.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

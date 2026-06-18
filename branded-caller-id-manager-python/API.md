@@ -6,7 +6,11 @@ Create a new brand.
 
 ```json
 {
-  "error": "example-value"
+  "entity_type": "PRIVATE_PROFIT",
+  "display_name": "Acme Corp",
+  "company_name": "Acme Corporation",
+  "ein": "12-3456789",
+  "phone": "+12125559999"
 }
 ```
 
@@ -29,7 +33,7 @@ Create a new brand.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -51,7 +55,7 @@ List all brands.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -71,7 +75,13 @@ Create a new campaign.
 
 ```json
 {
-  "error": "example-value"
+  "brand_id": "brand-abc123",
+  "usecase": "MIXED",
+  "description": "Customer notifications",
+  "sample_message": "Your order #1234 has shipped!",
+  "phone_numbers": [
+    "+12125559999"
+  ]
 }
 ```
 
@@ -87,7 +97,7 @@ Create a new campaign.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -109,7 +119,7 @@ Update caller id.
 
 ```json
 {
-  "campaigns": []
+  "business_name": "Acme Corp"
 }
 ```
 
@@ -121,7 +131,7 @@ Update caller id.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

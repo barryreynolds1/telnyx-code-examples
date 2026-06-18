@@ -6,7 +6,7 @@ Trigger a new alert.
 
 ```json
 {
-  "error": "invalid request body"
+  "device_id": "device-abc123"
 }
 ```
 
@@ -18,7 +18,7 @@ Trigger a new alert.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -27,7 +27,7 @@ Trigger a new alert.
 ```bash
 curl -X POST http://localhost:5000/alert \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -59,7 +59,7 @@ Register device.
 
 ```json
 {
-  "error": "invalid request body"
+  "device_id": "device-abc123"
 }
 ```
 
@@ -74,7 +74,7 @@ Register device.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -83,7 +83,7 @@ Register device.
 ```bash
 curl -X POST http://localhost:5000/devices \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -114,7 +114,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

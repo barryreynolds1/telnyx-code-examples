@@ -6,7 +6,9 @@ Start monitoring.
 
 ```json
 {
-  "error": "invalid request body"
+  "call_id": "call-abc123",
+  "agent": "agent_value",
+  "customer": "customer_value"
 }
 ```
 
@@ -20,7 +22,7 @@ Start monitoring.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -29,7 +31,7 @@ Start monitoring.
 ```bash
 curl -X POST http://localhost:5000/monitor \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -42,7 +44,9 @@ Receive transcript.
 
 ```json
 {
-  "error": "invalid request body"
+  "call_id": "call-abc123",
+  "agent": "agent_value",
+  "customer": "customer_value"
 }
 ```
 
@@ -56,7 +60,7 @@ Receive transcript.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -65,7 +69,7 @@ Receive transcript.
 ```bash
 curl -X POST http://localhost:5000/transcript \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -78,7 +82,7 @@ Call sentiment.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

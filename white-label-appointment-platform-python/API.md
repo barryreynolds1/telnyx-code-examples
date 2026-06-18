@@ -6,7 +6,10 @@ Create a new tenant.
 
 ```json
 {
-  "error": "invalid request body"
+  "business_name": "Dr. Smith Dental",
+  "phone": "+12125559999",
+  "timezone": "America/New_York",
+  "hours": "9-17"
 }
 ```
 
@@ -32,7 +35,7 @@ Create a new tenant.
 ```bash
 curl -X POST http://localhost:5000/tenants \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -124,7 +127,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

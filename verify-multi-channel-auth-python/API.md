@@ -6,7 +6,9 @@ Start verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999",
+  "channel": "sms",
+  "timeout": 300
 }
 ```
 
@@ -20,7 +22,7 @@ Start verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -29,7 +31,7 @@ Start verification.
 ```bash
 curl -X POST http://localhost:5000/verify/start \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -42,7 +44,9 @@ Check verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999",
+  "channel": "sms",
+  "timeout": 300
 }
 ```
 
@@ -55,7 +59,7 @@ Check verification.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +68,7 @@ Check verification.
 ```bash
 curl -X POST http://localhost:5000/verify/check \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -77,7 +81,7 @@ Escalate channel.
 
 ```json
 {
-  "error": "Verification not found"
+  "status": "ok"
 }
 ```
 
@@ -99,7 +103,9 @@ Cascade verify.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999",
+  "channel": "sms",
+  "timeout": 300
 }
 ```
 
@@ -111,7 +117,7 @@ Cascade verify.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -120,7 +126,7 @@ Cascade verify.
 ```bash
 curl -X POST http://localhost:5000/verify/cascade \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

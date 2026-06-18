@@ -6,7 +6,13 @@ Validate address.
 
 ```json
 {
-  "error": "invalid request body"
+  "street": "street_value",
+  "street2": "street2_value",
+  "city": "New York",
+  "state": "NY",
+  "zip": "10001",
+  "country": "US",
+  "business_name": ", timeout=10"
 }
 ```
 
@@ -24,7 +30,7 @@ Validate address.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -33,7 +39,7 @@ Validate address.
 ```bash
 curl -X POST http://localhost:5000/e911/validate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -46,7 +52,13 @@ Assign e911.
 
 ```json
 {
-  "error": "invalid request body"
+  "street": "street_value",
+  "street2": "street2_value",
+  "city": "New York",
+  "state": "NY",
+  "zip": "10001",
+  "country": "US",
+  "business_name": ", timeout=10"
 }
 ```
 
@@ -59,7 +71,7 @@ Assign e911.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -68,7 +80,7 @@ Assign e911.
 ```bash
 curl -X POST http://localhost:5000/e911/assign \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

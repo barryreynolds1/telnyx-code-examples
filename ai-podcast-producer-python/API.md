@@ -20,7 +20,7 @@ Start episode.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -42,7 +42,7 @@ Stop episode.
 
 ```json
 {
-  "error": "Episode not found"
+  "status": "ok"
 }
 ```
 
@@ -76,7 +76,7 @@ List all episodes.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -96,7 +96,7 @@ Get a specific episode by ID.
 
 ```json
 {
-  "error": "Episode not found"
+  "status": "ok"
 }
 ```
 

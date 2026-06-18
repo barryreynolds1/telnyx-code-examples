@@ -28,7 +28,11 @@ Add to waitlist.
 
 ```json
 {
-  "error": "invalid request body"
+  "event_type": "event_type_value",
+  "call_control_id": "call_control-abc123",
+  "from": "from_value",
+  "direction": "direction_value",
+  "speech": "speech_value"
 }
 ```
 
@@ -50,7 +54,7 @@ Add to waitlist.
 ```bash
 curl -X POST http://localhost:5000/waitlist/add \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -63,7 +67,7 @@ Table ready.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -72,7 +76,7 @@ Table ready.
 ```bash
 curl -X POST http://localhost:5000/waitlist/<int:idx>/ready \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

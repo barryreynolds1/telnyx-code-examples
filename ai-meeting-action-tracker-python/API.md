@@ -22,7 +22,7 @@ Create a new meeting.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -65,7 +65,7 @@ Get a specific meeting by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -85,7 +85,7 @@ List all meetings.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

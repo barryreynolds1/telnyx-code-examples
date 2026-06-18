@@ -39,7 +39,7 @@ Create a new connection.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -61,7 +61,7 @@ Get a specific connection by ID.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 

@@ -18,7 +18,7 @@ Generate phone tree.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

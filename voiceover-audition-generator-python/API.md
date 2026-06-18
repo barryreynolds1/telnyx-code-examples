@@ -23,7 +23,9 @@ Create a new audition.
 ### Response `200`
 
 ```json
-{"error": "Provide "script" text"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -44,7 +46,7 @@ Get a specific audition by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +66,7 @@ List all auditions.
 
 ```json
 {
-  "error": "Audition not found"
+  "status": "ok"
 }
 ```
 

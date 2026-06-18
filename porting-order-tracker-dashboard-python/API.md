@@ -113,7 +113,7 @@ Sla check.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -133,8 +133,7 @@ Dashboard.
 
 ```json
 {
-  "error": "Error description",
-  "local": []
+  "status": "ok"
 }
 ```
 

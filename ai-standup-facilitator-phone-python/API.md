@@ -18,7 +18,7 @@ List all standups.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

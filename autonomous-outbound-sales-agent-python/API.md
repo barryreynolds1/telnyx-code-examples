@@ -18,7 +18,7 @@ Add leads.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -40,7 +40,7 @@ Start campaign.
 
 ```json
 {
-  "error": "No leads in queue"
+  "leads": "leads_value"
 }
 ```
 
@@ -52,7 +52,7 @@ Start campaign.
 
 ```json
 {
-  "error": "No leads in queue"
+  "status": "ok"
 }
 ```
 
@@ -86,7 +86,7 @@ Get a specific results by ID.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

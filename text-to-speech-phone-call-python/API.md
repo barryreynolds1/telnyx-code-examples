@@ -18,7 +18,7 @@ Initiate call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ Speak endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -76,7 +76,7 @@ Hangup endpoint.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -110,7 +110,7 @@ Get calls status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

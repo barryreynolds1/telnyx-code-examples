@@ -18,7 +18,7 @@ Create a new network.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -40,7 +40,7 @@ List all networks.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -60,7 +60,8 @@ Create a new interface.
 
 ```json
 {
-  "error": "example-value"
+  "network_id": "network-abc123",
+  "region": "ashburn-va"
 }
 ```
 
@@ -73,7 +74,7 @@ Create a new interface.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -95,7 +96,9 @@ Create a new peer.
 
 ```json
 {
-  "error": "example-value"
+  "interface_id": "interface-abc123",
+  "public_key": "public_key_value",
+  "name": "sip-endpoint"
 }
 ```
 
@@ -109,7 +112,7 @@ Create a new peer.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -131,7 +134,7 @@ Get a specific config by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

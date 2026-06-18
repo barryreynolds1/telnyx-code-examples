@@ -18,7 +18,7 @@ List all messages.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

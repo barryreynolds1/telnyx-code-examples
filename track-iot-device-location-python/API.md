@@ -44,7 +44,7 @@ Get location only.
 
 ```json
 {
-  "error": "Invalid SIM card ID format"
+  "status": "ok"
 }
 ```
 

@@ -6,7 +6,7 @@ Run cycle.
 
 ```json
 {
-  "error": "invalid request body"
+  "day_overdue": 1
 }
 ```
 
@@ -25,7 +25,7 @@ Run cycle.
 ```bash
 curl -X POST http://localhost:5000/collections/run \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -74,7 +74,7 @@ Update status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -83,7 +83,7 @@ Update status.
 ```bash
 curl -X PUT http://localhost:5000/tenants/<int:idx>/status \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -96,7 +96,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

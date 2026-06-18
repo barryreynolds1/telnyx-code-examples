@@ -6,7 +6,7 @@ Get a specific quote by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "amount_usd": 50.0
 }
 ```
 
@@ -18,7 +18,7 @@ Get a specific quote by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -27,7 +27,7 @@ Get a specific quote by ID.
 ```bash
 curl -X POST http://localhost:5000/quote \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -40,7 +40,7 @@ Submit payment.
 
 ```json
 {
-  "error": "invalid request body"
+  "amount_usd": 50.0
 }
 ```
 
@@ -53,7 +53,7 @@ Submit payment.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -62,7 +62,7 @@ Submit payment.
 ```bash
 curl -X POST http://localhost:5000/pay \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -75,7 +75,7 @@ Get a specific balance by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

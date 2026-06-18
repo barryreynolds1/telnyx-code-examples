@@ -22,7 +22,7 @@ Create a new campaign.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -44,7 +44,7 @@ Send campaign.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -66,7 +66,7 @@ Analyze campaign.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

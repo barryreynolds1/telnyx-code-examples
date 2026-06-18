@@ -38,7 +38,7 @@ Add endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -120,7 +120,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

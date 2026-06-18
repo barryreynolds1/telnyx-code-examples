@@ -6,7 +6,8 @@ Assign number.
 
 ```json
 {
-  "error": "invalid request body"
+  "area_code": "area_code_value",
+  "use_case": "outbound"
 }
 ```
 
@@ -19,7 +20,7 @@ Assign number.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +29,7 @@ Assign number.
 ```bash
 curl -X POST http://localhost:5000/assign \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -41,7 +42,8 @@ Lookup and assign.
 
 ```json
 {
-  "error": "invalid request body"
+  "area_code": "area_code_value",
+  "use_case": "outbound"
 }
 ```
 
@@ -53,7 +55,7 @@ Lookup and assign.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -62,7 +64,7 @@ Lookup and assign.
 ```bash
 curl -X POST http://localhost:5000/lookup-and-assign \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

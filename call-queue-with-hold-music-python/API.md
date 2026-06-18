@@ -18,7 +18,7 @@ Queue status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

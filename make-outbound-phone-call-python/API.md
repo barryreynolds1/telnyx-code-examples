@@ -18,7 +18,7 @@ Dial call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

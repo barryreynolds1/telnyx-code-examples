@@ -6,7 +6,7 @@ Get a specific assistant by ID.
 
 ```json
 {
-  "error": "assistant_id is required"
+  "status": "ok"
 }
 ```
 
@@ -40,7 +40,7 @@ Clone assistant endpoint.
 
 ```json
 {
-  "error": "assistant_id is required"
+  "status": "ok"
 }
 ```
 

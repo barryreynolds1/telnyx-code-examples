@@ -6,7 +6,8 @@ Create a new bridge.
 
 ```json
 {
-  "error": "invalid request body"
+  "sms_number": "+12125559999",
+  "whatsapp_number": "+12125559999"
 }
 ```
 
@@ -19,7 +20,7 @@ Create a new bridge.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +29,7 @@ Create a new bridge.
 ```bash
 curl -X POST http://localhost:5000/bridge \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -71,7 +72,7 @@ List all messages.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

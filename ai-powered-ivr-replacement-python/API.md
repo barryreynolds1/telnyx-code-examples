@@ -18,7 +18,7 @@ Setup assistant.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

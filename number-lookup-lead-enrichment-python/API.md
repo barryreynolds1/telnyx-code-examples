@@ -6,7 +6,7 @@ Enrich lead.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -18,7 +18,7 @@ Enrich lead.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -27,7 +27,7 @@ Enrich lead.
 ```bash
 curl -X POST http://localhost:5000/enrich \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -40,7 +40,7 @@ Enrich bulk.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -59,7 +59,7 @@ Enrich bulk.
 ```bash
 curl -X POST http://localhost:5000/enrich/bulk \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

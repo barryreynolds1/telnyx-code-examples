@@ -25,7 +25,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

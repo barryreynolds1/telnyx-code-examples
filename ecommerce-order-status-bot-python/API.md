@@ -40,7 +40,8 @@ Check exceptions.
 
 ```json
 {
-  "error": "invalid request body"
+  "from": "from_value",
+  "text": "Hello from the API"
 }
 ```
 
@@ -64,7 +65,7 @@ Check exceptions.
 ```bash
 curl -X POST http://localhost:5000/exceptions/check \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -77,7 +78,7 @@ List all exceptions.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

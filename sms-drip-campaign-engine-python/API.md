@@ -20,7 +20,7 @@ Create a new drip.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ Subscribe.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

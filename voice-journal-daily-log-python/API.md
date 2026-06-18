@@ -18,7 +18,7 @@ List all entries.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

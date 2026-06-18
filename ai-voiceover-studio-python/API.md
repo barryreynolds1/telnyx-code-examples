@@ -25,7 +25,9 @@ Create a new project.
 ### Response `200`
 
 ```json
-{"error": "Provide "script" text"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -58,7 +60,7 @@ Retake.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -80,7 +82,7 @@ Get a specific project by ID.
 
 ```json
 {
-  "error": "Project not found"
+  "status": "ok"
 }
 ```
 
@@ -100,7 +102,7 @@ List all projects.
 
 ```json
 {
-  "error": "Project not found"
+  "status": "ok"
 }
 ```
 

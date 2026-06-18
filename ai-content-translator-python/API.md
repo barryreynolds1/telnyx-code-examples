@@ -5,7 +5,9 @@ Translate content.
 ### Response `200`
 
 ```json
-{"error": "Upload audio file as "audio""}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -26,7 +28,7 @@ Get a specific translation by ID.
 
 ```json
 {
-  "error": "Upload audio file as 'audio"
+  "status": "ok"
 }
 ```
 
@@ -64,7 +66,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "Job not found"
+  "status": "ok"
 }
 ```
 

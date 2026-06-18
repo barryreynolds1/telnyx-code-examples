@@ -6,7 +6,7 @@ Audit elevenlabs.
 
 ```json
 {
-  "error": "ELEVENLABS_API_KEY not configured"
+  "status": "ok"
 }
 ```
 
@@ -26,7 +26,8 @@ Migrate voice.
 
 ```json
 {
-  "error": "invalid request body"
+  "elevenlabs_voice_name": "Jane Smith",
+  "speed": 1.0
 }
 ```
 
@@ -39,7 +40,7 @@ Migrate voice.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -48,7 +49,7 @@ Migrate voice.
 ```bash
 curl -X POST http://localhost:5000/migrate/voice-config \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -104,7 +105,8 @@ Test tts.
 
 ```json
 {
-  "error": "invalid request body"
+  "elevenlabs_voice_name": "Jane Smith",
+  "speed": 1.0
 }
 ```
 
@@ -124,7 +126,7 @@ Test tts.
 ```bash
 curl -X POST http://localhost:5000/test-tts \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -137,7 +139,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

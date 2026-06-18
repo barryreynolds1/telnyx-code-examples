@@ -36,7 +36,7 @@ Get a specific commands by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

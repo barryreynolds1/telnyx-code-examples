@@ -24,7 +24,7 @@ Initiate screen.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -97,7 +97,7 @@ Advance candidate.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

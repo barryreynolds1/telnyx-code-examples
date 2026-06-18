@@ -6,7 +6,12 @@ Create a new assistant.
 
 ```json
 {
-  "error": "example-value"
+  "name": "Sales Agent",
+  "instructions": "You are a helpful sales assistant.",
+  "model": "meta-llama/Llama-3.3-70B-Instruct",
+  "voice_provider": "telnyx",
+  "voice_name": "Telnyx.Clara",
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -25,7 +30,7 @@ Create a new assistant.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -47,7 +52,7 @@ List all assistants.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -67,7 +72,7 @@ Get a specific assistant by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -87,7 +92,7 @@ Update assistant.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -123,7 +128,7 @@ Wire to number.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -177,7 +182,7 @@ List all models.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

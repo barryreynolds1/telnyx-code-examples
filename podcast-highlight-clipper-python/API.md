@@ -5,7 +5,9 @@ Clip highlights.
 ### Response `200`
 
 ```json
-{"error": "Upload audio as "audio""}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -26,7 +28,7 @@ Get a specific job by ID.
 
 ```json
 {
-  "error": "Upload audio as 'audio"
+  "status": "ok"
 }
 ```
 
@@ -80,7 +82,7 @@ List all jobs.
 
 ```json
 {
-  "error": "Job not found"
+  "status": "ok"
 }
 ```
 
@@ -100,7 +102,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

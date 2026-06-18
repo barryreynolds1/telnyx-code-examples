@@ -22,7 +22,7 @@ Send bulk sms endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

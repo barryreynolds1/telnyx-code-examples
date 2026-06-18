@@ -6,7 +6,8 @@ Start training.
 
 ```json
 {
-  "error": "invalid request body"
+  "rep_number": "+12125559999",
+  "persona": "persona_value"
 }
 ```
 
@@ -26,7 +27,7 @@ Start training.
 ```bash
 curl -X POST http://localhost:5000/train \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -51,7 +52,7 @@ Get a specific results by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

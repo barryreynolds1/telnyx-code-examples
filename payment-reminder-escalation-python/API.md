@@ -6,7 +6,11 @@ Add invoice.
 
 ```json
 {
-  "error": "invalid request body"
+  "company": "Acme Corp",
+  "phone": "+12125559999",
+  "amount": 1500.0,
+  "due_date": "2026-07-15",
+  "payment_link": "https://pay.example.com/inv-123"
 }
 ```
 
@@ -29,7 +33,7 @@ Add invoice.
 ```bash
 curl -X POST http://localhost:5000/invoices \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -42,7 +46,7 @@ Run reminders.
 
 ```json
 {
-  "error": "invalid request body"
+  "days_overdue": 1
 }
 ```
 
@@ -61,7 +65,7 @@ Run reminders.
 ```bash
 curl -X POST http://localhost:5000/reminders/run \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -110,7 +114,7 @@ Mark paid.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -119,7 +123,7 @@ Mark paid.
 ```bash
 curl -X POST http://localhost:5000/invoices/<int:idx>/paid \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

@@ -22,7 +22,7 @@ Setup sip endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

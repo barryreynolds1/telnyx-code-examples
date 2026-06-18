@@ -46,7 +46,8 @@ Add vip.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999",
+  "name": "Jane Smith"
 }
 ```
 
@@ -66,7 +67,7 @@ Add vip.
 ```bash
 curl -X POST http://localhost:5000/vip \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -79,7 +80,7 @@ List all calls.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -22,7 +22,7 @@ Start coaching.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -77,7 +77,7 @@ List all sessions.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -117,7 +117,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

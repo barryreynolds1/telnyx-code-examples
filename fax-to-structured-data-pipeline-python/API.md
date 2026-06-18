@@ -32,7 +32,7 @@ Extract data.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ List all faxes.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

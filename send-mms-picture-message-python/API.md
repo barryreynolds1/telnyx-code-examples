@@ -6,7 +6,9 @@ Send mms.
 
 ```json
 {
-  "error": "invalid request body"
+  "to": "+12125559999",
+  "message": "Hello from the API",
+  "media_urls": "https://example.com"
 }
 ```
 
@@ -20,7 +22,7 @@ Send mms.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -29,7 +31,7 @@ Send mms.
 ```bash
 curl -X POST http://localhost:5000/mms/send \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

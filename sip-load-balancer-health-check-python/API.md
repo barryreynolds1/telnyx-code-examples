@@ -26,8 +26,7 @@ Get a specific route by ID.
 
 ```json
 {
-  "error": "No healthy endpoints",
-  "fallback": "primary"
+  "status": "ok"
 }
 ```
 

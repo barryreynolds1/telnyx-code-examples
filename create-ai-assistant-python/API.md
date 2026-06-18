@@ -6,7 +6,12 @@ Create assistant endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "name": "Jane Smith",
+  "instructions": "You are a helpful agent.",
+  "model": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "enabled_features": [
+    "messaging"
+  ]
 }
 ```
 
@@ -21,7 +26,7 @@ Create assistant endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -30,7 +35,7 @@ Create assistant endpoint.
 ```bash
 curl -X POST http://localhost:5000/ai/assistants \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

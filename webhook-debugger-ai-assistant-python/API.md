@@ -45,7 +45,7 @@ Analyze recent.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -65,7 +65,7 @@ View log.
 
 ```json
 {
-  "error": "No webhooks captured yet"
+  "status": "ok"
 }
 ```
 

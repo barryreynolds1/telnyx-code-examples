@@ -20,7 +20,7 @@ Analyze call.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -42,7 +42,7 @@ Get a specific insights by ID.
 
 ```json
 {
-  "error": "No analyses yet"
+  "status": "ok"
 }
 ```
 

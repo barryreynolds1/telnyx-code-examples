@@ -24,7 +24,7 @@ Get a specific token by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -58,7 +58,7 @@ Get a specific coaching by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

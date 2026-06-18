@@ -6,7 +6,16 @@ Create a new kit.
 
 ```json
 {
-  "error": "invalid request body"
+  "script": "script_value",
+  "source_language": "en",
+  "target_languages": [
+    "es",
+    "fr",
+    "de",
+    "ja"
+  ],
+  "project": "Untitled Project",
+  "style": "neutral"
 }
 ```
 
@@ -21,7 +30,9 @@ Create a new kit.
 ### Response `200`
 
 ```json
-{"error": "Provide "script" text"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -29,7 +40,7 @@ Create a new kit.
 ```bash
 curl -X POST http://localhost:5000/kits/create \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -42,7 +53,7 @@ Get a specific kit by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -74,7 +85,7 @@ Add language.
 
 ```json
 {
-  "error": "Kit not found"
+  "status": "ok"
 }
 ```
 
@@ -96,7 +107,7 @@ List all kits.
 
 ```json
 {
-  "error": "Kit not found"
+  "status": "ok"
 }
 ```
 

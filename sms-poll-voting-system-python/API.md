@@ -20,7 +20,7 @@ Create a new poll.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -56,7 +56,7 @@ Broadcast poll.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -90,7 +90,7 @@ Results.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -20,7 +20,7 @@ Start show.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ Admit next caller.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -63,7 +63,7 @@ Admit next caller.
 ```bash
 curl -X POST http://localhost:5000/shows/example-id/next-caller \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -88,7 +88,7 @@ Fact check.
 
 ```json
 {
-  "error": "Show not found"
+  "status": "ok"
 }
 ```
 
@@ -110,7 +110,7 @@ View queue.
 
 ```json
 {
-  "error": "Show not found"
+  "status": "ok"
 }
 ```
 
@@ -130,7 +130,7 @@ List all shows.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

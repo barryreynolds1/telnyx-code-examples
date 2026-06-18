@@ -32,7 +32,7 @@ Produce episode.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

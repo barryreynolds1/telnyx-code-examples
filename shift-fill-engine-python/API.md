@@ -72,7 +72,7 @@ List all shifts.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

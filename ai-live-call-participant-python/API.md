@@ -22,7 +22,7 @@ Create a new conference.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -78,7 +78,7 @@ List all conferences.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -98,7 +98,7 @@ Get a specific transcript by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -130,7 +130,7 @@ Ask ai.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 
@@ -152,7 +152,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

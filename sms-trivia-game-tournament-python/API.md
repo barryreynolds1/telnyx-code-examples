@@ -22,7 +22,7 @@ Create a new tournament.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -56,7 +56,7 @@ Next round.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -65,7 +65,7 @@ Next round.
 ```bash
 curl -X POST http://localhost:5000/tournament/example-id/next \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -78,7 +78,7 @@ Leaderboard.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

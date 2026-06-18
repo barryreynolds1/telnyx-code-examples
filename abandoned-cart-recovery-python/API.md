@@ -78,7 +78,7 @@ List all carts.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

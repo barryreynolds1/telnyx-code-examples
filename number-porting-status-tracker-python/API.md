@@ -6,7 +6,7 @@ List all ports.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -26,7 +26,7 @@ Create a new port.
 
 ```json
 {
-  "error": "example-value"
+  "phone_numbers": "+12125559999"
 }
 ```
 
@@ -37,7 +37,9 @@ Create a new port.
 ### Response `200`
 
 ```json
-{"error": resp.text}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -70,7 +72,7 @@ Get a specific port by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -90,7 +92,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

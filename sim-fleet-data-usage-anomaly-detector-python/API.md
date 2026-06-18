@@ -6,7 +6,7 @@ Scan fleet.
 
 ```json
 {
-  "error": "No SIM data available"
+  "status": "ok"
 }
 ```
 

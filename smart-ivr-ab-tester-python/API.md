@@ -22,7 +22,7 @@ Create a new experiment.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -56,7 +56,7 @@ Get a specific results by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

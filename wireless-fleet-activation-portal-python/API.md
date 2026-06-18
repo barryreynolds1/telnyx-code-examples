@@ -6,7 +6,7 @@ List all sims.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -26,7 +26,7 @@ Activate sims.
 
 ```json
 {
-  "error": "invalid request body"
+  "sim_ids": "sims-abc123"
 }
 ```
 
@@ -45,7 +45,7 @@ Activate sims.
 ```bash
 curl -X POST http://localhost:5000/sims/activate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -58,7 +58,7 @@ Deactivate sims.
 
 ```json
 {
-  "error": "invalid request body"
+  "sim_ids": "sims-abc123"
 }
 ```
 
@@ -77,7 +77,7 @@ Deactivate sims.
 ```bash
 curl -X POST http://localhost:5000/sims/deactivate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -90,7 +90,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -6,7 +6,7 @@ List all connections.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -26,7 +26,13 @@ Create a new connection.
 
 ```json
 {
-  "error": "invalid request body"
+  "name": "Jane Smith",
+  "codecs": [
+    "G.711"
+  ],
+  "username": "Jane Smith",
+  "password": "password_value",
+  "sip_endpoint": "sip_endpoint_value"
 }
 ```
 
@@ -42,7 +48,7 @@ Create a new connection.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 
@@ -51,7 +57,7 @@ Create a new connection.
 ```bash
 curl -X POST http://localhost:5000/sip/connections \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -64,7 +70,7 @@ Get a specific connection by ID.
 
 ```json
 {
-  "error": "Invalid API key"
+  "status": "ok"
 }
 ```
 

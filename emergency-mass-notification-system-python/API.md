@@ -22,7 +22,7 @@ Send notification.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -6,7 +6,7 @@ Receive alert.
 
 ```json
 {
-  "error": "No sensor data"
+  "status": "ok"
 }
 ```
 
@@ -58,7 +58,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "No payload"
+  "status": "ok"
 }
 ```
 

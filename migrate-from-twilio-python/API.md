@@ -6,7 +6,7 @@ Audit twilio.
 
 ```json
 {
-  "error": "TWILIO_ACCOUNT_SID not configured"
+  "status": "ok"
 }
 ```
 
@@ -26,7 +26,8 @@ Migrate messaging.
 
 ```json
 {
-  "error": "example-value"
+  "name": "Migrated from Twilio",
+  "webhook_url": "https://example.com/webhook"
 }
 ```
 
@@ -39,7 +40,7 @@ Migrate messaging.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -61,7 +62,8 @@ Migrate numbers.
 
 ```json
 {
-  "error": "invalid request body"
+  "name": "Migrated from Twilio",
+  "webhook_url": "https://example.com/webhook"
 }
 ```
 
@@ -81,7 +83,7 @@ Migrate numbers.
 ```bash
 curl -X POST http://localhost:5000/migrate/numbers \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -127,7 +129,7 @@ Get a specific log by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

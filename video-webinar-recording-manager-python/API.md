@@ -6,7 +6,8 @@ Create a new webinar.
 
 ```json
 {
-  "error": "example-value"
+  "name": "Product Launch Webinar",
+  "scheduled_at": "2026-07-15T14:00:00Z"
 }
 ```
 
@@ -22,7 +23,7 @@ Create a new webinar.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -44,7 +45,7 @@ Get a specific recordings by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -76,7 +77,7 @@ Transcribe recording.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

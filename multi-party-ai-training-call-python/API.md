@@ -20,7 +20,7 @@ Start training.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -63,7 +63,7 @@ Get session detail.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -105,7 +105,7 @@ List all scenarios.
 
 ```json
 {
-  "error": "not found"
+  "status": "ok"
 }
 ```
 

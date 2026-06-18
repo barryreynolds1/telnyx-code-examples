@@ -18,7 +18,7 @@ List work orders.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

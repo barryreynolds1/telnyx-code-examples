@@ -18,7 +18,7 @@ Create a new conference.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -54,7 +54,7 @@ Invite.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -90,7 +90,7 @@ Start poll.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -124,7 +124,7 @@ Poll results.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

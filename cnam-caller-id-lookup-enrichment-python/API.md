@@ -73,7 +73,7 @@ List all enrichments.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

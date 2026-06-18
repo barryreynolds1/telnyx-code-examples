@@ -46,7 +46,11 @@ Assign tech.
 
 ```json
 {
-  "error": "invalid request body"
+  "event_type": "event_type_value",
+  "call_control_id": "call_control-abc123",
+  "from": "from_value",
+  "direction": "direction_value",
+  "speech": "speech_value"
 }
 ```
 
@@ -67,7 +71,7 @@ Assign tech.
 ```bash
 curl -X POST http://localhost:5000/bookings/<int:idx>/assign \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -80,7 +84,7 @@ List all techs.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 

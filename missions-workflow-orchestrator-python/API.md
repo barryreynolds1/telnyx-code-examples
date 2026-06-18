@@ -24,7 +24,7 @@ Create a new mission.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -46,8 +46,7 @@ List all missions.
 
 ```json
 {
-  "error": "Error description",
-  "local": []
+  "status": "ok"
 }
 ```
 
@@ -67,7 +66,7 @@ Get a specific mission by ID.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -105,7 +104,7 @@ Add task.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -127,7 +126,7 @@ Run mission.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 
@@ -149,7 +148,7 @@ List all runs.
 
 ```json
 {
-  "error": "Error description"
+  "status": "ok"
 }
 ```
 

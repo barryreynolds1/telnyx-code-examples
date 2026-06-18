@@ -18,7 +18,7 @@ Chat.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

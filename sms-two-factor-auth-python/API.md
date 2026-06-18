@@ -6,7 +6,7 @@ Request otp.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -18,7 +18,7 @@ Request otp.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -27,7 +27,7 @@ Request otp.
 ```bash
 curl -X POST http://localhost:5000/auth/request-otp \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -40,7 +40,7 @@ Verify otp endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "phone_number": "+12125559999"
 }
 ```
 
@@ -53,7 +53,7 @@ Verify otp endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -62,7 +62,7 @@ Verify otp endpoint.
 ```bash
 curl -X POST http://localhost:5000/auth/verify-otp \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -75,7 +75,7 @@ Otp status.
 
 ```json
 {
-  "error": "Missing required query parameter: 'phone_number"
+  "status": "ok"
 }
 ```
 

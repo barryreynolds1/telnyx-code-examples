@@ -18,7 +18,7 @@ Initiate call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -40,7 +40,7 @@ Transfer call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "to": "+12125559999"
 }
 ```
 
@@ -53,7 +53,7 @@ Transfer call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -62,7 +62,7 @@ Transfer call endpoint.
 ```bash
 curl -X POST http://localhost:5000/calls/transfer \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -75,7 +75,7 @@ Hangup call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "to": "+12125559999"
 }
 ```
 
@@ -87,7 +87,7 @@ Hangup call endpoint.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -96,7 +96,7 @@ Hangup call endpoint.
 ```bash
 curl -X POST http://localhost:5000/calls/hangup \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -121,7 +121,7 @@ Get call status.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

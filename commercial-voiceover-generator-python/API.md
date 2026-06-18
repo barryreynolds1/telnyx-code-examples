@@ -6,7 +6,14 @@ Generate commercial.
 
 ```json
 {
-  "error": "invalid request body"
+  "product": "product_value",
+  "audience": "general consumers",
+  "tone": "professional",
+  "length": "30s",
+  "cta": "cta_value",
+  "client_phone": "+12125559999",
+  "script": "script_value",
+  "variation": "?"
 }
 ```
 
@@ -22,7 +29,9 @@ Generate commercial.
 ### Response `200`
 
 ```json
-{"error": "Provide "product" name/description"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -30,7 +39,7 @@ Generate commercial.
 ```bash
 curl -X POST http://localhost:5000/commercials/generate \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -43,7 +52,7 @@ Get a specific campaign by ID.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -63,7 +72,7 @@ List all campaigns.
 
 ```json
 {
-  "error": "Campaign not found"
+  "status": "ok"
 }
 ```
 

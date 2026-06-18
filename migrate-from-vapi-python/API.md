@@ -6,7 +6,7 @@ Audit vapi.
 
 ```json
 {
-  "error": "VAPI_API_KEY not configured. Set it to audit your Vapi agents."
+  "status": "ok"
 }
 ```
 
@@ -38,7 +38,7 @@ Migrate agent.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

@@ -6,7 +6,8 @@ Provision esim.
 
 ```json
 {
-  "error": "invalid request body"
+  "iccid": "8901234567890123456",
+  "label": "Field Device 01"
 }
 ```
 
@@ -19,7 +20,7 @@ Provision esim.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -28,7 +29,7 @@ Provision esim.
 ```bash
 curl -X POST http://localhost:5000/esim/profiles \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---
@@ -41,7 +42,7 @@ Activate esim.
 
 ```json
 {
-  "error": "sim_card_id is required"
+  "status": "ok"
 }
 ```
 
@@ -63,7 +64,7 @@ Get a specific esim by ID.
 
 ```json
 {
-  "error": "sim_card_id is required"
+  "status": "ok"
 }
 ```
 
@@ -83,7 +84,7 @@ List all esims.
 
 ```json
 {
-  "error": "limit must be between 1 and 100"
+  "status": "ok"
 }
 ```
 

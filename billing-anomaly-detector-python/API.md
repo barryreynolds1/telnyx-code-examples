@@ -44,7 +44,7 @@ Run anomaly check.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -53,7 +53,7 @@ Run anomaly check.
 ```bash
 curl -X POST http://localhost:5000/check \
   -H "Content-Type: application/json" \
-  -d '{"error": "invalid request body"}'
+  -d '<see Request example above>'
 ```
 
 ---

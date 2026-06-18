@@ -20,7 +20,7 @@ Add document.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -56,7 +56,7 @@ Ask question.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -78,7 +78,7 @@ List all documents.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

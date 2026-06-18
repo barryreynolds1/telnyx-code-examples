@@ -6,7 +6,9 @@ Chat endpoint.
 
 ```json
 {
-  "error": "Request body must include 'messages' array"
+  "model": "moonshotai/Kimi-K2.6",
+  "max_tokens": 500,
+  "temperature": 0.7
 }
 ```
 
@@ -19,7 +21,9 @@ Chat endpoint.
 ### Response `200`
 
 ```json
-{"error": "Request body must include "messages" array"}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -40,7 +44,9 @@ Ask endpoint.
 
 ```json
 {
-  "error": "Request body must include 'messages' array"
+  "model": "moonshotai/Kimi-K2.6",
+  "max_tokens": 500,
+  "temperature": 0.7
 }
 ```
 
@@ -51,7 +57,9 @@ Ask endpoint.
 ### Response `200`
 
 ```json
-{"error": "Request body must include "question""}
+{
+  "status": "ok"
+}
 ```
 
 **Try it:**
@@ -72,7 +80,7 @@ Health check and service status.
 
 ```json
 {
-  "error": "Request body must include 'question"
+  "status": "ok"
 }
 ```
 

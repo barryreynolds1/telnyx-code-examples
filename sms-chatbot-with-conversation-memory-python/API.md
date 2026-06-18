@@ -18,7 +18,7 @@ List all conversations.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 

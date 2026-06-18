@@ -28,7 +28,7 @@ List all refills.
 
 ```json
 {
-  "error": "invalid request body"
+  "status": "ok"
 }
 ```
 
@@ -60,7 +60,7 @@ Approve refill.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
@@ -94,7 +94,7 @@ Deny refill.
 
 ```json
 {
-  "error": "Not found"
+  "status": "ok"
 }
 ```
 
