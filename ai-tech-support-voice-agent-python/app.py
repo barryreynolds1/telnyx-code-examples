@@ -39,8 +39,11 @@ KB = {"password_reset": "Go to portal.company.com/reset, enter your email, check
 SYSTEM_PROMPT = f"You are IT support. Knowledge base: {json.dumps(KB)}. Try to resolve issues using the KB first. If you cannot resolve, create a ticket. Keep responses under 2 sentences."
 
 def call_inference(messages, max_tokens=150):
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.4}, timeout=15)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 

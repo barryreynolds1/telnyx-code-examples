@@ -33,8 +33,11 @@ session_history = []
 LANGUAGES = {"1": {"name": "Spanish", "code": "es"}, "2": {"name": "French", "code": "fr"}, "3": {"name": "Japanese", "code": "ja"}, "4": {"name": "Mandarin", "code": "zh"}}
 
 def call_inference(messages, max_tokens=200):
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.7}, timeout=15)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 

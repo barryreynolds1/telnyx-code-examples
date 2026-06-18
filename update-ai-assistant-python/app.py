@@ -89,3 +89,8 @@ async def update_assistant_endpoint(assistant_id: str, request: UpdateAssistantR
 
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv("HOST", "127.0.0.1"), port=8000)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

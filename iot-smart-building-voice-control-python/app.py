@@ -35,8 +35,11 @@ You can control: HVAC (temperature, mode), lights (on/off by zone), security (ar
 When given a command, confirm what you'll do and report the change. Keep responses under 2 sentences."""
 
 def call_inference(messages, max_tokens=150):
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.5}, timeout=15)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 

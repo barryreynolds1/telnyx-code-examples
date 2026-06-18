@@ -11,8 +11,11 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 webhook_log = []
 
 def call_inference(messages, max_tokens=300):
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.3}, timeout=15)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 

@@ -32,8 +32,11 @@ _start_ttl_cleanup(interpreted_calls)
 def translate(text, from_lang, to_lang):
     messages = [{"role": "system", "content": f"Translate from {from_lang} to {to_lang}. Return only the translation. Keep it natural and conversational for a phone call."},
         {"role": "user", "content": text}]
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.3}, timeout=10)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 

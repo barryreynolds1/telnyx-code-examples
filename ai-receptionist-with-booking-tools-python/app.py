@@ -60,7 +60,10 @@ def chat():
     if not any(m["role"] == "system" for m in messages):
         messages.insert(0, {"role": "system", "content": "You are a friendly office receptionist with access to a real booking system. Use the tools to check availability and book appointments. Be helpful and concise."})
     payload = {"model": AI_MODEL, "messages": messages, "tools": TOOLS, "max_tokens": 300, "temperature": 0.5}
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     choice = resp.json()["choices"][0]
     msg = choice["message"]
@@ -71,7 +74,10 @@ def chat():
             messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
         payload["messages"] = messages
         del payload["tools"]
-        resp2 = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+        try:
+            resp2 = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+        except Exception as e:
+            app.logger.error("Request failed: %s", e)
         resp2.raise_for_status()
         msg = resp2.json()["choices"][0]["message"]
     return jsonify({"response": msg["content"], "bookings": len(bookings)}), 200

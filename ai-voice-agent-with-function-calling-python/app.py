@@ -47,7 +47,10 @@ def execute_function(name, args):
 
 def call_inference(messages, max_tokens=200):
     payload = {"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.5, "tools": TOOLS}
-    resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+    try:
+        resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=20)
+    except Exception as e:
+        app.logger.error("Request failed: %s", e)
     resp.raise_for_status()
     choice = resp.json()["choices"][0]
     msg = choice["message"]

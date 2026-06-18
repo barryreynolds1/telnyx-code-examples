@@ -251,5 +251,10 @@ def get_call_status(call_control_id):
     return jsonify(active_calls[call_control_id]), 200
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
