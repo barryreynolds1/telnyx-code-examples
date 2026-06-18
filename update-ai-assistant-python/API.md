@@ -32,3 +32,16 @@ curl -X PUT http://localhost:5000/ai/assistants \
   -H "Content-Type: application/json" \
   -d '{"assistant_id": "asst_abc123", "name": "Updated Assistant", "instructions": "You are a helpful agent."}'
 ```
+
+### Response
+
+```json
+{
+  "id": "asst_abc123",
+  "name": "Updated Assistant",
+  "model": "moonshotai/Kimi-K2.6",
+  "instructions": "You are a helpful agent.",
+  "voice": "Telnyx.Clara",
+  "updated_at": "2026-06-18T21:00:00Z"
+}
+```
