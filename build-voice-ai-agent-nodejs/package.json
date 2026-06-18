@@ -1,0 +1,15 @@
+{
+  "name": "build-voice-ai-agent-nodejs",
+  "version": "1.0.0",
+  "description": "Build a complete voice AI agent with Telnyx — inbound calls, LLM conversation, and call control",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --check server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "telnyx": "^2.0.0"
+  }
+}
