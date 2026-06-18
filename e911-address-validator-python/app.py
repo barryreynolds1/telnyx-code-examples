@@ -11,11 +11,13 @@ validated_addresses = []
 @app.route("/e911/validate", methods=["POST"])
 def validate_address():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     address = {"street_address": data.get("street"), "extended_address": data.get("street2", ""),
         "locality": data.get("city"), "administrative_area": data.get("state"), "postal_code": data.get("zip"), "country_code": data.get("country", "US")}
     try:
         resp = requests.post("https://api.telnyx.com/v2/addresses", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-            json={**address, "address_book": True, "business_name": data.get("business_name", "")}, timeout=15)
+            json={**address, "address_book": True, "business_name": data.get("business_name", "", timeout=10)}, timeout=15)
         if resp.ok:
             result = resp.json().get("data", {})
             validated_addresses.append(result)
@@ -27,6 +29,8 @@ def validate_address():
 @app.route("/e911/assign", methods=["POST"])
 def assign_e911():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone_number")
     address_id = data.get("address_id")
     try:
@@ -47,4 +51,4 @@ def health():
     return jsonify({"status": "ok", "addresses": len(validated_addresses)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

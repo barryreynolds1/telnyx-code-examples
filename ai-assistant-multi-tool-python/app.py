@@ -48,6 +48,8 @@ def execute_tool(name, args):
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     messages = data.get("messages", [])
     if not messages:
         return jsonify({"error": "messages required"}), 400
@@ -87,4 +89,4 @@ def health():
     return jsonify({"status": "ok", "tools": len(TOOLS), "calls": len(tool_calls_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

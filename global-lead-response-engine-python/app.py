@@ -7,11 +7,13 @@ import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -46,6 +48,21 @@ DEFAULT_LANG = {"lang": "en-US", "greeting": "Hi, thanks for calling! How can I 
 
 # Active calls
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 lead_results = []
 
 
@@ -109,7 +126,7 @@ def send_follow_up(to_number, text, channel="sms"):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"Follow-up send failed: {e}")
+        app.logger.error("Follow-up send failed: %s", e)
 
 
 @app.route("/webhooks/voice", methods=["POST"])
@@ -206,7 +223,7 @@ def handle_voice():
 
                 lead_results.append({"caller": call["caller"], "country": call["country"], "qualification": qual})
             except Exception as e:
-                app.logger.error(f"Qualification failed: {e}")
+                app.logger.error("Qualification failed: %s", e)
                 response = call_inference(call["conversation"])
                 call["conversation"].append({"role": "assistant", "content": response})
                 client.calls.actions.speak(call_control_id, payload=response, voice="female", language_code=call["language"])
@@ -235,4 +252,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

@@ -36,6 +36,8 @@ Company: {company}
 @app.route("/loa/generate", methods=["POST"])
 def generate_loa():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     loa = LOA_TEMPLATE.format(
         date=time.strftime("%B %d, %Y"),
         authorized_person=data.get("authorized_person", ""),
@@ -55,10 +57,12 @@ def generate_loa():
 @app.route("/loa/submit-and-port", methods=["POST"])
 def submit_and_port():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     loa_id = f"LOA-{int(time.time())}"
     try:
         resp = requests.post(f"{API}/porting_orders", headers=headers,
-            json={"phone_numbers": data.get("phone_numbers", []),
+            json={"phone_numbers": data.get("phone_numbers", [], timeout=10),
                 "authorized_person": data.get("authorized_person"),
                 "current_provider": data.get("current_provider"),
                 "billing_phone_number": data.get("billing_number"),
@@ -76,6 +80,8 @@ def submit_and_port():
 @app.route("/loa/check-portability", methods=["POST"])
 def check_portability():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("phone_numbers", [])
     results = []
     for num in numbers[:20]:
@@ -100,4 +106,4 @@ def health():
     return jsonify({"status": "ok", "loas": len(loa_records), "porting": len(porting_pipeline)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

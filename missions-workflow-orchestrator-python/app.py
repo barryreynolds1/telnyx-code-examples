@@ -15,7 +15,7 @@ def create_mission():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/missions", headers=headers,
-            json={"name": data.get("name"), "description": data.get("description"),
+            json={"name": data.get("name", timeout=10), "description": data.get("description"),
                 "status": data.get("status", "draft"),
                 "tasks": data.get("tasks", [])}, timeout=15)
         result = resp.json()
@@ -45,7 +45,7 @@ def add_task(mission_id):
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/missions/{mission_id}/tasks", headers=headers,
-            json={"name": data.get("name"), "type": data.get("type", "action"),
+            json={"name": data.get("name", timeout=10), "type": data.get("type", "action"),
                 "config": data.get("config", {}), "depends_on": data.get("depends_on", [])}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
@@ -86,4 +86,4 @@ def health():
     return jsonify({"status": "ok", "missions": len(local_missions)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

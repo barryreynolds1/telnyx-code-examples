@@ -76,6 +76,8 @@ def send_mms(to_number: str, message: str, media_urls: list) -> dict:
 def send_mms_endpoint():
     """HTTP endpoint to send MMS with media attachments."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

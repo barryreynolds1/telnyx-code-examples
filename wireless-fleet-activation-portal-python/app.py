@@ -22,6 +22,8 @@ def list_sims():
 @app.route("/sims/activate", methods=["POST"])
 def activate_sims():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     sim_ids = data.get("sim_ids", [])
     results = []
     for sim_id in sim_ids:
@@ -38,6 +40,8 @@ def activate_sims():
 @app.route("/sims/deactivate", methods=["POST"])
 def deactivate_sims():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     sim_ids = data.get("sim_ids", [])
     results = []
     for sim_id in sim_ids:
@@ -58,4 +62,4 @@ def health():
     return jsonify({"status": "ok", "activations": len(activation_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -13,6 +13,8 @@ validation_jobs = []
 @app.route("/validate", methods=["POST"])
 def validate_numbers():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("numbers", [])
     if not numbers:
         return jsonify({"error": "numbers list required"}), 400
@@ -70,4 +72,4 @@ def health():
     return jsonify({"status": "ok", "jobs": len(validation_jobs)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -15,7 +15,7 @@ def create_brand():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/brand", headers=headers,
-            json={"entity_type": data.get("entity_type", "PRIVATE_PROFIT"),
+            json={"entity_type": data.get("entity_type", "PRIVATE_PROFIT", timeout=10),
                 "display_name": data.get("display_name"),
                 "company_name": data.get("company_name"),
                 "ein": data.get("ein"), "phone": data.get("phone"),
@@ -41,7 +41,7 @@ def create_campaign():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/phoneNumberCampaign", headers=headers,
-            json={"telnyx_brand_id": data.get("brand_id"),
+            json={"telnyx_brand_id": data.get("brand_id", timeout=10),
                 "usecase": data.get("usecase", "MIXED"),
                 "description": data.get("description"),
                 "sample_message": data.get("sample_message", ["Your appointment is tomorrow at 2pm. Reply CONFIRM."]),
@@ -60,7 +60,7 @@ def update_caller_id(number):
             headers=headers,
             json={"caller_id_name_enabled": True,
                 "cnam_listing_enabled": True,
-                "cnam_listing_details": data.get("business_name", "")}, timeout=15)
+                "cnam_listing_details": data.get("business_name", "", timeout=10)}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -88,4 +88,4 @@ def health():
     return jsonify({"status": "ok", "campaigns": len(campaigns)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

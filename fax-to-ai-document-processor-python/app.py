@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 FAX_NUMBER = os.getenv("FAX_NUMBER")
 FORWARD_EMAIL = os.getenv("FORWARD_EMAIL")
@@ -21,6 +22,8 @@ def call_inference(messages, max_tokens=400):
 @app.route("/webhooks/fax", methods=["POST"])
 def handle_fax():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event_type = data.get("event_type")
     if event_type == "fax.received":
@@ -40,7 +43,7 @@ def handle_fax():
         if result.get("priority") == "urgent":
             try:
                 requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-                    json={"from": FAX_NUMBER, "to": FAX_NUMBER, "text": f"URGENT FAX from {from_number}: {result.get('summary', 'Review needed')}"}, timeout=10)
+                    json={"from": FAX_NUMBER, "to": FAX_NUMBER, "text": f"URGENT FAX from {from_number}: {result.get('summary', 'Review needed', timeout=10)}"}, timeout=10)
             except Exception:
                 pass
         return jsonify({"status": "processed", "analysis": result}), 200
@@ -55,4 +58,4 @@ def health():
     return jsonify({"status": "ok", "processed": len(processed_faxes)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

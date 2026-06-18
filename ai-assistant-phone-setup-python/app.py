@@ -3,6 +3,7 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -10,12 +11,27 @@ API = "https://api.telnyx.com/v2"
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 assistants = {}
 
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(assistants)
+
+
 @app.route("/assistants", methods=["POST"])
 def create_assistant():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/ai/assistants", headers=headers,
-            json={"name": data.get("name", "My Assistant"),
+            json={"name": data.get("name", "My Assistant", timeout=10),
                 "instructions": data.get("instructions", "You are a helpful assistant. Be friendly and concise."),
                 "model": data.get("model", "meta-llama/Llama-3.3-70B-Instruct"),
                 "voice": {"provider": data.get("voice_provider", "telnyx"),
@@ -60,6 +76,8 @@ def update_assistant(assistant_id):
 @app.route("/assistants/<assistant_id>/wire", methods=["POST"])
 def wire_to_number(assistant_id):
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone_number = data.get("phone_number")
     return jsonify({"assistant_id": assistant_id, "phone_number": phone_number,
         "instructions": "To wire an assistant to a phone number: 1) Create a Call Control Application in the portal, "
@@ -69,6 +87,8 @@ def wire_to_number(assistant_id):
 @app.route("/assistants/<assistant_id>/test", methods=["POST"])
 def test_assistant(assistant_id):
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     message = data.get("message", "Hello")
     try:
         resp = requests.post(f"{API}/ai/chat/completions", headers=headers,
@@ -92,4 +112,4 @@ def health():
     return jsonify({"status": "ok", "assistants": len(assistants)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

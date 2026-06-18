@@ -7,11 +7,13 @@ import os, json, uuid, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -32,6 +34,21 @@ PROMPT_TYPES = {
 }
 
 prompt_sets = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(prompt_sets)
+
 
 
 def inference(messages, max_tokens=2000):
@@ -73,6 +90,8 @@ def generate_prompts():
     AI writes caller-friendly scripts, TTS renders each prompt.
     """
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     business_name = data.get("business_name", "")
     business_type = data.get("business_type", "")
     hours = data.get("hours", "Monday-Friday 9am-5pm")
@@ -172,6 +191,8 @@ def preview_prompt(set_id):
         return jsonify({"error": "Prompt set not found"}), 404
 
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone", "")
     prompt_type = data.get("type", "greeting")
 
@@ -212,6 +233,8 @@ def preview_prompt(set_id):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event = payload.get("data", {})
     event_type = event.get("event_type", "")
     ep = event.get("payload", {})
@@ -265,4 +288,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

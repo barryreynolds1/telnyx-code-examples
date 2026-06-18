@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -23,6 +25,21 @@ clients = [
         "docs_received": ["P&L Statement", "Balance Sheet"], "status": "docs_pending"},
 ]
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 def send_sms(to, text):
     requests.post(f"{API}/messages", headers=headers, json={"from": MAIN_NUMBER, "to": to, "text": text}, timeout=10)
@@ -44,6 +61,8 @@ def send_reminders():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -91,6 +110,8 @@ def handle_voice():
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "").strip()
@@ -113,6 +134,8 @@ def list_clients():
 def doc_received(idx):
     if idx >= len(clients): return jsonify({"error":"Not found"}), 404
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     doc = data.get("document")
     if doc and doc not in clients[idx]["docs_received"]:
         clients[idx]["docs_received"].append(doc)
@@ -140,4 +163,4 @@ def health():
     return jsonify({"status":"ok","clients":len(clients)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
 def process_inbound_sms(event_data: dict) -> dict:
@@ -50,6 +51,8 @@ def receive_sms_webhook():
     Telnyx sends a POST request with event type 'message.received' for inbound SMS.
     """
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "Empty request body"}), 400

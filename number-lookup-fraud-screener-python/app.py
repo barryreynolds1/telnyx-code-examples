@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 API = "https://api.telnyx.com/v2"
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 screening_log = []
@@ -59,6 +60,8 @@ def screen_number(number):
 @app.route("/webhooks/voice", methods=["POST"])
 def screen_inbound_call():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     if data.get("event_type") == "call.initiated" and data.get("direction") == "incoming":
         caller = data.get("from", "")
@@ -81,6 +84,8 @@ def screen_inbound_call():
 @app.route("/blocklist", methods=["POST"])
 def add_to_blocklist():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     number = data.get("number")
     blocked_numbers.add(number)
     return jsonify({"status": "blocked", "number": number}), 200
@@ -102,4 +107,4 @@ def health():
     return jsonify({"status": "ok", "screened": len(screening_log), "blocked": len(blocked_numbers)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -50,6 +50,8 @@ def initiate_call(to_number: str) -> dict:
 def dial_call_endpoint():
     """HTTP endpoint to initiate an outbound call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

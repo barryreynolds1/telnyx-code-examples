@@ -7,6 +7,7 @@ import os, json, uuid, time, requests, io, base64
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_file
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
@@ -35,6 +36,21 @@ SUPPORTED_LANGUAGES = {
 }
 
 jobs = {}  # job_id -> dubbing state
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(jobs)
+
 
 
 def inference(messages, max_tokens=4000):
@@ -254,4 +270,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -18,6 +20,21 @@ policies = {"POL-1001": {"name": "John Smith", "phone": "+15559004001", "type": 
     "POL-1002": {"name": "Sarah Lee", "phone": "+15559004002", "type": "home", "deductible": 1000}}
 claims = []
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 SYSTEM_PROMPT = """You are a claims intake specialist for SecureShield Insurance.
 Collect: policy number, type of incident, date/time of incident, location, description of damage, other parties involved, police report number (if applicable), injuries.
@@ -39,6 +56,8 @@ def send_sms(to, text):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -79,6 +98,8 @@ def handle_voice():
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     media = data.get("media", [])
@@ -98,6 +119,8 @@ def assign_adjuster(claim_id):
     claim = next((c for c in claims if c["id"]==claim_id), None)
     if not claim: return jsonify({"error":"Not found"}), 404
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     claim["adjuster"] = data.get("adjuster","")
     claim["status"] = "assigned"
     send_sms(claim["caller"], f"SecureShield: Adjuster {claim['adjuster']} has been assigned to your claim {claim_id}. They will contact you within 48 hours.")
@@ -108,4 +131,4 @@ def health():
     return jsonify({"status":"ok","claims":len(claims),"pending":sum(1 for c in claims if c["status"]=="pending_review")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

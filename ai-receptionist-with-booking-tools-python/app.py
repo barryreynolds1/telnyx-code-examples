@@ -54,6 +54,8 @@ def execute_tool(name, args):
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     messages = data.get("messages", [])
     if not any(m["role"] == "system" for m in messages):
         messages.insert(0, {"role": "system", "content": "You are a friendly office receptionist with access to a real booking system. Use the tools to check availability and book appointments. Be helpful and concise."})
@@ -83,4 +85,4 @@ def health():
     return jsonify({"status": "ok", "bookings": len(bookings), "available_slots": sum(1 for s in available_slots if s["available"])}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

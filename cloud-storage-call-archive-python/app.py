@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 BUCKET_NAME = os.getenv("BUCKET_NAME", "call-archive")
 API = "https://api.telnyx.com/v2"
 STORAGE_API = "https://api.telnyx.com/v2/storage"
@@ -32,6 +33,8 @@ def list_buckets():
 @app.route("/archive", methods=["POST"])
 def archive_recording():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     recording_url = data.get("recording_url")
     call_id = data.get("call_id", f"call-{int(time.time())}")
     metadata = data.get("metadata", {})
@@ -60,6 +63,8 @@ def archive_recording():
 @app.route("/webhooks/recording", methods=["POST"])
 def handle_recording_webhook():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     if data.get("event_type") == "call.recording.saved":
         recording_url = data.get("recording_urls", {}).get("mp3")
@@ -88,4 +93,4 @@ def health():
     return jsonify({"status": "ok", "archived": len(archive_index), "bucket": BUCKET_NAME}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

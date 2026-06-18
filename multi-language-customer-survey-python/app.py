@@ -4,10 +4,12 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -17,6 +19,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 
 survey_queue = []
 active_surveys = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_surveys)
+
 results = []
 
 SURVEY_QUESTIONS = [
@@ -41,6 +58,8 @@ def translate_question(question, language):
 @app.route("/survey/start", methods=["POST"])
 def start_survey():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     contacts = data.get("contacts", [])
     for contact in contacts:
         if "number" in contact:
@@ -55,12 +74,14 @@ def start_survey():
                 lang = contact.get("language", "en")
                 active_surveys[ccid] = {"contact": contact, "language": lang, "question_index": 0, "answers": []}
         except requests.RequestException as e:
-            app.logger.error(f"Survey call failed: {e}")
+            app.logger.error("Survey call failed: %s", e)
     return jsonify({"queued": len(survey_queue)}), 200
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -111,4 +132,4 @@ def health():
     return jsonify({"status": "ok", "completed": len(results), "queued": len(survey_queue)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

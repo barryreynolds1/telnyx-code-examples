@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 FRAUD_SLACK = os.getenv("FRAUD_SLACK_WEBHOOK", "")
@@ -15,12 +17,29 @@ headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 alerts = []
 active_calls = {}
 
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
+
 def send_sms(to, text):
     requests.post(f"{API}/messages", headers=headers, json={"from": MAIN_NUMBER, "to": to, "text": text}, timeout=10)
 
 @app.route("/alerts/trigger", methods=["POST"])
 def trigger_alert():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     alert = {"id": len(alerts), "customer_phone": data.get("phone"),
         "transaction": data.get("transaction", ""), "amount": data.get("amount", 0),
         "merchant": data.get("merchant", ""), "risk_score": data.get("risk_score", 0),
@@ -29,7 +48,7 @@ def trigger_alert():
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": alert["customer_phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"alert_id": alert["id"]}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"alert_id": alert["id"]}, timeout=10).encode().hex()}, timeout=10)
         active_calls[resp.json().get("data",{}).get("call_control_id","")] = alert["id"]
     except Exception:
         alert["status"] = "call_failed"
@@ -39,6 +58,8 @@ def trigger_alert():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -83,6 +104,8 @@ def handle_voice():
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "").strip().upper()
@@ -111,4 +134,4 @@ def health():
     return jsonify({"status":"ok","active":sum(1 for a in alerts if a["status"]=="calling")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -119,6 +119,8 @@ def list_connections():
 def create_connection():
     """Create a new SIP connection for inbound call routing."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

@@ -8,11 +8,13 @@ import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -22,6 +24,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 
 # Active meetings: call_control_id -> meeting data
 meetings = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(meetings)
+
 completed_meetings = []
 
 
@@ -61,13 +78,15 @@ def send_sms(to, text):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"SMS failed to {to}: {e}")
+        app.logger.error("SMS failed to %s: %s", to, e)
 
 
 @app.route("/join", methods=["POST"])
 def join_meeting():
     """Join a conference call. POST {dial_number, participants: [{name, number}]}"""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     dial_number = data.get("dial_number")
     participants = data.get("participants", [])
 
@@ -167,7 +186,7 @@ def handle_voice():
                         send_sms(number, summary)
 
             except Exception as e:
-                app.logger.error(f"Note generation failed: {e}")
+                app.logger.error("Note generation failed: %s", e)
 
         return jsonify({"status": "meeting_ended"}), 200
 
@@ -189,4 +208,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

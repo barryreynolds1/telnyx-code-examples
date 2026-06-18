@@ -45,6 +45,8 @@ def audit_elevenlabs():
 @app.route("/migrate/voice-config", methods=["POST"])
 def migrate_voice():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     el_voice = data.get("elevenlabs_voice_name", "")
     mapping = VOICE_MAP.get(el_voice, {})
     if not mapping:
@@ -76,6 +78,8 @@ def cost_comparison():
 @app.route("/test-tts", methods=["POST"])
 def test_tts():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     text = data.get("text", "Hello, this is a test of Telnyx text to speech.")
     voice = data.get("voice_id", "en-US-Neural2-F")
     try:
@@ -95,4 +99,4 @@ def health():
     return jsonify({"status": "ok", "migrations": len(migration_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

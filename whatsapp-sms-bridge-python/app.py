@@ -3,13 +3,30 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 SMS_NUMBER = os.getenv("SMS_NUMBER")
 WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER")
 MESSAGING_PROFILE_ID = os.getenv("MESSAGING_PROFILE_ID", "")
 bridges = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(bridges)
+
 message_log = []
 
 def send_sms(to, text):
@@ -29,6 +46,8 @@ def send_whatsapp(to, text):
 @app.route("/bridge", methods=["POST"])
 def create_bridge():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     sms_user = data.get("sms_number")
     whatsapp_user = data.get("whatsapp_number")
     bridges[sms_user] = {"whatsapp": whatsapp_user, "direction": "sms_to_whatsapp"}
@@ -38,6 +57,8 @@ def create_bridge():
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_message():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
@@ -77,4 +98,4 @@ def health():
     return jsonify({"status": "ok", "bridges": len(bridges) // 2, "messages": len(message_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

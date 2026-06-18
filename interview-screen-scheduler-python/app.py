@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -17,6 +19,21 @@ headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 
 candidates = []
 screens = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(screens)
+
 PASS_THRESHOLD = 70
 
 SCREEN_QUESTIONS = [
@@ -30,7 +47,7 @@ def ai_score(conversation):
         resp = requests.post(INFERENCE_URL, headers=headers,
             json={"model": AI_MODEL, "messages": [
                 {"role": "system", "content": "Score this phone screen 0-100. Consider: relevance of experience, enthusiasm, compensation alignment, communication clarity. Reply JSON: {\"score\": number, \"strengths\": \"...\", \"concerns\": \"...\", \"recommend\": \"advance|reject\"}"},
-                {"role": "user", "content": json.dumps(conversation)}], "max_tokens": 150, "temperature": 0.2}, timeout=15)
+                {"role": "user", "content": json.dumps(conversation, timeout=10)}], "max_tokens": 150, "temperature": 0.2}, timeout=15)
         return json.loads(resp.json()["choices"][0]["message"]["content"].strip().strip("`").replace("json\n",""))
     except Exception:
         return {"score": 50, "strengths": "Unable to evaluate", "concerns": "", "recommend": "review"}
@@ -41,6 +58,8 @@ def send_sms(to, text):
 @app.route("/candidates/screen", methods=["POST"])
 def initiate_screen():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     candidate = {"name": data.get("name"), "phone": data.get("phone"),
         "position": data.get("position", ""), "source": data.get("source", ""),
         "status": "screening", "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -50,7 +69,7 @@ def initiate_screen():
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": candidate["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"candidate_idx": idx, "q": 0}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"candidate_idx": idx, "q": 0}, timeout=10).encode().hex()}, timeout=10)
         screens[resp.json().get("data",{}).get("call_control_id","")] = {"candidate_idx": idx, "q_idx": 0, "answers": []}
     except Exception:
         candidate["status"] = "call_failed"
@@ -59,6 +78,8 @@ def initiate_screen():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -97,7 +118,7 @@ def handle_voice():
                     json={"payload": "Thank you for your time today. We'll review your responses and follow up. Have a great day!",
                         "voice": "female", "language_code": "en-US"}, timeout=10)
             if RECRUITER_SLACK:
-                try: requests.post(RECRUITER_SLACK, json={"text": f"Screen complete: {candidate['name']} - Score: {scorecard.get('score',0)}/100 - {scorecard.get('recommend','review').upper()}\nStrengths: {scorecard.get('strengths','')}\nConcerns: {scorecard.get('concerns','')}"}, timeout=5)
+                try: requests.post(RECRUITER_SLACK, json={"text": f"Screen complete: {candidate['name']} - Score: {scorecard.get('score',0, timeout=10)}/100 - {scorecard.get('recommend','review').upper()}\nStrengths: {scorecard.get('strengths','')}\nConcerns: {scorecard.get('concerns','')}"}, timeout=5)
                 except Exception: pass
     elif event == "call.hangup":
         screens.pop(ccid, None)
@@ -113,6 +134,8 @@ def advance_candidate(idx):
     candidate = candidates[idx]
     candidate["status"] = "interview_scheduled"
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     candidate["interview_time"] = data.get("time", "")
     send_sms(candidate["phone"], f"Your interview is confirmed for {candidate['interview_time']}. Looking forward to meeting you!")
     return jsonify({"candidate": candidate}), 200
@@ -123,4 +146,4 @@ def health():
         "passed":sum(1 for c in candidates if c["status"]=="passed")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

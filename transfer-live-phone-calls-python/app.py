@@ -6,6 +6,7 @@ import json
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+import threading, time as _ttl_time
 
 load_dotenv()
 
@@ -13,9 +14,25 @@ app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # In-memory store for active calls (use a database in production)
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 
 def initiate_call(to_number: str) -> dict:
@@ -101,6 +118,8 @@ def hangup_call(call_control_id: str) -> dict:
 def initiate_call_endpoint():
     """HTTP endpoint to initiate an outbound call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -130,6 +149,8 @@ def initiate_call_endpoint():
 def transfer_call_endpoint():
     """HTTP endpoint to transfer an active call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -160,6 +181,8 @@ def transfer_call_endpoint():
 def hangup_call_endpoint():
     """HTTP endpoint to terminate a call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -189,6 +212,8 @@ def hangup_call_endpoint():
 def handle_call_webhook():
     """Webhook endpoint to receive call state change events from Telnyx."""
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "No payload"}), 400

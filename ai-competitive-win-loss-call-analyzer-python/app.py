@@ -20,6 +20,8 @@ def call_inference(messages, max_tokens=600):
 @app.route("/analyze", methods=["POST"])
 def analyze_call():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     transcript = data.get("transcript", "")
     outcome = data.get("outcome", "unknown")
     if not transcript:
@@ -49,4 +51,4 @@ def health():
     return jsonify({"status": "ok", "analyses": len(analyses)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

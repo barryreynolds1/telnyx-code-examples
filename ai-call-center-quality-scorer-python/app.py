@@ -34,6 +34,8 @@ def call_inference(messages, max_tokens=600):
 @app.route("/score", methods=["POST"])
 def score_call():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     transcript = data.get("transcript", "")
     if not transcript:
         return jsonify({"error": "transcript required"}), 400
@@ -52,6 +54,8 @@ def score_call():
 @app.route("/score/batch", methods=["POST"])
 def batch_score():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     transcripts = data.get("transcripts", [])
     results = []
     for t in transcripts[:10]:
@@ -82,4 +86,4 @@ def health():
     return jsonify({"status": "ok", "scorecards": len(scorecards)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

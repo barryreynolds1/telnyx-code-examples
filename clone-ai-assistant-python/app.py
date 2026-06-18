@@ -102,6 +102,8 @@ def clone_assistant_endpoint(assistant_id: str):
         return jsonify({"error": "assistant_id is required"}), 400
     
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     # Extract optional override parameters from request body
     new_name = data.get("name")

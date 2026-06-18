@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -17,6 +19,21 @@ headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 rooms = {"101": {"guest": "Smith", "phone": "+15559001234"}, "205": {"guest": "Chen", "phone": "+15559005678"}}
 service_requests = []
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 SYSTEM_PROMPT = """You are the AI concierge for The Grand Hotel.
 Services: room service (menu items + prices), housekeeping (towels, toiletries, cleaning), concierge (restaurant reservations, transportation, tours), maintenance (broken items, AC/heat issues).
@@ -40,6 +57,8 @@ def ai_categorize(text):
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "")
@@ -54,13 +73,15 @@ def handle_sms():
     send_sms(sender, f"Thank you, {guest}. Your {result['department'].replace('_',' ')} request has been received (#{req['id']}). {'URGENT - staff dispatched immediately.' if result['urgency']=='urgent' else 'We will update you shortly.'}")
     if STAFF_SLACK:
         emoji = "🔴" if result["urgency"] == "urgent" else "🔵"
-        try: requests.post(STAFF_SLACK, json={"text": f"{emoji} Room {room} ({guest}): {result['department']} - {result['summary']}"}, timeout=5)
+        try: requests.post(STAFF_SLACK, json={"text": f"{emoji} Room {room} ({guest}, timeout=10): {result['department']} - {result['summary']}"}, timeout=5)
         except Exception: pass
     return jsonify({"status": "ok"}), 200
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -122,4 +143,4 @@ def health():
     return jsonify({"status":"ok","open":sum(1 for r in service_requests if r["status"]=="open")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

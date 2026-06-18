@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
 def generate_response(incoming_message: str, sender_number: str) -> str:
@@ -81,6 +82,8 @@ def handle_sms_webhook():
     """Process incoming SMS webhooks and send automated replies."""
     try:
         webhook_data = request.get_json()
+        if not webhook_data:
+            return jsonify({"error": "invalid request body"}), 400
         
         if not webhook_data:
             return jsonify({"error": "No webhook data received"}), 400

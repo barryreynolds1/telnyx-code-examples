@@ -39,6 +39,8 @@ def create_sip_connection(name: str, username: str, password: str) -> dict:
 def setup_sip_endpoint():
     """HTTP endpoint to set up SIP trunking."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

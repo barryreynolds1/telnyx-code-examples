@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 BOT_NUMBER = os.getenv("BOT_NUMBER")
 MESSAGING_PROFILE_ID = os.getenv("MESSAGING_PROFILE_ID", "")
 
@@ -24,11 +25,13 @@ def send_sms(to, text):
         requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"from": BOT_NUMBER, "to": to, "text": text, "messaging_profile_id": MESSAGING_PROFILE_ID}, timeout=10)
     except Exception as e:
-        app.logger.error(f"SMS failed: {e}")
+        app.logger.error("SMS failed: %s", e)
 
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
@@ -53,6 +56,8 @@ def list_keywords():
 @app.route("/keywords", methods=["POST"])
 def add_keyword():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     keyword = data.get("keyword", "").upper()
     response = data.get("response", "")
     keywords[keyword] = {"response": response, "count": 0}
@@ -68,4 +73,4 @@ def health():
     return jsonify({"status": "ok", "keywords": len(keywords), "messages": len(message_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

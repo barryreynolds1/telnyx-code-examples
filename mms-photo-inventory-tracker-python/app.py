@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 INVENTORY_NUMBER = os.getenv("INVENTORY_NUMBER")
 MESSAGING_PROFILE_ID = os.getenv("MESSAGING_PROFILE_ID", "")
@@ -17,7 +18,7 @@ def send_sms(to, text):
         requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"from": INVENTORY_NUMBER, "to": to, "text": text, "messaging_profile_id": MESSAGING_PROFILE_ID}, timeout=10)
     except Exception as e:
-        app.logger.error(f"SMS failed: {e}")
+        app.logger.error("SMS failed: %s", e)
 
 def call_inference(messages, max_tokens=300):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
@@ -28,6 +29,8 @@ def call_inference(messages, max_tokens=300):
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_mms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
@@ -82,4 +85,4 @@ def health():
     return jsonify({"status": "ok", "items": len(inventory)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

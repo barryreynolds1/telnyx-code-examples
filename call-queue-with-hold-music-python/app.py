@@ -3,15 +3,32 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 QUEUE_NUMBER = os.getenv("QUEUE_NUMBER")
 AGENT_NUMBERS = os.getenv("AGENT_NUMBERS", "").split(",")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 caller_queue = []
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 agents = {num.strip(): {"status": "available", "calls_handled": 0} for num in AGENT_NUMBERS if num.strip()}
 
 def get_available_agent():
@@ -23,6 +40,8 @@ def get_available_agent():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -67,4 +86,4 @@ def health():
     return jsonify({"status": "ok", "queue": len(caller_queue), "active": len(active_calls)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

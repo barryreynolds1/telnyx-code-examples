@@ -39,6 +39,8 @@ def cosine_sim(a, b):
 @app.route("/documents", methods=["POST"])
 def add_document():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     title = data.get("title", f"doc-{int(time.time())}")
     content = data.get("content", "")
     if not content:
@@ -57,6 +59,8 @@ def add_document():
 @app.route("/ask", methods=["POST"])
 def ask_question():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     question = data.get("question", "")
     top_k = data.get("top_k", 3)
     if not question:
@@ -89,4 +93,4 @@ def health():
     return jsonify({"status": "ok", "documents": len(documents), "chunks": len(chunks)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -7,6 +7,7 @@ import os, json, uuid, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
@@ -22,6 +23,21 @@ API = "https://api.telnyx.com/v2"
 HEADERS = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 
 jobs = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(jobs)
+
 distribution_list = []
 
 
@@ -147,7 +163,7 @@ Rank by virality_score descending. Focus on: surprising insights, strong opinion
                 "text": teaser_text
             })
         except Exception as e:
-            app.logger.error(f"Teaser {i} failed: {e}")
+            app.logger.error("Teaser %s failed: %s", i, e)
 
     # Step 4: SMS distribution
     if distribute and distribution_list and jobs[job_id]["highlights"]:
@@ -185,6 +201,8 @@ def get_job(job_id):
 @app.route("/distribution", methods=["POST"])
 def add_to_distribution():
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone")
     if phone and phone not in distribution_list:
         distribution_list.append(phone)
@@ -206,4 +224,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

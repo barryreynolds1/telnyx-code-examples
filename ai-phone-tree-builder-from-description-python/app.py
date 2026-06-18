@@ -24,6 +24,8 @@ def call_inference(messages, max_tokens=800):
 def generate_phone_tree():
     """Describe your business, get a complete AI Assistant + TeXML phone tree."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     description = data.get("description", "")
     if not description:
         return jsonify({"error": "Provide a business description"}), 400
@@ -63,4 +65,4 @@ def health():
     return jsonify({"status": "ok", "trees_generated": len(generated_trees)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

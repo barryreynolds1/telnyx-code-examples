@@ -30,6 +30,8 @@ def search_numbers():
 @app.route("/numbers/purchase", methods=["POST"])
 def purchase_number():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("phone_numbers", [])
     results = []
     for number in numbers:
@@ -61,4 +63,4 @@ def health():
     return jsonify({"status": "ok", "purchases": len(purchases)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

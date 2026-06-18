@@ -16,6 +16,7 @@ load_dotenv()
 app = Flask(__name__)
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
@@ -28,6 +29,21 @@ API = "https://api.telnyx.com/v2"
 
 # In-memory session store
 sessions = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(sessions)
+
 
 
 ANALYSIS_PROMPT = """You are a deepfake voice detection analyst. Analyze these audio characteristics from a live phone call and assess the probability of synthetic/AI-generated speech.
@@ -149,7 +165,7 @@ def analyze_with_inference(features, call_id):
             "model": AI_MODEL,
             "messages": [
                 {"role": "system", "content": "You are a voice forensics AI. Return only valid JSON."},
-                {"role": "user", "content": ANALYSIS_PROMPT.format(features=json.dumps(features, indent=2))}
+                {"role": "user", "content": ANALYSIS_PROMPT.format(features=json.dumps(features, indent=2, timeout=10))}
             ],
             "max_tokens": 500,
             "temperature": 0.1
@@ -162,7 +178,7 @@ def analyze_with_inference(features, call_id):
             content = content.split("\n", 1)[1].rsplit("```", 1)[0]
         return json.loads(content)
     except Exception as e:
-        app.logger.error(f"Inference failed for {call_id}: {e}")
+        app.logger.error("Inference failed for %s: %s", call_id, e)
         return {"score": 0.5, "confidence": 0, "assessment": "error", "indicators": [], "reasoning": str(e)}
 
 
@@ -174,13 +190,13 @@ def send_alert(call_id, result, caller):
         requests.post(ALERT_WEBHOOK, json={
             "text": f":warning: *Deepfake Alert* on call `{call_id}`\n"
                     f"Caller: `{caller}`\n"
-                    f"Score: {result.get('score', 'N/A')} ({result.get('assessment', 'unknown')})\n"
+                    f"Score: {result.get('score', 'N/A', timeout=10)} ({result.get('assessment', 'unknown')})\n"
                     f"Confidence: {result.get('confidence', 'N/A')}\n"
                     f"Indicators: {', '.join(result.get('indicators', []))}\n"
                     f"Reasoning: {result.get('reasoning', 'N/A')}"
         }, timeout=5)
     except Exception as e:
-        app.logger.error(f"Alert webhook failed: {e}")
+        app.logger.error("Alert webhook failed: %s", e)
 
 
 def telnyx_action(call_control_id, action, payload=None):
@@ -191,13 +207,15 @@ def telnyx_action(call_control_id, action, payload=None):
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
-        app.logger.error(f"Call action {action} failed: {e}")
+        app.logger.error("Call action %s failed: %s", action, e)
         return None
 
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", payload.get("data", {}))
     event = data.get("event_type", "")
     call_id = data.get("call_control_id", "")
@@ -230,7 +248,7 @@ def handle_voice():
         })
 
     elif event == "call.streaming.started":
-        app.logger.info(f"Media streaming started for {call_id}")
+        app.logger.info("Media streaming started for %s", call_id)
 
     elif event == "call.streaming.stopped":
         # Analyze collected audio
@@ -265,6 +283,8 @@ def handle_voice():
 def handle_media():
     """Receive media stream audio chunks for analysis."""
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     call_id = data.get("call_control_id", "")
     media = data.get("media", {})
@@ -342,4 +362,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -16,10 +16,12 @@ payments = []
 @app.route("/quote", methods=["POST"])
 def get_quote():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     amount = data.get("amount_usd", "50.00")
     try:
         resp = requests.post(f"{API}/x402/credit_account/quote", headers=headers,
-            json={"amount_usd": str(amount)}, timeout=15)
+            json={"amount_usd": str(amount, timeout=10)}, timeout=15)
         result = resp.json()
         result["requested_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
         quotes.append(result)
@@ -30,6 +32,8 @@ def get_quote():
 @app.route("/pay", methods=["POST"])
 def submit_payment():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     quote_id = data.get("quote_id")
     payment_signature = data.get("payment_signature")
     if not quote_id or not payment_signature:
@@ -73,4 +77,4 @@ def health():
     return jsonify({"status": "ok", "quotes": len(quotes), "payments": len(payments)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

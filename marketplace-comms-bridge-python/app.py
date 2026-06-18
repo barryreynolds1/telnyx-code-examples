@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 OPS_SLACK = os.getenv("OPS_SLACK_WEBHOOK", "")
@@ -27,7 +28,7 @@ def ai_moderate(text):
     try:
         resp = requests.post(INFERENCE_URL, headers=headers,
             json={"model": AI_MODEL, "messages": [
-                {"role": "system", "content": "Check if this marketplace message contains: personal contact info being shared to bypass platform, scam patterns (wire transfer, Western Union, gift cards), abusive language, or off-platform transaction attempts. Reply JSON: {\"safe\": true/false, \"reason\": \"...\"}"},
+                {"role": "system", "content": "Check if this marketplace message contains: personal contact info being shared to bypass platform, scam patterns (wire transfer, Western Union, gift cards, timeout=10), abusive language, or off-platform transaction attempts. Reply JSON: {\"safe\": true/false, \"reason\": \"...\"}"},
                 {"role": "user", "content": text}], "max_tokens": 80, "temperature": 0.1}, timeout=15)
         return json.loads(resp.json()["choices"][0]["message"]["content"].strip().strip("`").replace("json\n",""))
     except Exception:
@@ -36,6 +37,8 @@ def ai_moderate(text):
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "").strip()
@@ -68,7 +71,7 @@ def handle_sms():
                         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
                     send_sms(sender, "Your message was flagged for review. Please keep all transactions on-platform for your safety.")
                     if OPS_SLACK:
-                        try: requests.post(OPS_SLACK, json={"text": f"FLAGGED message from {sender}: {message} | Reason: {moderation.get('reason','')}"}, timeout=5)
+                        try: requests.post(OPS_SLACK, json={"text": f"FLAGGED message from {sender}: {message} | Reason: {moderation.get('reason','', timeout=10)}"}, timeout=5)
                         except Exception: pass
     return jsonify({"status": "ok"}), 200
 
@@ -89,4 +92,4 @@ def health():
     return jsonify({"status":"ok","conversations":len(conversations),"flagged":len(flagged)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 ALERT_NUMBER = os.getenv("ALERT_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
@@ -16,6 +17,8 @@ devices = {"DEV-001": {"name": "Warehouse A Panic Button", "location": "Building
 @app.route("/alert", methods=["POST"])
 def trigger_alert():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     device_id = data.get("device_id")
     device = devices.get(device_id)
     if not device: return jsonify({"error": "Unknown device"}), 404
@@ -26,7 +29,7 @@ def trigger_alert():
         try:
             resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
                 json={"to": contact, "from": ALERT_NUMBER, "connection_id": CONNECTION_ID,
-                    "client_state": json.dumps({"alert_id": alert_id, "device": device["name"], "location": device["location"]}).encode().hex()}, timeout=10)
+                    "client_state": json.dumps({"alert_id": alert_id, "device": device["name"], "location": device["location"]}, timeout=10).encode().hex()}, timeout=10)
             alert["calls_made"].append({"contact": contact, "status": "calling"})
         except Exception:
             alert["calls_made"].append({"contact": contact, "status": "failed"})
@@ -40,6 +43,8 @@ def trigger_alert():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -70,6 +75,8 @@ def handle_voice():
 @app.route("/devices", methods=["POST"])
 def register_device():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     did = data.get("device_id", f"DEV-{int(time.time())}")
     devices[did] = {"name": data.get("name"), "location": data.get("location"), "contacts": data.get("contacts", [])}
     return jsonify({"device_id": did}), 200
@@ -84,4 +91,4 @@ def health():
     return jsonify({"status": "ok", "devices": len(devices), "active_alerts": active}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

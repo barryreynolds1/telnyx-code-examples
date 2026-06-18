@@ -7,11 +7,13 @@ import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -20,6 +22,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 
 # Active sessions: call_control_id -> verification state
 sessions = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(sessions)
+
 
 SYSTEM_PROMPT = """You are a secure transaction assistant for a financial institution.
 You help verified callers with: balance inquiries, transfers, payment scheduling, account updates.
@@ -62,7 +79,7 @@ def send_verification(phone_number):
         if resp.ok:
             return resp.json().get("data", {})
     except requests.RequestException as e:
-        app.logger.error(f"Verify send failed: {e}")
+        app.logger.error("Verify send failed: %s", e)
     return None
 
 
@@ -70,7 +87,7 @@ def check_verification(phone_number, code):
     """Check OTP code via Telnyx Verify API."""
     try:
         resp = requests.post(
-            "https://api.telnyx.com/v2/verifications/by_phone_number/{}/actions/verify".format(phone_number),
+            "https://api.telnyx.com/v2/verifications/by_phone_number/{}/actions/verify".format(phone_number, timeout=10),
             headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"code": code},
             timeout=10,
@@ -217,7 +234,7 @@ def handle_voice():
     elif event_type == "call.hangup":
         session = sessions.pop(call_control_id, None)
         if session:
-            app.logger.info(f"Session ended: {session['caller']}, verified: {session['verified']}")
+            app.logger.info("Session ended: %s, verified: %s", session['caller'], session['verified'])
         return jsonify({"status": "call_ended"}), 200
 
     return jsonify({"status": "event_received"}), 200
@@ -229,4 +246,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

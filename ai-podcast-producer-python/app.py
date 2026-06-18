@@ -7,11 +7,13 @@ import os, json, time, uuid, hashlib, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -23,6 +25,21 @@ HEADERS = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 
 episodes = {}  # episode_id -> episode state
 conferences = {}  # conference_id -> episode_id
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(episodes, conferences)
+
 
 
 def telnyx_post(path, payload):
@@ -69,6 +86,8 @@ def notify_slack(message):
 def start_episode():
     """Start a new podcast episode recording session via conference call."""
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     title = data.get("title", f"Episode {datetime.utcnow().strftime('%Y-%m-%d')}")
     hosts = data.get("hosts", [])  # list of E.164 phone numbers
 
@@ -116,7 +135,7 @@ def start_episode():
                 "segments": []
             }
         except Exception as e:
-            app.logger.error(f"Failed to dial {phone}: {e}")
+            app.logger.error("Failed to dial %s: %s", phone, e)
 
     conferences[conf_name] = episode_id
     notify_slack(f"🎙️ Podcast recording started: *{title}* with {len(hosts)} hosts")
@@ -200,7 +219,7 @@ def stop_episode(episode_id):
             "generated": True
         }
     except Exception as e:
-        app.logger.error(f"TTS bumper generation failed: {e}")
+        app.logger.error("TTS bumper generation failed: %s", e)
 
     episode["status"] = "complete"
     notify_slack(f"✅ Podcast *{episode['title']}* processed: {len(episode.get('chapters', []))} chapters, {len(episode.get('clips', []))} clips")
@@ -219,6 +238,8 @@ def stop_episode(episode_id):
 def handle_voice_webhook():
     """Handle call control events during recording."""
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event = payload.get("data", {})
     event_type = event.get("event_type", "")
     call_id = event.get("payload", {}).get("call_control_id", "")
@@ -236,7 +257,7 @@ def handle_voice_webhook():
                 "timeout_millis": 600000,  # 10 min segments
             })
         except Exception as e:
-            app.logger.error(f"Gather failed: {e}")
+            app.logger.error("Gather failed: %s", e)
 
     elif event_type == "call.gather.ended":
         ep_payload = event.get("payload", {})
@@ -323,4 +344,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

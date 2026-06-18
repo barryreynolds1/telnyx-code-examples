@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
@@ -27,7 +28,7 @@ def make_call(to, message):
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"msg": message}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"msg": message}, timeout=10).encode().hex()}, timeout=10)
         return resp.json().get("data", {}).get("call_control_id")
     except Exception:
         return None
@@ -35,6 +36,8 @@ def make_call(to, message):
 @app.route("/collections/run", methods=["POST"])
 def run_cycle():
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     day = data.get("day_overdue", 1)
     results = []
     for t in tenants:
@@ -59,7 +62,7 @@ def run_cycle():
         else:
             entry["action"] = "manager_escalation"
             if MANAGER_SLACK:
-                try: requests.post(MANAGER_SLACK, json={"text": f"ESCALATION: {t['name']} Unit {t['unit']} - {day} days overdue, ${t['rent']}. {sum(1 for l in collection_log if l.get('unit')==t['unit'])} prior attempts."}, timeout=5)
+                try: requests.post(MANAGER_SLACK, json={"text": f"ESCALATION: {t['name']} Unit {t['unit']} - {day} days overdue, ${t['rent']}. {sum(1 for l in collection_log if l.get('unit', timeout=10)==t['unit'])} prior attempts."}, timeout=5)
                 except Exception: pass
         collection_log.append(entry)
         results.append(entry)
@@ -68,6 +71,8 @@ def run_cycle():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -77,7 +82,7 @@ def handle_voice():
             try:
                 cs = json.loads(bytes.fromhex(cs_hex).decode())
                 requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
-                    json={"payload": cs.get("msg",""), "voice":"female","language_code":"en-US"}, timeout=10)
+                    json={"payload": cs.get("msg","", timeout=10), "voice":"female","language_code":"en-US"}, timeout=10)
             except Exception: pass
     return jsonify({"status": "ok"}), 200
 
@@ -100,4 +105,4 @@ def health():
     return jsonify({"status":"ok","overdue":sum(1 for t in tenants if t["status"]=="overdue")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

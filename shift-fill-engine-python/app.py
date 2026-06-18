@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 MANAGER_SLACK = os.getenv("MANAGER_SLACK_WEBHOOK", "")
@@ -20,6 +22,21 @@ employees = [
 ]
 open_shifts = []
 active_fills = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_fills)
+
 
 def send_sms(to, text):
     requests.post(f"{API}/messages", headers=headers, json={"from": MAIN_NUMBER, "to": to, "text": text}, timeout=10)
@@ -42,7 +59,7 @@ def call_next(shift_id):
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": emp["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"shift_id": shift_id, "emp": emp["name"]}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"shift_id": shift_id, "emp": emp["name"]}, timeout=10).encode().hex()}, timeout=10)
         active_fills[resp.json().get("data",{}).get("call_control_id","")] = {"shift_id": shift_id, "emp": emp}
     except Exception:
         call_next(shift_id)
@@ -50,6 +67,8 @@ def call_next(shift_id):
 @app.route("/shifts/open", methods=["POST"])
 def open_shift():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     shift = {"id": len(open_shifts), "role": data.get("role", "nurse"),
         "date": data.get("date"), "time": data.get("time"),
         "department": data.get("department", ""),
@@ -62,6 +81,8 @@ def open_shift():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -72,7 +93,7 @@ def handle_voice():
     if event == "call.answered" and shift_id is not None:
         shift = open_shifts[shift_id]
         requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
-            json={"payload": f"Hi {emp.get('name','')}, we have an open {shift['role']} shift on {shift['date']} at {shift['time']}. Press 1 to accept or 2 to decline.",
+            json={"payload": f"Hi {emp.get('name','', timeout=10)}, we have an open {shift['role']} shift on {shift['date']} at {shift['time']}. Press 1 to accept or 2 to decline.",
                 "voice": "female", "language_code": "en-US"}, timeout=10)
     elif event == "call.speak.ended" and shift_id is not None:
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
@@ -117,4 +138,4 @@ def health():
         "filled":sum(1 for s in open_shifts if s["status"]=="filled")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -5,6 +5,7 @@ import os
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+import threading, time as _ttl_time
 
 load_dotenv()
 
@@ -12,9 +13,25 @@ app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # In-memory store for call state (use Redis or database in production)
 call_state = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(call_state)
+
 
 # IVR menu configuration
 MENU_CONFIG = {
@@ -117,6 +134,8 @@ def handle_call_webhook():
     """Handle inbound call events from Telnyx."""
     try:
         payload = request.get_json()
+        if not payload:
+            return jsonify({"error": "invalid request body"}), 400
         
         if not payload:
             return jsonify({"error": "Empty payload"}), 400

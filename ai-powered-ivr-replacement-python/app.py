@@ -13,6 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 TELNYX_API_BASE = "https://api.telnyx.com/v2"
 
@@ -74,7 +75,7 @@ def create_assistant_with_ab_test():
         if resp.ok:
             return resp.json().get("data", {})
     except requests.RequestException as e:
-        app.logger.error(f"Assistant creation failed: {e}")
+        app.logger.error("Assistant creation failed: %s", e)
     return None
 
 
@@ -160,4 +161,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

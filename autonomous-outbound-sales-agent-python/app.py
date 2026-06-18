@@ -8,11 +8,13 @@ import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -23,6 +25,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 # Lead queue and active call tracking
 lead_queue = []  # List of {number, name, company, context}
 active_calls = {}  # call_control_id -> {lead, conversation, status}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 call_results = []  # Completed call dispositions
 
 SYSTEM_PROMPT = """You are an outbound sales development representative for a technology company.
@@ -92,13 +109,15 @@ def send_confirmation_sms(to_number, message):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"SMS failed: {e}")
+        app.logger.error("SMS failed: %s", e)
 
 
 @app.route("/leads", methods=["POST"])
 def add_leads():
     """Add leads to the outbound queue."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     leads = data.get("leads", [])
     for lead in leads:
         if "number" in lead:
@@ -239,7 +258,7 @@ def handle_voice_webhook():
                 except (json.JSONDecodeError, KeyError):
                     pass
             except Exception as e:
-                app.logger.error(f"Disposition failed: {e}")
+                app.logger.error("Disposition failed: %s", e)
         return jsonify({"status": "call_ended"}), 200
 
     return jsonify({"status": "event_received"}), 200
@@ -262,4 +281,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

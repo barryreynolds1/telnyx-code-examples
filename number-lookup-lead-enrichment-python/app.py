@@ -28,6 +28,8 @@ def call_inference(messages, max_tokens=200):
 @app.route("/enrich", methods=["POST"])
 def enrich_lead():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone_number")
     if not phone:
         return jsonify({"error": "phone_number required"}), 400
@@ -48,6 +50,8 @@ def enrich_lead():
 @app.route("/enrich/bulk", methods=["POST"])
 def enrich_bulk():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("phone_numbers", [])
     results = []
     for phone in numbers[:50]:
@@ -60,4 +64,4 @@ def health():
     return jsonify({"status": "ok", "enriched": len(enriched_leads)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

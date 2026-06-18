@@ -137,6 +137,8 @@ def send_bulk_sms(recipients: List[str], message: str) -> Dict[str, Any]:
 def send_bulk_sms_endpoint():
     """HTTP endpoint to send bulk SMS messages."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

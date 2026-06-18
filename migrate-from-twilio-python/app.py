@@ -63,6 +63,8 @@ def migrate_messaging():
 @app.route("/migrate/numbers", methods=["POST"])
 def migrate_numbers():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("numbers", [])
     results = []
     for num in numbers:
@@ -81,6 +83,8 @@ def migrate_numbers():
 @app.route("/migrate/webhook-map", methods=["POST"])
 def map_webhooks():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     twilio_url = data.get("twilio_webhook_url", "")
     mapping = {"twilio_url": twilio_url,
         "telnyx_equivalents": {
@@ -116,4 +120,4 @@ def health():
     return jsonify({"status": "ok", "migrations": len(migration_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

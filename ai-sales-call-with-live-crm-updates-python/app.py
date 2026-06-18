@@ -7,11 +7,13 @@ import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -23,6 +25,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 
 # Active calls: call_control_id -> {transcript, prospect_number, ae_number, insights}
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 
 def call_inference(messages, max_tokens=300):
@@ -64,7 +81,7 @@ def push_to_crm(deal_data, prospect_number):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"CRM push failed: {e}")
+        app.logger.error("CRM push failed: %s", e)
 
 
 def send_follow_up_sms(to_number, summary):
@@ -83,7 +100,7 @@ def send_follow_up_sms(to_number, summary):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"SMS follow-up failed: {e}")
+        app.logger.error("SMS follow-up failed: %s", e)
 
 
 @app.route("/webhooks/voice", methods=["POST"])
@@ -153,7 +170,7 @@ def handle_voice_webhook():
                 if call_data.get("prospect_number"):
                     send_follow_up_sms(call_data["prospect_number"], summary)
             except Exception as e:
-                app.logger.error(f"Post-call processing failed: {e}")
+                app.logger.error("Post-call processing failed: %s", e)
 
         return jsonify({"status": "call_ended"}), 200
 
@@ -166,4 +183,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

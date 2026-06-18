@@ -55,6 +55,8 @@ def list_endpoints():
 @app.route("/endpoints", methods=["POST"])
 def add_endpoint():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     name = data.get("name")
     endpoints[name] = {"host": data.get("host"), "port": data.get("port", 5060), "weight": data.get("weight", 10),
         "status": "unknown", "last_check": 0, "uptime_checks": 0, "uptime_passes": 0}
@@ -70,4 +72,4 @@ def health():
     return jsonify({"status": "ok", "healthy": healthy, "total": len(endpoints)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

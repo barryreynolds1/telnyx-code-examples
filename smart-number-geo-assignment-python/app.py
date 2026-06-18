@@ -3,10 +3,26 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 number_cache = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(number_cache)
+
 assignments = []
 
 def search_local_number(area_code):
@@ -31,6 +47,8 @@ def purchase_number(phone_number):
 @app.route("/assign", methods=["POST"])
 def assign_number():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     target_area_code = data.get("area_code")
     use_case = data.get("use_case", "outbound")
     if target_area_code in number_cache:
@@ -47,6 +65,8 @@ def assign_number():
 @app.route("/lookup-and-assign", methods=["POST"])
 def lookup_and_assign():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     target_number = data.get("target_number", "")
     if len(target_number) >= 5:
         area_code = target_number[2:5] if target_number.startswith("+1") else target_number[:3]
@@ -75,4 +95,4 @@ def health():
     return jsonify({"status": "ok", "cached_numbers": len(number_cache)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -25,6 +25,7 @@ def create_app():
 
 
 app = create_app()
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
 # ============================================================================
@@ -100,6 +101,8 @@ def list_esim_profiles(client, sim_card_group_id: str = None, limit: int = 20) -
 def provision_esim():
     """Provision a new eSIM profile."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -197,6 +200,8 @@ def list_esims():
 def handle_sim_status_webhook():
     """Handle SIM card status change webhooks from Telnyx."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Webhook payload required"}), 400

@@ -7,6 +7,7 @@ import os, json, uuid, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
@@ -22,6 +23,21 @@ HEADERS = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 
 CLIP_VOICES = ["nova", "onyx", "echo", "shimmer", "alloy"]
 jobs = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(jobs)
+
 subscribers = []  # list of E.164 phone numbers
 
 
@@ -58,7 +74,7 @@ def send_sms(to, text):
             "messaging_profile_id": MESSAGING_PROFILE_ID
         }, timeout=10)
     except Exception as e:
-        app.logger.error(f"SMS to {to} failed: {e}")
+        app.logger.error("SMS to %s failed: %s", to, e)
 
 
 @app.route("/repurpose", methods=["POST"])
@@ -135,7 +151,7 @@ def repurpose_episode():
                 "clip_text": clip_text
             })
         except Exception as e:
-            app.logger.error(f"Clip {i} TTS failed: {e}")
+            app.logger.error("Clip %s TTS failed: %s", i, e)
 
     # Step 5: Distribute via SMS to subscribers
     if subscribers and jobs[job_id]["quotes"]:
@@ -175,6 +191,8 @@ def get_job(job_id):
 def add_subscriber():
     """Add a phone number to the SMS distribution list."""
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone")
     if not phone:
         return jsonify({"error": "Provide 'phone' in E.164 format"}), 400
@@ -206,4 +224,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

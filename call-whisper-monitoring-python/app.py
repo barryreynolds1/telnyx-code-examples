@@ -7,6 +7,7 @@ import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from openai import OpenAI
+import threading, time as _ttl_time
 
 load_dotenv()
 
@@ -14,10 +15,26 @@ app = Flask(__name__)
 
 # Initialize clients with the new SDK pattern
 telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # In-memory store for call state (use Redis in production)
 call_state = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(call_state)
+
 
 
 def initiate_call(to_number: str) -> dict:
@@ -110,6 +127,8 @@ def speak_response(call_control_id: str, text: str) -> dict:
 def initiate_call_endpoint():
     """HTTP endpoint to initiate an outbound call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -139,6 +158,8 @@ def initiate_call_endpoint():
 def handle_call_webhook():
     """Webhook endpoint to handle Telnyx call events."""
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "No payload"}), 400

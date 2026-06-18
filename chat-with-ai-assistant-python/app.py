@@ -53,6 +53,8 @@ def chat_with_assistant(assistant_id: str, user_message: str) -> dict:
 def chat_endpoint():
     """HTTP endpoint to chat with an AI Assistant."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

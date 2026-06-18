@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -21,6 +23,21 @@ patients_db = {
 }
 refill_requests = []
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 SYSTEM_PROMPT = """You are a pharmacy assistant AI for Valley Pharmacy.
 To verify identity, ask for: full name, date of birth, last 4 digits of phone number.
@@ -43,6 +60,8 @@ def send_sms(to, text):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -69,7 +88,7 @@ def handle_voice():
                 req = {"caller": caller, "medication": speech, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"), "status": "pending_pharmacist"}
                 refill_requests.append(req)
                 if PHARMACY_SLACK:
-                    try: requests.post(PHARMACY_SLACK, json={"text": f"Refill request #{len(refill_requests)-1}: {caller} - {speech}\nPOST /refills/{len(refill_requests)-1}/approve or /deny"}, timeout=5)
+                    try: requests.post(PHARMACY_SLACK, json={"text": f"Refill request #{len(refill_requests, timeout=10)-1}: {caller} - {speech}\nPOST /refills/{len(refill_requests)-1}/approve or /deny"}, timeout=5)
                     except Exception: pass
             requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
                 json={"payload": response, "voice": "female", "language_code": "en-US"}, timeout=10)
@@ -88,6 +107,8 @@ def approve_refill(idx):
     req["status"] = "approved"
     req["approved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     req["pickup_time"] = data.get("pickup_time", "2 hours")
     send_sms(req["caller"], f"Valley Pharmacy: Your refill is approved and will be ready in {req['pickup_time']}.")
     return jsonify({"refill": req}), 200
@@ -98,6 +119,8 @@ def deny_refill(idx):
     req = refill_requests[idx]
     req["status"] = "denied"
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     req["reason"] = data.get("reason", "Requires new prescription from doctor")
     send_sms(req["caller"], f"Valley Pharmacy: Your refill requires attention. {req['reason']}. Please contact your doctor or call us.")
     return jsonify({"refill": req}), 200
@@ -107,4 +130,4 @@ def health():
     return jsonify({"status": "ok", "pending": sum(1 for r in refill_requests if r["status"] == "pending_pharmacist")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

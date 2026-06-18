@@ -3,18 +3,37 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 CONF_NUMBER = os.getenv("CONF_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 conferences = {}
 active_polls = {}
 
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(conferences, active_polls)
+
+
 @app.route("/conference/create", methods=["POST"])
 def create_conference():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     cid = f"CONF-{int(time.time())}"
     conferences[cid] = {"name": data.get("name", "Meeting"), "participants": {}, "polls": []}
     return jsonify({"conference_id": cid}), 200
@@ -24,11 +43,13 @@ def invite(cid):
     conf = conferences.get(cid)
     if not conf: return jsonify({"error": "Not found"}), 404
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("numbers", [])
     for num in numbers:
         try:
             resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-                json={"to": num, "from": CONF_NUMBER, "connection_id": CONNECTION_ID, "client_state": json.dumps({"cid": cid}).encode().hex()}, timeout=10)
+                json={"to": num, "from": CONF_NUMBER, "connection_id": CONNECTION_ID, "client_state": json.dumps({"cid": cid}, timeout=10).encode().hex()}, timeout=10)
             ccid = resp.json().get("data", {}).get("call_control_id")
             if ccid: conf["participants"][ccid] = {"number": num, "status": "ringing"}
         except Exception: pass
@@ -39,6 +60,8 @@ def start_poll(cid):
     conf = conferences.get(cid)
     if not conf: return jsonify({"error": "Not found"}), 404
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     poll_id = f"POLL-{int(time.time())}"
     poll = {"question": data.get("question"), "options": data.get("options", []), "votes": {}, "status": "active"}
     conf["polls"].append(poll)
@@ -54,6 +77,8 @@ def start_poll(cid):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -105,4 +130,4 @@ def health():
     return jsonify({"status": "ok", "conferences": len(conferences)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -19,6 +19,8 @@ def call_inference(messages, max_tokens=400):
 @app.route("/predict", methods=["POST"])
 def predict_churn():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     customer = data
     prompt = f"""Analyze this customer's communication pattern for churn risk. Customer data:
 - Monthly call volume trend: {customer.get('call_volumes', [])}
@@ -45,6 +47,8 @@ Return JSON: churn_risk (high/medium/low), probability (0.0-1.0), risk_factors (
 @app.route("/predict/batch", methods=["POST"])
 def batch_predict():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     customers = data.get("customers", [])
     results = []
     for c in customers[:20]:
@@ -73,4 +77,4 @@ def health():
     return jsonify({"status": "ok", "predictions": len(predictions)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

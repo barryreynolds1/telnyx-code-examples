@@ -8,11 +8,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 from dotenv import load_dotenv
+import threading, time as _ttl_time
 
 load_dotenv()
 
 # Configuration
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_PHONE_NUMBER = os.getenv("TELNYX_PHONE_NUMBER")
 TELNYX_CONNECTION_ID = os.getenv("TELNYX_CONNECTION_ID")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -28,6 +30,21 @@ client = telnyx.Telnyx(api_key=TELNYX_API_KEY)
 
 # In-memory call store (use Redis in production)
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 # Pydantic models
 class CallInitiateRequest(BaseModel):
@@ -236,4 +253,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=os.getenv("HOST", "127.0.0.1"), port=8000)

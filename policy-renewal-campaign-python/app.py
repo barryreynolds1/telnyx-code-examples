@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -29,6 +30,8 @@ def send_sms(to, text):
 @app.route("/campaigns/run", methods=["POST"])
 def run_campaign():
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     days_to_expiry = data.get("days_to_expiry", 60)
     results = []
     for pol in policies:
@@ -42,7 +45,7 @@ def run_campaign():
             try:
                 requests.post(f"{API}/calls", headers=headers,
                     json={"to": pol["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                        "client_state": json.dumps({"pol_id": pol["id"]}).encode().hex()}, timeout=10)
+                        "client_state": json.dumps({"pol_id": pol["id"]}, timeout=10).encode().hex()}, timeout=10)
             except Exception: pass
             entry["action"] = "30_day_voice"
         elif days_to_expiry >= 7:
@@ -60,6 +63,8 @@ def run_campaign():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -97,6 +102,8 @@ def handle_voice():
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "").strip().upper()
@@ -120,4 +127,4 @@ def health():
     return jsonify({"status":"ok","active":sum(1 for p in policies if p["status"]=="active")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

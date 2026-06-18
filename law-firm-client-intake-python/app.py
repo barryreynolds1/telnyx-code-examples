@@ -3,9 +3,11 @@
 import os, json, time, requests, stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -20,6 +22,21 @@ headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 existing_clients = ["Acme Corp", "GlobalTech Inc", "Smith Family Trust"]
 intakes = []
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 SYSTEM_PROMPT = """You are the intake specialist for Harrison & Associates Law Firm.
 Practice areas: business litigation, employment law, intellectual property, real estate.
@@ -45,6 +62,8 @@ def check_conflict(party_name):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -76,7 +95,7 @@ def handle_voice():
                     "conflict": check_conflict(call["facts"])}
                 intakes.append(intake)
                 if ATTORNEY_SLACK:
-                    try: requests.post(ATTORNEY_SLACK, json={"text": f"New intake #{len(intakes)-1}: {caller}\nFacts: {call['facts'][:300]}\nConflict: {intake['conflict']}"}, timeout=5)
+                    try: requests.post(ATTORNEY_SLACK, json={"text": f"New intake #{len(intakes, timeout=10)-1}: {caller}\nFacts: {call['facts'][:300]}\nConflict: {intake['conflict']}"}, timeout=5)
                     except Exception: pass
                 send_sms(caller, "Harrison & Associates: Your intake has been submitted. An attorney will review and contact you within 24 hours.")
             requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
@@ -95,6 +114,8 @@ def accept_intake(idx):
     intake = intakes[idx]
     intake["status"] = "accepted"
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     intake["attorney"] = data.get("attorney", "")
     intake["consultation_time"] = data.get("time", "")
     send_sms(intake["caller"], f"Harrison & Associates: Your consultation with {intake['attorney']} is scheduled for {intake['consultation_time']}. A $250 retainer deposit is required.")
@@ -112,6 +133,8 @@ def decline_intake(idx):
     intake = intakes[idx]
     intake["status"] = "declined"
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     intake["reason"] = data.get("reason", "")
     send_sms(intake["caller"], "Harrison & Associates: After review, we are unable to take your case at this time. We recommend consulting your local bar association for referrals.")
     return jsonify({"intake": intake}), 200
@@ -121,4 +144,4 @@ def health():
     return jsonify({"status":"ok","intakes":len(intakes),"pending":sum(1 for i in intakes if i["status"]=="pending_review")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

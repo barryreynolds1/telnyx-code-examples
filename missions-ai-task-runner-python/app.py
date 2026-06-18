@@ -29,6 +29,8 @@ def call_inference(messages, max_tokens=400):
 @app.route("/run", methods=["POST"])
 def run_ai_task():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     objective = data.get("objective", "")
     context = data.get("context", {})
     max_steps = data.get("max_steps", 5)
@@ -48,7 +50,7 @@ def run_ai_task():
                 if action_config["method"] == "GET":
                     api_resp = requests.get(f"{API}{endpoint}", headers=headers, timeout=15)
                 else:
-                    api_resp = requests.post(f"{API}{endpoint}", headers=headers, json=step.get("params", {}), timeout=15)
+                    api_resp = requests.post(f"{API}{endpoint}", headers=headers, json=step.get("params", {}, timeout=10), timeout=15)
                 step["result"] = api_resp.json() if api_resp.ok else {"error": api_resp.text[:200]}
             conversation.append({"role": "assistant", "content": response})
             conversation.append({"role": "user", "content": f"Step {i+1} result: {json.dumps(step.get('result', 'executed'))}"})
@@ -73,4 +75,4 @@ def health():
     return jsonify({"status": "ok", "runs": len(task_runs)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

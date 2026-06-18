@@ -30,7 +30,7 @@ def send_alert(text):
         requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"from": ALERT_NUMBER, "to": ALERT_NUMBER, "text": text}, timeout=10)
     except Exception as e:
-        app.logger.error(f"Alert failed: {e}")
+        app.logger.error("Alert failed: %s", e)
 
 @app.route("/check", methods=["POST"])
 def health_check():
@@ -58,4 +58,4 @@ def health():
     return jsonify({"status": "ok", "active_trunk": current_active, "checks": len(health_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

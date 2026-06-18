@@ -4,10 +4,12 @@
 import os, json, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -16,6 +18,21 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 
 voicemails = []
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 def call_inference(messages, max_tokens=300):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
@@ -33,11 +50,13 @@ def send_sms(to, text):
         requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"from": to, "to": FORWARD_NUMBER, "text": text}, timeout=10)
     except requests.RequestException as e:
-        app.logger.error(f"SMS forward failed: {e}")
+        app.logger.error("SMS forward failed: %s", e)
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -76,7 +95,7 @@ def handle_voice():
                     sms_text += "\n⬆️ Callback requested"
                 send_sms(call["caller"], sms_text)
             except Exception as e:
-                app.logger.error(f"Analysis failed: {e}")
+                app.logger.error("Analysis failed: %s", e)
                 send_sms(call["caller"], f"📞 New voicemail from {call['caller']}: {full_transcript[:200]}")
         return jsonify({"status": "processed"}), 200
     return jsonify({"status": "ok"}), 200
@@ -90,4 +109,4 @@ def health():
     return jsonify({"status": "ok", "voicemails": len(voicemails)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

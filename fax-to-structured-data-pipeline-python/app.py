@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 fax_queue = []
@@ -20,6 +21,8 @@ def call_inference(messages, max_tokens=600):
 @app.route("/webhooks/fax", methods=["POST"])
 def receive_fax():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event_type = data.get("event_type", "")
     if event_type == "fax.received":
@@ -33,6 +36,8 @@ def receive_fax():
 @app.route("/extract", methods=["POST"])
 def extract_data():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     text = data.get("text", "")
     doc_type = data.get("type", "auto")
     if not text: return jsonify({"error": "text required"}), 400
@@ -67,4 +72,4 @@ def health():
     return jsonify({"status": "ok", "faxes": len(fax_queue), "extracted": len(extracted_data)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

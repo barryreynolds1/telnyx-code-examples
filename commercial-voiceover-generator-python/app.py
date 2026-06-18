@@ -7,6 +7,7 @@ import os, json, uuid, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
@@ -28,6 +29,21 @@ SPOT_LENGTHS = {
 TONES = ["professional", "playful", "urgent", "luxurious", "friendly", "edgy", "inspirational"]
 
 campaigns = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(campaigns)
+
 
 
 def inference(messages, max_tokens=2000):
@@ -64,6 +80,8 @@ def generate_commercial():
     AI writes the script, TTS renders in multiple voices, SMS notifies client.
     """
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     product = data.get("product", "")
     audience = data.get("audience", "general consumers")
     tone = data.get("tone", "professional")
@@ -195,4 +213,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

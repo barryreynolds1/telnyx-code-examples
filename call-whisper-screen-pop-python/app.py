@@ -3,9 +3,11 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 AGENT_NUMBER = os.getenv("AGENT_NUMBER")
@@ -13,6 +15,21 @@ CONNECTION_ID = os.getenv("CONNECTION_ID")
 contacts_db = {"+15551234567": {"name": "Jane Smith", "company": "Acme Corp", "tier": "Enterprise", "last_call": "2 weeks ago", "open_tickets": 2},
     "+15559876543": {"name": "Bob Johnson", "company": "Startup Inc", "tier": "Growth", "last_call": "yesterday", "open_tickets": 0}}
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 call_log = []
 
 def lookup_caller(phone):
@@ -30,6 +47,8 @@ def lookup_caller(phone):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -85,6 +104,8 @@ def handle_voice():
 @app.route("/contacts", methods=["POST"])
 def add_contact():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone")
     contacts_db[phone] = {k: v for k, v in data.items() if k != "phone"}
     return jsonify({"status": "added"}), 200
@@ -94,4 +115,4 @@ def health():
     return jsonify({"status": "ok", "contacts": len(contacts_db), "active": len(active_calls)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

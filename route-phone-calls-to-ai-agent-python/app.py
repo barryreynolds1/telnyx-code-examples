@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
 def answer_call(call_control_id: str) -> dict:
@@ -52,6 +53,8 @@ def handle_call_webhook():
     """Webhook endpoint to handle inbound call events."""
     try:
         payload = request.get_json()
+        if not payload:
+            return jsonify({"error": "invalid request body"}), 400
         
         if not payload:
             return jsonify({"error": "No payload received"}), 400

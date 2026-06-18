@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 recordings = []
@@ -19,6 +20,8 @@ def call_inference(messages, max_tokens=500):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     data = payload.get("data", {})
     if event_type == "call.recording.saved":
@@ -31,6 +34,8 @@ def handle_voice():
 @app.route("/summarize", methods=["POST"])
 def summarize_recording():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     transcript = data.get("transcript", "")
     if not transcript:
         return jsonify({"error": "transcript required"}), 400
@@ -52,4 +57,4 @@ def health():
     return jsonify({"status": "ok", "recordings": len(recordings)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -6,6 +6,7 @@ from flask import Flask, request, Response, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 FROM_NUMBER = os.getenv("FROM_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 VOICEMAIL_AUDIO_URL = os.getenv("VOICEMAIL_AUDIO_URL", "https://example.com/voicemail.mp3")
@@ -14,13 +15,15 @@ drops = []
 @app.route("/drop", methods=["POST"])
 def voicemail_drop():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     numbers = data.get("numbers", [])
     results = []
     for number in numbers:
         try:
             resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
                 json={"to": number, "from": FROM_NUMBER, "connection_id": CONNECTION_ID, "answering_machine_detection": "detect_beep",
-                    "webhook_url": request.host_url.rstrip("/") + "/webhooks/voice"}, timeout=10)
+                    "webhook_url": request.host_url.rstrip("/", timeout=10) + "/webhooks/voice"}, timeout=10)
             ccid = resp.json().get("data", {}).get("call_control_id")
             drops.append({"number": number, "ccid": ccid, "status": "calling", "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
             results.append({"number": number, "status": "initiated"})
@@ -31,6 +34,8 @@ def voicemail_drop():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     if event_type == "call.machine.detection.ended":
@@ -70,4 +75,4 @@ def health():
     return jsonify({"status": "ok", "total_drops": len(drops), "delivered": delivered}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

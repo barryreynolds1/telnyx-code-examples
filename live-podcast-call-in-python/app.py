@@ -8,11 +8,13 @@ from datetime import datetime
 from collections import deque
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -25,6 +27,21 @@ HEADERS = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 shows = {}  # show_id -> show state
 caller_queue = deque()  # callers waiting to go live
 active_callers = {}  # call_control_id -> caller state
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(shows, active_callers)
+
 
 
 def telnyx_post(path, payload):
@@ -53,6 +70,8 @@ def notify_slack(msg):
 def start_show():
     """Start a live show — dial hosts into conference, open call-in line."""
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     hosts = data.get("hosts", [])
     topic = data.get("topic", SHOW_TOPIC)
 
@@ -90,7 +109,7 @@ def start_show():
                 "client_state": json.dumps({"show_id": show_id, "role": "host"}).encode().hex()
             })
         except Exception as e:
-            app.logger.error(f"Failed to dial host {phone}: {e}")
+            app.logger.error("Failed to dial host %s: %s", phone, e)
 
     notify_slack(f"🎙️ Live show started: *{topic}* | Call-in: {MAIN_NUMBER}")
     return jsonify({"show_id": show_id, "conference": conf_name, "call_in_number": MAIN_NUMBER, "status": "live"}), 201
@@ -99,6 +118,8 @@ def start_show():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event = payload.get("data", {})
     event_type = event.get("event_type", "")
     ep = event.get("payload", {})
@@ -146,7 +167,7 @@ def handle_voice():
                     "timeout_millis": 30000,
                 })
             except Exception as e:
-                app.logger.error(f"Screening gather failed: {e}")
+                app.logger.error("Screening gather failed: %s", e)
 
     elif event_type == "call.gather.ended":
         speech = ep.get("speech", {})
@@ -259,6 +280,8 @@ def fact_check(show_id):
         return jsonify({"error": "Show not found"}), 404
 
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     claim = data.get("claim", "")
     if not claim:
         return jsonify({"error": "Provide a 'claim' to fact-check"}), 400
@@ -311,4 +334,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -40,6 +40,8 @@ def audit_vapi():
 @app.route("/migrate/agent", methods=["POST"])
 def migrate_agent():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     vapi_config = data.get("vapi_agent", {})
     voice_id = VOICE_MAP.get(vapi_config.get("voice", ""), "en-US-Neural2-F")
     model = vapi_config.get("model", "meta-llama/Llama-3.3-70B-Instruct")
@@ -47,7 +49,7 @@ def migrate_agent():
         model = "meta-llama/Llama-3.3-70B-Instruct"
     try:
         resp = requests.post(f"{TELNYX_API}/ai/assistants", headers=telnyx_headers,
-            json={"name": vapi_config.get("name", "Migrated Vapi Agent"),
+            json={"name": vapi_config.get("name", "Migrated Vapi Agent", timeout=10),
                 "instructions": vapi_config.get("systemPrompt", vapi_config.get("instructions", "")),
                 "model": model,
                 "voice": {"provider": "telnyx", "settings": {"voice_id": voice_id}},
@@ -84,4 +86,4 @@ def health():
     return jsonify({"status": "ok", "migrations": len(migration_log)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

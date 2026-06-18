@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -25,13 +26,15 @@ def make_call(to, client_state):
     try:
         requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps(client_state).encode().hex()}, timeout=10)
+                "client_state": json.dumps(client_state, timeout=10).encode().hex()}, timeout=10)
     except Exception:
         pass
 
 @app.route("/webhooks/shopify/cart-abandoned", methods=["POST"])
 def cart_abandoned():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     cart = {"id": data.get("id", str(int(time.time()))),
         "customer_phone": data.get("customer", {}).get("phone", ""),
         "customer_name": data.get("customer", {}).get("first_name", ""),
@@ -76,6 +79,8 @@ def run_call_recovery():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -118,6 +123,8 @@ def list_carts():
 @app.route("/webhooks/shopify/order-created", methods=["POST"])
 def order_created():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("customer", {}).get("phone", "")
     for cart in abandoned_carts:
         if cart["customer_phone"] == phone and not cart["recovered"]:
@@ -131,4 +138,4 @@ def health():
     return jsonify({"status": "ok", "active_carts": sum(1 for c in abandoned_carts if not c["recovered"])}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

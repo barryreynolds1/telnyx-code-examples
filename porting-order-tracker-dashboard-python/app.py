@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 ALERT_WEBHOOK = os.getenv("ALERT_WEBHOOK", "")
 API = "https://api.telnyx.com/v2"
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
@@ -30,7 +31,7 @@ def submit_order():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/porting_orders", headers=headers,
-            json={"phone_numbers": data.get("phone_numbers", []),
+            json={"phone_numbers": data.get("phone_numbers", [], timeout=10),
                 "authorized_person": data.get("authorized_person"),
                 "current_provider": data.get("current_provider"),
                 "billing_phone_number": data.get("billing_phone_number"),
@@ -48,11 +49,13 @@ def submit_order():
 @app.route("/porting/bulk", methods=["POST"])
 def bulk_submit():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     results = []
     for batch in data.get("batches", []):
         try:
             resp = requests.post(f"{API}/porting_orders", headers=headers,
-                json={"phone_numbers": batch.get("phone_numbers", []),
+                json={"phone_numbers": batch.get("phone_numbers", [], timeout=10),
                     "authorized_person": batch.get("authorized_person"),
                     "current_provider": batch.get("current_provider"),
                     "billing_phone_number": batch.get("billing_phone_number")}, timeout=15)
@@ -76,6 +79,8 @@ def list_orders():
 @app.route("/webhooks/porting", methods=["POST"])
 def handle_webhook():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     update = {"event": data.get("event_type"), "order_id": data.get("porting_order_id"),
         "status": data.get("status"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -85,7 +90,7 @@ def handle_webhook():
             order["status"] = data.get("status", order["status"])
             order.setdefault("timeline", []).append({"status": order["status"], "at": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
     if data.get("status") == "exception" and ALERT_WEBHOOK:
-        try: requests.post(ALERT_WEBHOOK, json={"text": f"Port exception: {data.get('porting_order_id')}"}, timeout=5)
+        try: requests.post(ALERT_WEBHOOK, json={"text": f"Port exception: {data.get('porting_order_id', timeout=10)}"}, timeout=5)
         except Exception: pass
     return jsonify({"status": "received"}), 200
 
@@ -117,4 +122,4 @@ def health():
     return jsonify({"status": "ok", "orders": len(local_orders)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

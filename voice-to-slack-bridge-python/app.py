@@ -3,28 +3,47 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 BRIDGE_NUMBER = os.getenv("BRIDGE_NUMBER")
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 messages_posted = []
 
 def post_to_slack(text, urgency="normal"):
     emoji = {"critical": ":rotating_light:", "high": ":warning:", "normal": ":speech_balloon:", "low": ":information_source:"}
     if SLACK_WEBHOOK_URL:
         try:
-            requests.post(SLACK_WEBHOOK_URL, json={"text": f"{emoji.get(urgency, '')} {text}"}, timeout=10)
+            requests.post(SLACK_WEBHOOK_URL, json={"text": f"{emoji.get(urgency, '', timeout=10)} {text}"}, timeout=10)
         except Exception as e:
-            app.logger.error(f"Slack post failed: {e}")
+            app.logger.error("Slack post failed: %s", e)
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -44,7 +63,7 @@ def handle_voice():
         if call and speech:
             try:
                 resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-                    json={"model": AI_MODEL, "messages": [{"role": "system", "content": "Classify urgency of this voice message as critical/high/normal/low. Return JSON: urgency (string), cleaned_message (string, cleaned up speech-to-text artifacts), summary (1 sentence)."},
+                    json={"model": AI_MODEL, "messages": [{"role": "system", "content": "Classify urgency of this voice message as critical/high/normal/low. Return JSON: urgency (string, timeout=10), cleaned_message (string, cleaned up speech-to-text artifacts), summary (1 sentence)."},
                         {"role": "user", "content": speech}], "max_tokens": 150, "temperature": 0.2}, timeout=15)
                 analysis = json.loads(resp.json()["choices"][0]["message"]["content"])
                 urgency = analysis.get("urgency", "normal")
@@ -71,4 +90,4 @@ def health():
     return jsonify({"status": "ok", "posted": len(messages_posted)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

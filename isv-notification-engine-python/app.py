@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER", "")
@@ -31,7 +32,7 @@ def make_voice_call(to, message):
     try:
         requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"msg": message}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"msg": message}, timeout=10).encode().hex()}, timeout=10)
         return True
     except Exception:
         return False
@@ -69,12 +70,16 @@ def deliver(customer_id, message, urgency="normal"):
 @app.route("/notify", methods=["POST"])
 def notify():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     result = deliver(data.get("customer_id"), data.get("message", ""), data.get("urgency", "normal"))
     return jsonify({"notification": result}), 200
 
 @app.route("/notify/bulk", methods=["POST"])
 def bulk_notify():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     results = []
     for customer_id in data.get("customer_ids", []):
         result = deliver(customer_id, data.get("message", ""), data.get("urgency", "normal"))
@@ -84,6 +89,8 @@ def bulk_notify():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -104,6 +111,8 @@ def list_customers():
 def update_preference(cid):
     if cid not in customers: return jsonify({"error":"Not found"}), 404
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     customers[cid]["preference"] = data.get("preference", customers[cid]["preference"])
     customers[cid]["fallback"] = data.get("fallback", customers[cid].get("fallback", []))
     return jsonify({"customer": customers[cid]}), 200
@@ -119,4 +128,4 @@ def health():
     return jsonify({"status":"ok","notifications":len(notifications)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

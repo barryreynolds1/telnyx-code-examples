@@ -45,7 +45,7 @@ def index():
 def get_token():
     try:
         resp = requests.post("https://api.telnyx.com/v2/telephony_credentials", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-            json={"connection_id": os.getenv("CONNECTION_ID")}, timeout=10)
+            json={"connection_id": os.getenv("CONNECTION_ID", timeout=10)}, timeout=10)
         if resp.ok:
             return jsonify(resp.json().get("data", {})), 200
     except Exception as e:
@@ -55,6 +55,8 @@ def get_token():
 @app.route("/coaching", methods=["POST"])
 def get_coaching():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     transcript = data.get("transcript", "")
     msgs = [{"role": "system", "content": "You are a real-time sales coach. Based on the call transcript, give one actionable coaching tip. Be specific and brief."},
         {"role": "user", "content": transcript}]
@@ -69,4 +71,4 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

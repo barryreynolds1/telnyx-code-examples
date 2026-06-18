@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 API = "https://api.telnyx.com/v2"
 INFERENCE_URL = f"{API}/ai/chat/completions"
@@ -15,9 +17,26 @@ tenants = {}
 appointments = {}
 calls = {}
 
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(tenants, appointments, calls)
+
+
 @app.route("/tenants", methods=["POST"])
 def create_tenant():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     tid = data.get("id", f"t-{int(time.time())}")
     tenant = {"id": tid, "business_name": data.get("business_name"),
         "phone_number": data.get("phone_number"), "greeting": data.get("greeting", f"Thank you for calling {data.get('business_name')}"),
@@ -39,6 +58,8 @@ def send_sms(to, from_num, text):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -107,4 +128,4 @@ def health():
     return jsonify({"status":"ok","tenants":len(tenants),"total_appointments":sum(len(a) for a in appointments.values())}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

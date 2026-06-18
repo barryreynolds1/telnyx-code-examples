@@ -4,15 +4,32 @@ AI translates each side's speech before playing it to the other party."""
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 BRIDGE_NUMBER = os.getenv("BRIDGE_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 bridges = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(bridges)
+
 
 def translate(text, from_lang, to_lang):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
@@ -24,13 +41,15 @@ def translate(text, from_lang, to_lang):
 @app.route("/bridge", methods=["POST"])
 def create_bridge():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     bid = f"BR-{int(time.time())}"
     bridges[bid] = {"caller_a": data.get("number_a"), "lang_a": data.get("lang_a", "English"),
         "caller_b": data.get("number_b"), "lang_b": data.get("lang_b", "Spanish"), "state": "initiating", "ccids": {}}
     try:
         resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"to": data["number_a"], "from": BRIDGE_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"bid": bid, "side": "a"}).encode().hex()}, timeout=10)
+                "client_state": json.dumps({"bid": bid, "side": "a"}, timeout=10).encode().hex()}, timeout=10)
         bridges[bid]["ccids"]["a"] = resp.json().get("data", {}).get("call_control_id")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -39,6 +58,8 @@ def create_bridge():
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
@@ -56,7 +77,7 @@ def handle_voice():
             try:
                 resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
                     json={"to": bridge["caller_b"], "from": BRIDGE_NUMBER, "connection_id": CONNECTION_ID,
-                        "client_state": json.dumps({"bid": bid, "side": "b"}).encode().hex()}, timeout=10)
+                        "client_state": json.dumps({"bid": bid, "side": "b"}, timeout=10).encode().hex()}, timeout=10)
                 bridge["ccids"]["b"] = resp.json().get("data", {}).get("call_control_id")
             except Exception: pass
         elif side == "b":
@@ -97,4 +118,4 @@ def health():
     return jsonify({"status": "ok", "active_bridges": active}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

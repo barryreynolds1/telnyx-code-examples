@@ -16,6 +16,8 @@ baselines = {"daily_cost": 50.0, "daily_calls": 500, "daily_messages": 1000,
 @app.route("/config", methods=["POST"])
 def set_baselines():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     baselines.update(data)
     return jsonify({"baselines": baselines}), 200
 
@@ -54,7 +56,7 @@ def run_anomaly_check():
         alerts.append(alert)
         if ALERT_WEBHOOK:
             try:
-                requests.post(ALERT_WEBHOOK, json={"text": f"Billing anomaly detected: {json.dumps(anomalies)}"}, timeout=10)
+                requests.post(ALERT_WEBHOOK, json={"text": f"Billing anomaly detected: {json.dumps(anomalies, timeout=10)}"}, timeout=10)
             except Exception:
                 pass
     return jsonify({"anomalies": anomalies, "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}), 200
@@ -76,4 +78,4 @@ def health():
     return jsonify({"status": "ok", "alerts": len(alerts), "baselines": baselines}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

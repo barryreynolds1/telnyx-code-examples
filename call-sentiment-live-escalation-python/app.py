@@ -3,6 +3,7 @@
 import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
@@ -12,13 +13,28 @@ SUPERVISOR_NUMBER = os.getenv("SUPERVISOR_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 monitored_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(monitored_calls)
+
 escalations = []
 
 TRIGGER_WORDS = ["cancel", "lawsuit", "attorney", "supervisor", "manager", "unacceptable", "furious", "ridiculous", "terrible"]
 
 def analyze_sentiment(text):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-        json={"model": AI_MODEL, "messages": [{"role": "system", "content": "Analyze customer sentiment. Return JSON: sentiment (positive/neutral/negative/hostile), score (-1.0 to 1.0), escalate (boolean - true if customer is very upset, threatening, or requesting supervisor), reason (string, 5 words max)."},
+        json={"model": AI_MODEL, "messages": [{"role": "system", "content": "Analyze customer sentiment. Return JSON: sentiment (positive/neutral/negative/hostile, timeout=10), score (-1.0 to 1.0), escalate (boolean - true if customer is very upset, threatening, or requesting supervisor), reason (string, 5 words max)."},
             {"role": "user", "content": text}], "max_tokens": 80, "temperature": 0.1}, timeout=10)
     resp.raise_for_status()
     return json.loads(resp.json()["choices"][0]["message"]["content"])
@@ -26,6 +42,8 @@ def analyze_sentiment(text):
 @app.route("/monitor", methods=["POST"])
 def start_monitoring():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     call_id = data.get("call_id")
     monitored_calls[call_id] = {"agent": data.get("agent"), "customer": data.get("customer"), "transcript_chunks": [], "sentiment_scores": [], "escalated": False}
     return jsonify({"status": "monitoring", "call_id": call_id}), 200
@@ -33,6 +51,8 @@ def start_monitoring():
 @app.route("/transcript", methods=["POST"])
 def receive_transcript():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     call_id = data.get("call_id")
     text = data.get("text", "")
     speaker = data.get("speaker", "customer")
@@ -77,4 +97,4 @@ def health():
     return jsonify({"status": "ok", "monitoring": len(monitored_calls), "escalations": len(escalations)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

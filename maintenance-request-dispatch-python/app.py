@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 MANAGER_NUMBER = os.getenv("MANAGER_NUMBER", "")
@@ -46,6 +47,8 @@ def dispatch_vendor(category, wo):
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "")
@@ -104,4 +107,4 @@ def health():
     return jsonify({"status": "ok", "total": len(work_orders), "pending": sum(1 for w in work_orders if w["status"] == "pending_approval")}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

@@ -14,6 +14,7 @@ load_dotenv()
 
 app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -32,6 +33,21 @@ REQUIRED_DISCLOSURES = [
 
 # Call records and audit results
 call_records = {}  # call_control_id -> record
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(call_records)
+
 audit_results = []
 violations = []
 
@@ -82,7 +98,7 @@ def create_ticket(violation_data):
             timeout=10,
         )
     except requests.RequestException as e:
-        app.logger.error(f"Ticket creation failed: {e}")
+        app.logger.error("Ticket creation failed: %s", e)
 
 
 def store_recording(call_control_id, recording_url):
@@ -110,7 +126,7 @@ def store_recording(call_control_id, recording_url):
         if upload_resp.ok:
             return filename
     except requests.RequestException as e:
-        app.logger.error(f"Recording storage failed: {e}")
+        app.logger.error("Recording storage failed: %s", e)
     return None
 
 
@@ -183,7 +199,7 @@ def handle_voice():
                         "details": audit,
                     })
             except (json.JSONDecodeError, Exception) as e:
-                app.logger.error(f"Audit failed: {e}")
+                app.logger.error("Audit failed: %s", e)
         return jsonify({"status": "call_ended"}), 200
 
     return jsonify({"status": "event_received"}), 200
@@ -210,4 +226,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

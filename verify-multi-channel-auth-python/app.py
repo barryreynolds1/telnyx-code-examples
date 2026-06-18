@@ -3,6 +3,7 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -10,11 +11,28 @@ API = "https://api.telnyx.com/v2"
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 verifications = {}
 
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(verifications)
+
+
 CHANNELS = ["sms", "call", "whatsapp"]
 
 @app.route("/verify/start", methods=["POST"])
 def start_verification():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone_number")
     channel = data.get("channel", "sms")
     if not phone:
@@ -35,6 +53,8 @@ def start_verification():
 @app.route("/verify/check", methods=["POST"])
 def check_verification():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     vid = data.get("verification_id")
     code = data.get("code")
     v = verifications.get(vid)
@@ -80,6 +100,8 @@ def escalate_channel(vid):
 @app.route("/verify/cascade", methods=["POST"])
 def cascade_verify():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     phone = data.get("phone_number")
     return jsonify({"phone": phone,
         "flow": "1) SMS code sent → 2) If no response in 60s, voice call → 3) If unreachable, WhatsApp",
@@ -94,4 +116,4 @@ def health():
     return jsonify({"status": "ok", "verifications": len(verifications)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

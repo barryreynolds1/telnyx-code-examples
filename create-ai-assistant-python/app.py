@@ -52,6 +52,8 @@ def create_ai_assistant(name: str, instructions: str, model: str = "meta-llama/M
 def create_assistant_endpoint():
     """HTTP endpoint to create AI assistant."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

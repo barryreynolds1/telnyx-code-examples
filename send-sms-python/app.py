@@ -44,6 +44,8 @@ def send_sms(to_number: str, message: str) -> dict:
 def send_sms_endpoint():
     """HTTP endpoint to send single SMS."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400

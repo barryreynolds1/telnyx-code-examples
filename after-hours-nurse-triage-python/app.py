@@ -3,9 +3,11 @@
 import os, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -17,6 +19,21 @@ headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "applica
 
 triage_queue = []
 calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(calls)
+
 
 TRIAGE_PROMPT = """You are a medical triage nurse AI for Valley Health Clinic after-hours line.
 Your job: collect symptoms, assess severity, determine routing.
@@ -48,7 +65,7 @@ def page_oncall(triage_data):
     try:
         requests.post("https://events.pagerduty.com/v2/enqueue", json={
             "routing_key": PAGERDUTY_KEY, "event_action": "trigger",
-            "payload": {"summary": f"Urgent triage: {triage_data.get('symptoms', 'Unknown')} - Patient: {triage_data.get('caller', 'Unknown')}",
+            "payload": {"summary": f"Urgent triage: {triage_data.get('symptoms', 'Unknown', timeout=10)} - Patient: {triage_data.get('caller', 'Unknown')}",
                 "severity": "warning", "source": "telnyx-triage",
                 "custom_details": triage_data}}, timeout=10)
     except Exception:
@@ -68,6 +85,8 @@ def send_sms(to, text):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event = data.get("event_type")
     ccid = data.get("call_control_id")
@@ -142,6 +161,8 @@ def override_severity(idx):
     if idx >= len(triage_queue):
         return jsonify({"error": "Not found"}), 404
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     entry = triage_queue[idx]
     old = entry["severity"]
     entry["severity"] = data.get("severity", entry["severity"])
@@ -157,4 +178,4 @@ def health():
     return jsonify({"status": "ok", "queue_size": len(triage_queue)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

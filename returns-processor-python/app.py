@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
@@ -36,6 +37,8 @@ def ai_evaluate_return(description, order_value):
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {}).get("payload", {})
     sender = data.get("from", {}).get("phone_number", "")
     text = data.get("text", "")
@@ -63,7 +66,7 @@ def handle_sms():
             ret["status"] = "escalated"
             send_sms(sender, "Your return request has been received. A team member will review and contact you within 24 hours.")
             if SUPPORT_SLACK:
-                try: requests.post(SUPPORT_SLACK, json={"text": f"Return escalation #{ret['id']}: {sender} - {order_info}. Photos: {has_photo}. AI recommendation: {evaluation.get('action')}"}, timeout=5)
+                try: requests.post(SUPPORT_SLACK, json={"text": f"Return escalation #{ret['id']}: {sender} - {order_info}. Photos: {has_photo}. AI recommendation: {evaluation.get('action', timeout=10)}"}, timeout=5)
                 except Exception: pass
     else:
         send_sms(sender, "To start a return, text RETURN followed by your order number and issue description. Attach a photo if applicable.")
@@ -81,6 +84,8 @@ def manual_approve(idx):
     if idx >= len(returns): return jsonify({"error":"Not found"}), 404
     ret = returns[idx]
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     ret["status"] = "manually_approved"
     ret["approved_by"] = data.get("agent", "unknown")
     amount = data.get("refund_amount", 0)
@@ -97,4 +102,4 @@ def health():
     return jsonify({"status":"ok","returns":len(returns)}), 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))
