@@ -1,27 +1,46 @@
+---
+name: provision-esim
+title: "Production-ready Flask application for eSIM provisioning via Telnyx."
+description: "Production-ready Flask application for eSIM provisioning via Telnyx."
+language: python
+framework: flask
+---
+
 # Production-ready Flask application for eSIM provisioning via Telnyx.
 
 Production-ready Flask application for eSIM provisioning via Telnyx.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/provision-esim-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -35,6 +54,10 @@ docker run --env-file .env -p 5000:5000 provision-esim
 
 ### `POST /esim/profiles`
 
+Handles `POST /esim/profiles`.
+
+**Request:**
+
 ```bash
 curl -X POST http://localhost:5000/esim/profiles \
   -H "Content-Type: application/json" \
@@ -44,38 +67,84 @@ curl -X POST http://localhost:5000/esim/profiles \
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
+```
+
 ### `POST /esim/profiles/<sim_card_id>/activate`
 
+Handles `POST /esim/profiles/<sim_card_id>/activate`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/esim/profiles/<sim_card_id>/activate \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/esim/profiles/example-id/activate
+```
+
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
 ```
 
 ### `GET /esim/profiles/<sim_card_id>`
 
+Returns esim details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/esim/profiles/<sim_card_id>
+curl http://localhost:5000/esim/profiles/example-id
+```
+
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
 ```
 
 ### `GET /esim/profiles`
 
 Returns all esims.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/esim/profiles
 ```
 
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Webhook Endpoints
@@ -86,6 +155,5 @@ Receives external webhook events.
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

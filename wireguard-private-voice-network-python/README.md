@@ -1,26 +1,45 @@
-# WireGuard Private Voice Network — create WireGuard mesh network for private SIP trunking with encrypted voice traffic.
+---
+name: wireguard-private-voice-network
+title: "WireGuard Private Voice Network"
+description: "WireGuard Private Voice Network — create WireGuard mesh network for private SIP trunking with encrypted voice traffic."
+language: python
+framework: flask
+---
+
+# WireGuard Private Voice Network
 
 WireGuard Private Voice Network — create WireGuard mesh network for private SIP trunking with encrypted voice traffic.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/wireguard-private-voice-network-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -34,7 +53,9 @@ docker run --env-file .env -p 5000:5000 wireguard-private-voice-network
 
 ### `POST /networks`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/networks \
@@ -44,17 +65,39 @@ curl -X POST http://localhost:5000/networks \
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `GET /networks`
 
 Returns all networks.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/networks
 ```
 
+**Response:**
+
+```json
+{
+  "networks": [
+    "..."
+  ]
+}
+```
+
 ### `POST /interfaces`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/interfaces \
@@ -65,46 +108,94 @@ curl -X POST http://localhost:5000/interfaces \
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `POST /peers`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/peers \
   -H "Content-Type: application/json" \
   -d '{
   "interface_id": "abc-123",
-  "public_key": "value",
+  "public_key": "example_value",
   "name": "sip-endpoint"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `GET /interfaces/<iface_id>/config`
 
+Returns config details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/interfaces/<iface_id>/config
+curl http://localhost:5000/interfaces/example-id/config
+```
+
+**Response:**
+
+```json
+{
+  "config": "...",
+  "interface": "..."
+}
 ```
 
 ### `GET /topology`
+
+Handles `GET /topology`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/topology
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

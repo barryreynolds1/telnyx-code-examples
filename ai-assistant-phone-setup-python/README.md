@@ -1,32 +1,55 @@
-# AI Assistant Phone Setup — create and configure a managed Telnyx AI Assistant and wire it to a phone number.
+---
+name: ai-assistant-phone-setup
+title: "AI Assistant Phone Setup"
+description: "AI Assistant Phone Setup — create and configure a managed Telnyx AI Assistant and wire it to a phone number."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
+# AI Assistant Phone Setup
 
 AI Assistant Phone Setup — create and configure a managed Telnyx AI Assistant and wire it to a phone number.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-assistant-phone-setup-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -40,7 +63,9 @@ docker run --env-file .env -p 5000:5000 ai-assistant-phone-setup
 
 ### `POST /assistants`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/assistants \
@@ -53,70 +78,158 @@ curl -X POST http://localhost:5000/assistants \
   "voice_id": "en-US-Neural2-F",
   "speed": "1.0",
   "greeting": "Hello! How can I help you today?",
-  "hold_music_url": "value"
+  "hold_music_url": "https://pay.example.com/inv-123"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ### `GET /assistants`
 
 Returns all assistants.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/assistants
 ```
 
+**Response:**
+
+```json
+{
+  "assistants": [
+    "..."
+  ]
+}
+```
+
 ### `GET /assistants/<assistant_id>`
 
+Returns assistant details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/assistants/<assistant_id>
+curl http://localhost:5000/assistants/example-id
+```
+
+**Response:**
+
+```json
+{
+  "assistant": [
+    "..."
+  ]
+}
 ```
 
 ### `PATCH /assistants/<assistant_id>`
 
-Update record status.
+Updates the record.
+
+**Request:**
+
+```bash
+curl -X PATCH http://localhost:5000/assistants/example-id
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
 
 ### `POST /assistants/<assistant_id>/wire`
 
+Handles `POST /assistants/<assistant_id>/wire`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/assistants/<assistant_id>/wire \
-  -H "Content-Type: application/json" \
-  -d '{
-  "phone_number": "+12125551234"
-}'
+curl -X POST http://localhost:5000/assistants/example-id/wire
+```
+
+**Response:**
+
+```json
+{
+  "assistant_id": "...",
+  "phone_number": "...",
+  "instructions": "..."
+}
 ```
 
 ### `POST /assistants/<assistant_id>/test`
 
+Handles `POST /assistants/<assistant_id>/test`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/assistants/<assistant_id>/test \
+curl -X POST http://localhost:5000/assistants/example-id/test \
   -H "Content-Type: application/json" \
   -d '{
   "message": "Hello"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `GET /models`
 
 Returns all models.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/models
 ```
 
+**Response:**
+
+```json
+{
+  "models": [
+    "..."
+  ]
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

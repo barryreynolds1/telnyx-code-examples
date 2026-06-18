@@ -1,35 +1,58 @@
-# Click-to-Call WebRTC with AI Assist — browser-based calling with real-time AI coaching sidebar.
+---
+name: click-to-call-webrtc-with-ai-assist
+title: "Click-to-Call WebRTC with AI Assist"
+description: "Click-to-Call WebRTC with AI Assist — browser-based calling with real-time AI coaching sidebar."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
+# Click-to-Call WebRTC with AI Assist
 
 Click-to-Call WebRTC with AI Assist — browser-based calling with real-time AI coaching sidebar.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
-| `WEBRTC_CREDENTIAL_ID` | string | `-` | **yes** | webrtc credential id |
-| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
+| `WEBRTC_CREDENTIAL_ID` | `string` | `...` | **yes** | webrtc credential id | — |
+| `CONNECTION_ID` | `string` | `1234567890` | **yes** | Call Control connection ID | [→ link](https://portal.telnyx.com/call-control/applications) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/click-to-call-webrtc-with-ai-assist-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -43,42 +66,84 @@ docker run --env-file .env -p 5000:5000 click-to-call-webrtc-with-ai-assist
 
 ### `GET /`
 
+Handles `GET /`.
+
+**Request:**
+
 ```bash
 curl http://localhost:5000/
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `POST /webrtc/token`
 
+Returns token details.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/webrtc/token \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/webrtc/token
+```
+
+**Response:**
+
+```json
+{
+  "token": [
+    "..."
+  ]
+}
 ```
 
 ### `POST /coaching`
+
+Returns coaching details.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/coaching \
   -H "Content-Type: application/json" \
   -d '{
-  "transcript": "value"
+  "transcript": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "coaching_tip": "..."
+}
 ```
 
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

@@ -1,34 +1,46 @@
-# Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets.
+---
+name: cloud-storage-media-cdn
+title: "Cloud Storage Media CDN"
+description: "Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets."
+language: python
+framework: flask
+---
+
+# Cloud Storage Media CDN
 
 Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets.
 
-## Telnyx APIs
+## Architecture
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| Cloud Storage API | `S3-compatible` | [docs](https://developers.telnyx.com/docs/storage) |
-| MMS Media | `via Messaging API` | [docs](https://developers.telnyx.com/docs/messaging) |
-
-## How It Works
-
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `BUCKET_NAME` | string | `-` | no | bucket name |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `BUCKET_NAME` | `string` | `media-cdn` | no | bucket name | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/cloud-storage-media-cdn-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -42,13 +54,29 @@ docker run --env-file .env -p 5000:5000 cloud-storage-media-cdn
 
 ### `POST /setup`
 
+Handles `POST /setup`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/setup \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/setup
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "bucket": "...",
+  "categories": "..."
+}
 ```
 
 ### `POST /upload`
+
+Handles `POST /upload`.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/upload \
@@ -56,45 +84,96 @@ curl -X POST http://localhost:5000/upload \
   -d '{
   "category": "ivr_prompts",
   "name": "Jane Doe",
-  "url": "value"
+  "url": "https://pay.example.com/inv-123"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "entry": "..."
+}
 ```
 
 ### `GET /media`
 
 Returns all media.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/media
 ```
 
+**Response:**
+
+```json
+{
+  "media": "...",
+  "category": "..."
+}
+```
+
 ### `GET /media/<category>/<name>`
 
+Returns media url details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/media/<category>/<name>
+curl http://localhost:5000/media/example-id/example-id
+```
+
+**Response:**
+
+```json
+{
+  "url": "...",
+  "item": "..."
+}
 ```
 
 ### `GET /ivr-config`
+
+Handles `GET /ivr-config`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/ivr-config
 ```
 
+**Response:**
+
+```json
+{
+  "ivr_prompts": "...",
+  "hold_music": "...",
+  "usage": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Cloud Storage API](https://developers.telnyx.com/docs/storage)
-- [MMS Media](https://developers.telnyx.com/docs/messaging)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

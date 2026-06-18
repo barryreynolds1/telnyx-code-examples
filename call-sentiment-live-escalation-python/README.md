@@ -1,36 +1,59 @@
-# Call Sentiment Live Escalation — monitor call transcripts in real-time. When negative sentiment or distress is detected, auto-escalate to a supervisor.
+---
+name: call-sentiment-live-escalation
+title: "Call Sentiment Live Escalation"
+description: "Call Sentiment Live Escalation — monitor call transcripts in real-time. When negative sentiment or distress is detected, auto-escalate to a supervisor."
+language: python
+framework: flask
+telnyx_products: [SMS/MMS, AI Inference]
+---
+
+# Call Sentiment Live Escalation
 
 Call Sentiment Live Escalation — monitor call transcripts in real-time. When negative sentiment or distress is detected, auto-escalate to a supervisor.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **Messaging**: `POST /v2/messages` — [API reference](https://developers.telnyx.com/api/messaging/send-message)
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
-| `SUPERVISOR_NUMBER` | string | `+E.164` | **yes** | supervisor number |
-| `CONNECTION_ID` | string | `uuid` | **yes** | Call Control connection ID ([get it](https://portal.telnyx.com/call-control/applications)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
+| `SUPERVISOR_NUMBER` | `string` | `+18005551234` | **yes** | supervisor number | — |
+| `CONNECTION_ID` | `string` | `1234567890` | **yes** | Call Control connection ID | [→ link](https://portal.telnyx.com/call-control/applications) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/call-sentiment-live-escalation-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -44,57 +67,113 @@ docker run --env-file .env -p 5000:5000 call-sentiment-live-escalation
 
 ### `POST /monitor`
 
+Handles `POST /monitor`.
+
+**Request:**
+
 ```bash
 curl -X POST http://localhost:5000/monitor \
   -H "Content-Type: application/json" \
   -d '{
   "call_id": "abc-123",
-  "agent": "value",
-  "customer": "value"
+  "agent": "Sarah Chen",
+  "customer": "example_value"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "call_id": "..."
+}
+```
+
 ### `POST /transcript`
+
+Handles `POST /transcript`.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/transcript \
   -H "Content-Type: application/json" \
   -d '{
   "call_id": "abc-123",
-  "text": "Hello, this is a test",
   "speaker": "customer"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `GET /calls/<call_id>/sentiment`
 
+Handles `GET /calls/<call_id>/sentiment`.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/calls/<call_id>/sentiment
+curl http://localhost:5000/calls/example-id/sentiment
+```
+
+**Response:**
+
+```json
+{
+  "call_id": "...",
+  "avg_sentiment": "...",
+  "trend": "...",
+  "escalated": "...",
+  "chunks": "..."
+}
 ```
 
 ### `GET /escalations`
 
 Returns all escalations.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/escalations
 ```
 
+**Response:**
+
+```json
+{
+  "escalations": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Messaging API](https://developers.telnyx.com/docs/messaging)
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Messaging — API Reference](https://developers.telnyx.com/api/messaging/send-message)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

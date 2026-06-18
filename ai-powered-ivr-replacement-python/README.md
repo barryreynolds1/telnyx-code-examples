@@ -1,34 +1,53 @@
-# AI-Powered IVR Replacement — natural language routing with A/B testing and structured insights.
+---
+name: ai-powered-ivr-replacement
+title: "AI-Powered IVR Replacement"
+description: "AI-Powered IVR Replacement — natural language routing with A/B testing and structured insights."
+language: python
+framework: flask
+---
+
+# AI-Powered IVR Replacement
 
 AI-Powered IVR Replacement — natural language routing with A/B testing and structured insights.
 
-## Webhook Events Handled
+## Telnyx Webhook Events
 
-```
-call.initiated
-```
+This app handles these [Call Control](https://developers.telnyx.com/docs/api/v2/call-control) and [Messaging](https://developers.telnyx.com/docs/api/v2/messaging) webhook events:
 
-## How It Works
+- `call.initiated` — incoming call detected, app answers
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+## Architecture
+
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `ASSISTANT_ID` | string | `-` | **yes** | assistant id |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `ASSISTANT_ID` | `string` | `...` | **yes** | assistant id | — |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-powered-ivr-replacement-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -42,28 +61,62 @@ docker run --env-file .env -p 5000:5000 ai-powered-ivr-replacement
 
 ### `POST /setup`
 
+Handles `POST /setup`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/setup \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/setup
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "assistant_id": "..."
+}
 ```
 
 ### `GET /analytics`
+
+Returns analytics details.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/analytics
 ```
 
+**Response:**
+
+```json
+{
+  "total_calls": 3,
+  "ai_resolution_rate": "...",
+  "transfer_rate": "...",
+  "department_distribution": "...",
+  "ab_test_results": "...",
+  "recent_calls": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Webhook Endpoints
@@ -74,6 +127,5 @@ Receives external webhook events.
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

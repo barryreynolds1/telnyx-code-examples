@@ -1,26 +1,45 @@
+---
+name: e911-address-validator
+title: "E911 Address Validator — validate and provision E911 addresses via API."
+description: "E911 Address Validator — validate and provision E911 addresses via API."
+language: python
+framework: flask
+---
+
 # E911 Address Validator — validate and provision E911 addresses via API.
 
 E911 Address Validator — validate and provision E911 addresses via API.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/e911-address-validator-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -34,57 +53,95 @@ docker run --env-file .env -p 5000:5000 e911-address-validator
 
 ### `POST /e911/validate`
 
-Create a new record.
+Adds a new entry.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/e911/validate \
   -H "Content-Type: application/json" \
   -d '{
-  "street": "value",
-  "street2": "value",
-  "city": "value",
-  "state": "value",
-  "zip": "value",
+  "street": "example_value",
+  "street2": "example_value",
+  "city": "example_value",
+  "state": "example_value",
+  "zip": "example_value",
   "country": "US",
-  "business_name": "Jane Doe"
+  "business_name": "Acme Services"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "valid": "...",
+  "address_id": "...",
+  "address": "..."
+}
 ```
 
 ### `POST /e911/assign`
 
-Assign to team member. Notifies both parties.
+Assigns to a team member. Notifies both assignee and customer.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/e911/assign \
   -H "Content-Type: application/json" \
   -d '{
-  "phone_number": "+12125551234",
-  "address_id": "abc-123"
+  "address_id": "123 Main St, Apt 4"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "phone": "...",
+  "address_id": "..."
+}
 ```
 
 ### `GET /e911/addresses`
 
 Returns all addresses.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/e911/addresses
 ```
 
+**Response:**
+
+```json
+{
+  "addresses": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

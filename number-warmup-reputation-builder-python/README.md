@@ -1,33 +1,51 @@
-# Number Warmup & Reputation Builder — gradually ramp SMS volume on new numbers to build carrier reputation and avoid spam flags.
+---
+name: number-warmup-reputation-builder
+title: "Number Warmup & Reputation Builder"
+description: "Number Warmup & Reputation Builder — gradually ramp SMS volume on new numbers to build carrier reputation and avoid spam flags."
+language: python
+framework: flask
+telnyx_products: [SMS/MMS]
+---
+
+# Number Warmup & Reputation Builder
 
 Number Warmup & Reputation Builder — gradually ramp SMS volume on new numbers to build carrier reputation and avoid spam flags.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
+- **Messaging**: `POST /v2/messages` — [API reference](https://developers.telnyx.com/api/messaging/send-message)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `MESSAGING_PROFILE_ID` | string | `uuid` | no | Telnyx messaging profile ID ([get it](https://portal.telnyx.com/messaging/profiles)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `MESSAGING_PROFILE_ID` | `string` | `4001...` | no | Telnyx messaging profile ID | [→ link](https://portal.telnyx.com/messaging/profiles) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/number-warmup-reputation-builder-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -41,57 +59,112 @@ docker run --env-file .env -p 5000:5000 number-warmup-reputation-builder
 
 ### `POST /warmup/start`
 
+Handles `POST /warmup/start`.
+
+**Request:**
+
 ```bash
 curl -X POST http://localhost:5000/warmup/start \
   -H "Content-Type: application/json" \
   -d '{
-  "number": "+12125551234"
+  "number": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "number": "...",
+  "schedule": "..."
+}
 ```
 
 ### `POST /warmup/send`
 
-Trigger the workflow.
+Sends notifications to applicable recipients.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/warmup/send \
   -H "Content-Type: application/json" \
   -d '{
-  "from_number": "+12125551234",
-  "text": "Test message for number warmup"
+  "from_number": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "limit": "...",
+  "sent": "...",
+  "wait_seconds": "...",
+  "status": "ok",
+  "day": "...",
+  "today_count": 3
+}
 ```
 
 ### `GET /warmup/status`
 
-Update record status.
+Handles `GET /warmup/status`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/warmup/status
 ```
 
+**Response:**
+
+```json
+{
+  "numbers": "..."
+}
+```
+
 ### `POST /warmup/reset-daily`
 
+Handles `POST /warmup/reset-daily`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/warmup/reset-daily \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/warmup/reset-daily
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "numbers": "..."
+}
 ```
 
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Messaging API](https://developers.telnyx.com/docs/messaging)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Messaging — API Reference](https://developers.telnyx.com/api/messaging/send-message)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

@@ -1,33 +1,56 @@
-# AI Assistant Knowledge Base — AI Assistant with document knowledge base for context-aware Q&A over uploaded documents.
+---
+name: ai-assistant-knowledge-base
+title: "AI Assistant Knowledge Base"
+description: "AI Assistant Knowledge Base — AI Assistant with document knowledge base for context-aware Q&A over uploaded documents."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
+# AI Assistant Knowledge Base
 
 AI Assistant Knowledge Base — AI Assistant with document knowledge base for context-aware Q&A over uploaded documents.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-assistant-knowledge-base-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -41,50 +64,91 @@ docker run --env-file .env -p 5000:5000 ai-assistant-knowledge-base
 
 ### `POST /documents`
 
-Create a new record.
+Adds a new entry.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/documents \
   -H "Content-Type: application/json" \
   -d '{
   "title": "f\"doc-{int(time.time(",
-  "content": "value"
+  "content": "example_value"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "document": "..."
+}
+```
+
 ### `POST /ask`
+
+Handles `POST /ask`.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/ask \
   -H "Content-Type: application/json" \
   -d '{
-  "question": "value",
-  "top_k": "3"
+  "question": "example_value",
+  "top_k": 3
 }'
+```
+
+**Response:**
+
+```json
+{
+  "answer": "...",
+  "sources": "..."
+}
 ```
 
 ### `GET /documents`
 
 Returns all documents.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/documents
 ```
 
+**Response:**
+
+```json
+{
+  "documents": "...",
+  "total_chunks": 3
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

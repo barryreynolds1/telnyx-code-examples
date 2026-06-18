@@ -1,42 +1,64 @@
+---
+name: send-bulk-sms
+title: "Production-ready Flask application for sending bulk SMS via Telnyx."
+description: "Production-ready Flask application for sending bulk SMS via Telnyx."
+language: python
+framework: flask
+channel: [sms]
+---
+
 # Production-ready Flask application for sending bulk SMS via Telnyx.
 
 Production-ready Flask application for sending bulk SMS via Telnyx.
 
-## How It Works
+## Architecture
 
-```
-Inbound SMS ──► Telnyx ──► POST /webhooks/sms
-                                   │
-                                   ├── Takes action
-                                   └── Sends reply SMS
+```text
+┌─────────────┐     ┌────────────┐     ┌──────────────────────┐
+│   SMS/MMS   │────►│   Telnyx   │────►│  POST /webhooks/sms  │
+└─────────────┘     │   Cloud    │     └──────────┬───────────┘
+                    └────────────┘                │
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
-| `BULK_SMS_RATE_LIMIT` | string | `-` | no | bulk sms rate limit |
-| `BULK_SMS_DELAY` | string | `-` | no | bulk sms delay |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `TELNYX_PHONE_NUMBER` | `string` | `+18005551234` | **yes** | telnyx phone number | — |
+| `BULK_SMS_RATE_LIMIT` | `string` | `10` | no | bulk sms rate limit | — |
+| `BULK_SMS_DELAY` | `string` | `0.1` | no | bulk sms delay | — |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/send-bulk-sms-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
-### Webhook URL
+### Webhook Configuration
 
-Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+1. Expose your local server:
 
-Configure in [Telnyx Portal](https://portal.telnyx.com):
+   ```bash
+   ngrok http 5000
+   ```
 
-- **Messaging Profile** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/sms`
+2. Copy the HTTPS URL and configure in [Telnyx Portal](https://portal.telnyx.com):
+
+   - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
 ### Docker
 
@@ -49,27 +71,49 @@ docker run --env-file .env -p 5000:5000 send-bulk-sms
 
 ### `POST /sms/bulk/send`
 
-Trigger the workflow.
+Sends notifications to applicable recipients.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/sms/bulk/send \
   -H "Content-Type: application/json" \
   -d '{
-  "recipients": "value",
-  "message": "Hello, this is a test"
+  "recipients": "[]",
+  "message": "Customer reported issue with service"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ### `GET /sms/bulk/status`
 
-Update record status.
+Handles `GET /sms/bulk/status`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/sms/bulk/status
 ```
 
+**Response:**
+
+```json
+{
+  "service": "...",
+  "status": "ok",
+  "rate_limit": "...",
+  "delay_between_messages": "..."
+}
+```
+
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

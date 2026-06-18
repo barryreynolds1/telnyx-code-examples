@@ -1,34 +1,57 @@
+---
+name: run-llm-inference
+title: "Run LLM inference on Telnyx — OpenAI-compatible chat completions API."
+description: "Run LLM inference on Telnyx — OpenAI-compatible chat completions API."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
 # Run LLM inference on Telnyx — OpenAI-compatible chat completions API.
 
 Run LLM inference on Telnyx — OpenAI-compatible chat completions API.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/run-llm-inference-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -42,40 +65,70 @@ docker run --env-file .env -p 5000:5000 run-llm-inference
 
 ### `POST /inference/chat`
 
+Handles `POST /inference/chat`.
+
+**Request:**
+
 ```bash
 curl -X POST http://localhost:5000/inference/chat \
   -H "Content-Type: application/json" \
   -d '{
-  "model": "value",
-  "max_tokens": "500",
+  "model": "example_value",
+  "max_tokens": 500,
   "temperature": "0.7"
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `POST /inference/ask`
+
+Handles `POST /inference/ask`.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/inference/ask \
   -H "Content-Type: application/json" \
   -d '{
-  "system_prompt": "value"
+  "system_prompt": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "answer": "..."
+}
 ```
 
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

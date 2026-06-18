@@ -1,36 +1,55 @@
+---
+name: route-phone-calls-to-ai-agent
+title: "Production-ready Flask webhook for handling inbound calls via Telnyx Voice API."
+description: "Production-ready Flask webhook for handling inbound calls via Telnyx Voice API."
+language: python
+framework: flask
+---
+
 # Production-ready Flask webhook for handling inbound calls via Telnyx Voice API.
 
 Production-ready Flask webhook for handling inbound calls via Telnyx Voice API.
 
-## Webhook Events Handled
+## Telnyx Webhook Events
 
-```
-call.initiated
-call.answered
-call.speak.ended
-call.hangup
-```
+This app handles these [Call Control](https://developers.telnyx.com/docs/api/v2/call-control) and [Messaging](https://developers.telnyx.com/docs/api/v2/messaging) webhook events:
 
-## How It Works
+- `call.initiated` — incoming call detected, app answers
+- `call.answered` — call connected, app speaks greeting
+- `call.speak.ended` — TTS finished, app starts listening
+- `call.hangup` — call ended, app cleans up session
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+## Architecture
+
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/route-phone-calls-to-ai-agent-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -48,6 +67,5 @@ Receives external webhook events.
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

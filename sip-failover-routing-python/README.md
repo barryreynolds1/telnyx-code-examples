@@ -1,31 +1,50 @@
+---
+name: sip-failover-routing
+title: "Production-ready SIP failover routing system with Flask and Telnyx."
+description: "Production-ready SIP failover routing system with Flask and Telnyx."
+language: python
+framework: flask
+---
+
 # Production-ready SIP failover routing system with Flask and Telnyx.
 
 Production-ready SIP failover routing system with Flask and Telnyx.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `PRIMARY_SIP_IP` | string | `-` | **yes** | primary sip ip |
-| `PRIMARY_SIP_PORT` | string | `-` | no | primary sip port |
-| `BACKUP_SIP_IP` | string | `-` | **yes** | backup sip ip |
-| `BACKUP_SIP_PORT` | string | `-` | no | backup sip port |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `PRIMARY_SIP_IP` | `string` | `...` | **yes** | primary sip ip | — |
+| `PRIMARY_SIP_PORT` | `string` | `5060` | no | primary sip port | — |
+| `BACKUP_SIP_IP` | `string` | `...` | **yes** | backup sip ip | — |
+| `BACKUP_SIP_PORT` | `string` | `5060` | no | backup sip port | — |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/sip-failover-routing-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -41,13 +60,26 @@ docker run --env-file .env -p 5000:5000 sip-failover-routing
 
 Returns all connections.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/sip/connections
 ```
 
+**Response:**
+
+```json
+{
+  "connections": "...",
+  "status_code": "..."
+}
+```
+
 ### `POST /sip/connections`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/sip/connections \
@@ -57,43 +89,88 @@ curl -X POST http://localhost:5000/sip/connections \
 }'
 ```
 
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
+```
+
 ### `GET /sip/connections/<connection_id>`
 
+Returns connection details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/sip/connections/<connection_id>
+curl http://localhost:5000/sip/connections/example-id
+```
+
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
 ```
 
 ### `GET /sip/health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/sip/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ### `GET /sip/failover-status`
 
-Update record status.
+Handles `GET /sip/failover-status`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/sip/failover-status
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ### `POST /sip/assign-number`
 
-Assign to team member. Notifies both parties.
+Assigns to a team member. Notifies both assignee and customer.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/sip/assign-number \
   -H "Content-Type: application/json" \
   -d '{
-  "phone_number": "+12125551234",
   "connection_id": "abc-123"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status_code": "..."
+}
 ```
 
 ## Webhook Endpoints
@@ -104,6 +181,5 @@ Receives external webhook events.
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

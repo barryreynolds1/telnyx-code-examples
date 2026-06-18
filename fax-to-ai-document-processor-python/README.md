@@ -1,37 +1,59 @@
-# Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary.
+---
+name: fax-to-ai-document-processor
+title: "Fax to AI Document Processor"
+description: "Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary."
+language: python
+framework: flask
+telnyx_products: [SMS/MMS, AI Inference]
+---
+
+# Fax to AI Document Processor
 
 Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| Messaging API | `POST /v2/messages` | [docs](https://developers.telnyx.com/docs/messaging) |
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
-| MMS Media | `via Messaging API` | [docs](https://developers.telnyx.com/docs/messaging) |
+- **Messaging**: `POST /v2/messages` — [API reference](https://developers.telnyx.com/api/messaging/send-message)
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
-| `FAX_NUMBER` | string | `+E.164` | **yes** | fax number |
-| `FORWARD_EMAIL` | string | `-` | **yes** | forward email |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
+| `FAX_NUMBER` | `string` | `+18005551234` | **yes** | fax number | — |
+| `FORWARD_EMAIL` | `string` | `...` | **yes** | forward email | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/fax-to-ai-document-processor-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -47,20 +69,36 @@ docker run --env-file .env -p 5000:5000 fax-to-ai-document-processor
 
 Returns all faxes.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/faxes
 ```
 
+**Response:**
+
+```json
+{
+  "faxes": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Webhook Endpoints
@@ -71,7 +109,7 @@ Receives external webhook events.
 
 ## Resources
 
-- [Messaging API](https://developers.telnyx.com/docs/messaging)
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Messaging — API Reference](https://developers.telnyx.com/api/messaging/send-message)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

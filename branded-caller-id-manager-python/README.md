@@ -1,26 +1,45 @@
-# Branded Caller ID Manager — register, manage, and verify branded calling profiles with STIR/SHAKEN attestation for higher answer rates.
+---
+name: branded-caller-id-manager
+title: "Branded Caller ID Manager"
+description: "Branded Caller ID Manager — register, manage, and verify branded calling profiles with STIR/SHAKEN attestation for higher answer rates."
+language: python
+framework: flask
+---
+
+# Branded Caller ID Manager
 
 Branded Caller ID Manager — register, manage, and verify branded calling profiles with STIR/SHAKEN attestation for higher answer rates.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/branded-caller-id-manager-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -34,7 +53,9 @@ docker run --env-file .env -p 5000:5000 branded-caller-id-manager
 
 ### `POST /brands`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/brands \
@@ -43,29 +64,51 @@ curl -X POST http://localhost:5000/brands \
   "entity_type": "PRIVATE_PROFIT",
   "display_name": "Jane Doe",
   "company_name": "Jane Doe",
-  "ein": "value",
+  "ein": "example_value",
   "phone": "+12125551234",
-  "street": "value",
-  "city": "value",
-  "state": "value",
-  "postal_code": "value",
+  "street": "example_value",
+  "city": "example_value",
+  "state": "example_value",
+  "postal_code": "example_value",
   "country": "US",
   "vertical": "TECHNOLOGY",
-  "website": "value"
+  "website": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ### `GET /brands`
 
 Returns all brands.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/brands
 ```
 
+**Response:**
+
+```json
+{
+  "brands": [
+    "..."
+  ]
+}
+```
+
 ### `POST /campaigns`
 
-Create a new record.
+Creates a new record.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/campaigns \
@@ -73,54 +116,100 @@ curl -X POST http://localhost:5000/campaigns \
   -d '{
   "brand_id": "abc-123",
   "usecase": "MIXED",
-  "description": "value",
+  "description": "Customer reported issue with service",
   "sample_message": "[\"Your appointment is tomorrow at 2pm. Reply CONFIRM.\"]",
-  "phone_numbers": "+12125551234"
+  "phone_numbers": "[]"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ### `PUT /numbers/<number>/caller-id`
 
-Update record status.
+Updates the record.
+
+**Request:**
 
 ```bash
-curl -X PUT http://localhost:5000/numbers/<number>/caller-id \
+curl -X PUT http://localhost:5000/numbers/example-id/caller-id \
   -H "Content-Type: application/json" \
   -d '{
-  "business_name": "Jane Doe"
+  "business_name": "Acme Services"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ### `GET /stir-shaken/status`
 
-Update record status.
+Handles `GET /stir-shaken/status`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/stir-shaken/status
+```
+
+**Response:**
+
+```json
+{
+  "number": "...",
+  "cnam_enabled": "...",
+  "caller_id_name": "...",
+  "purchased_at": "..."
+}
 ```
 
 ### `GET /campaigns`
 
 Returns all campaigns.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/campaigns
 ```
 
+**Response:**
+
+```json
+{
+  "campaigns": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

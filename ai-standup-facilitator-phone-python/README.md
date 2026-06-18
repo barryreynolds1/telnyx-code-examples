@@ -1,67 +1,92 @@
-# AI Standup Facilitator Phone — team members call in their daily standup update. AI collects what they did, what they're doing, and blockers, then summarizes for the team.
+---
+name: ai-standup-facilitator-phone
+title: "AI Standup Facilitator Phone"
+description: "AI Standup Facilitator Phone — team members call in their daily standup update. AI collects what they did, what they're doing, and blockers, then summarizes for the team."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+integrations: [Slack]
+channel: [voice]
+---
+
+# AI Standup Facilitator Phone
 
 AI Standup Facilitator Phone — team members call in their daily standup update. AI collects what they did, what they're doing, and blockers, then summarizes for the team.
 
-## Telnyx APIs
+## Telnyx API Endpoints Used
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| AI Inference API | `POST /v2/ai/chat/completions` | [docs](https://developers.telnyx.com/docs/inference) |
+- **AI Inference (Chat Completions)**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
 
-## Webhook Events Handled
+## Telnyx Webhook Events
 
-```
-call.initiated
-call.answered
-call.speak.ended
-call.gather.ended
-call.hangup
-call.gather.ended (speech)
-```
+This app handles these [Call Control](https://developers.telnyx.com/docs/api/v2/call-control) and [Messaging](https://developers.telnyx.com/docs/api/v2/messaging) webhook events:
 
-## External Integrations
+- `call.initiated` — incoming call detected, app answers
+- `call.answered` — call connected, app speaks greeting
+- `call.speak.ended` — TTS finished, app starts listening
+- `call.gather.ended` — caller input received (speech or DTMF)
+- `call.hangup` — call ended, app cleans up session
 
-| Service | APIs Used |
-|---------|-----------|
-| Slack | Incoming Webhooks |
+## External Service Integrations
 
-## How It Works
+- **Slack** — Team notifications via incoming webhooks ([docs](https://api.slack.com/messaging/webhooks))
 
-```
-Inbound Call ──► Telnyx ──► POST /webhooks/voice
-                                    │
-                               call.initiated → answer
-                               call.answered  → speak greeting
-                               call.speak.ended → gather (listen)
-                               call.gather.ended → AI inference → speak response
-                               call.hangup → cleanup
+## Architecture
+
+```text
+┌─────────────┐     ┌────────────┐     ┌──────────────────────┐
+│  Phone Call  │────►│   Telnyx   │────►│  POST /webhooks/voice│
+└─────────────┘     │   Cloud    │     └──────────┬───────────┘
+                    └────────────┘                │
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Telnyx Inference │
+                                          │ (AI processing) │
+                                          └────────┬────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │ Slack            │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `AI_MODEL` | string | `provider/model` | no | Telnyx inference model ([get it](https://developers.telnyx.com/docs/inference)) |
-| `STANDUP_NUMBER` | string | `+E.164` | **yes** | standup number |
-| `SLACK_WEBHOOK_URL` | string | `https://hooks.slack.com/services/...` | no | Slack webhook for slack webhook url alerts ([get it](https://api.slack.com/messaging/webhooks)) |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Inference model identifier | [→ link](https://developers.telnyx.com/docs/inference/models) |
+| `STANDUP_NUMBER` | `string` | `+18005551234` | **yes** | standup number | — |
+| `SLACK_WEBHOOK_URL` | `string` | `https://hooks.slack.com/...` | no | Slack webhook for slack webhook url alerts | [→ link](https://api.slack.com/messaging/webhooks) |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-standup-facilitator-phone-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
-### Webhook URL
+### Webhook Configuration
 
-Expose with [ngrok](https://ngrok.com): `ngrok http 5000`
+1. Expose your local server:
 
-Configure in [Telnyx Portal](https://portal.telnyx.com):
+   ```bash
+   ngrok http 5000
+   ```
 
-- **Call Control App** → Webhook URL: `https://<ngrok>.ngrok.io/webhooks/voice`
+2. Copy the HTTPS URL and configure in [Telnyx Portal](https://portal.telnyx.com):
+
+   - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
 
 ### Docker
 
@@ -76,52 +101,92 @@ docker run --env-file .env -p 5000:5000 ai-standup-facilitator-phone
 
 Returns all standups.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/standups
 ```
 
+**Response:**
+
+```json
+{
+  "updates": "..."
+}
+```
+
 ### `GET /standups/summary`
+
+Handles `GET /standups/summary`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/standups/summary
 ```
 
+**Response:**
+
+```json
+{
+  "message": "...",
+  "team_size": "...",
+  "has_blockers": "...",
+  "blockers": "..."
+}
+```
+
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Webhook Endpoints
 
 ### `POST /webhooks/voice`
 
-Receives Telnyx Call Control webhook events.
+Receives [Telnyx Call Control](https://developers.telnyx.com/docs/voice/call-control) webhook events.
 
-Events handled: `call.initiated`, `call.answered`, `call.speak.ended`, `call.gather.ended`, `call.hangup`, `call.gather.ended (speech)`
+**Events handled:** `call.initiated`, `call.answered`, `call.speak.ended`, `call.gather.ended`, `call.hangup`
 
-Example payload:
+**Example inbound payload:**
 
 ```json
 {
   "data": {
     "event_type": "call.initiated",
-    "call_control_id": "v3:abc-123",
+    "call_control_id": "v3:uMi2qMWHT-mLFGkEm4t9tA",
+    "connection_id": "1494404757140276705",
     "direction": "incoming",
     "from": "+12125551234",
-    "to": "+13105559876"
+    "to": "+13105559876",
+    "call_leg_id": "428c31b6-7af4-4bcb-b7f5-5013ef9657c1",
+    "client_state": null,
+    "state": "ringing"
+  },
+  "meta": {
+    "attempt": 1,
+    "delivered_to": "https://your-server.example.com/webhooks/voice"
   }
 }
 ```
 
 ## Resources
 
-- [AI Inference API](https://developers.telnyx.com/docs/inference)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [AI Inference (Chat Completions) — API Reference](https://developers.telnyx.com/api/inference/chat-completions)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)
+- [Slack Documentation](https://api.slack.com/messaging/webhooks)

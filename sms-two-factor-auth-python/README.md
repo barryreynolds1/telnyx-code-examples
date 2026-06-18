@@ -1,35 +1,48 @@
+---
+name: sms-two-factor-auth
+title: "Production-ready OTP 2FA system with Flask and Telnyx SMS."
+description: "Production-ready OTP 2FA system with Flask and Telnyx SMS."
+language: python
+framework: flask
+---
+
 # Production-ready OTP 2FA system with Flask and Telnyx SMS.
 
 Production-ready OTP 2FA system with Flask and Telnyx SMS.
 
-## Telnyx APIs
+## Architecture
 
-| API | Endpoint | Docs |
-|-----|----------|------|
-| Cloud Storage API | `S3-compatible` | [docs](https://developers.telnyx.com/docs/storage) |
-
-## How It Works
-
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `OTP_EXPIRY_SECONDS` | string | `-` | no | otp expiry seconds |
-| `TELNYX_PHONE_NUMBER` | string | `+E.164` | **yes** | telnyx phone number |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `OTP_EXPIRY_SECONDS` | `string` | `300` | no | otp expiry seconds | — |
+| `TELNYX_PHONE_NUMBER` | `string` | `+18005551234` | **yes** | telnyx phone number | — |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/sms-two-factor-auth-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -43,35 +56,69 @@ docker run --env-file .env -p 5000:5000 sms-two-factor-auth
 
 ### `POST /auth/request-otp`
 
+Handles `POST /auth/request-otp`.
+
+**Request:**
+
 ```bash
-curl -X POST http://localhost:5000/auth/request-otp \
-  -H "Content-Type: application/json" \
-  -d '{
-  "phone_number": "+12125551234"
-}'
+curl -X POST http://localhost:5000/auth/request-otp
+```
+
+**Response:**
+
+```json
+{
+  "message": "...",
+  "message_id": "...",
+  "expires_in_seconds": "...",
+  "status_code": "..."
+}
 ```
 
 ### `POST /auth/verify-otp`
+
+Handles `POST /auth/verify-otp`.
+
+**Request:**
 
 ```bash
 curl -X POST http://localhost:5000/auth/verify-otp \
   -H "Content-Type: application/json" \
   -d '{
-  "phone_number": "+12125551234",
-  "code": "value"
+  "code": "example_value"
 }'
+```
+
+**Response:**
+
+```json
+{
+  "message": "...",
+  "session_token": "...",
+  "authenticated": "...",
+  "attempts_remaining": "..."
+}
 ```
 
 ### `GET /auth/otp-status`
 
-Update record status.
+Handles `GET /auth/otp-status`.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/auth/otp-status
 ```
 
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 ## Resources
 
-- [Cloud Storage API](https://developers.telnyx.com/docs/storage)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)

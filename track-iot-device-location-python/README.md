@@ -1,27 +1,46 @@
-# Production-ready Flask application for device location tracking via Telnyx IoT API.
+---
+name: track-iot-device-location
+title: "Production-ready Flask application for device location"
+description: "Production-ready Flask application for device location tracking via Telnyx IoT API."
+language: python
+framework: flask
+---
+
+# Production-ready Flask application for device location
 
 Production-ready Flask application for device location tracking via Telnyx IoT API.
 
-## How It Works
+## Architecture
 
-```
-API Call ──► Your App ──► Telnyx APIs ──► Customer
+```text
+┌─────────────┐                        ┌──────────────────────┐
+│  API Client │───────────────────────►│     Your App         │
+└─────────────┘                        └──────────┬───────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ Response (SMS/  │
+                                          │ Voice/Webhook)  │
+                                          └─────────────────┘
 ```
 
 ## Environment Variables
 
-| Variable | Type | Format | Required | Description |
-|----------|------|--------|----------|-------------|
-| `TELNYX_API_KEY` | string | `KEY...` | **yes** | Telnyx API v2 key ([get it](https://portal.telnyx.com/api-keys)) |
-| `FLASK_DEBUG` | string | `-` | no | flask debug |
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY...` | **yes** | Telnyx API v2 key | [→ link](https://portal.telnyx.com/api-keys) |
+| `FLASK_DEBUG` | `string` | `false` | no | flask debug | — |
 
 ## Setup
 
 ```bash
-cp .env.example .env
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/track-iot-device-location-python
+cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
-python app.py
-# Server starts on http://localhost:5000
+python app.py           # starts on http://localhost:5000
 ```
 
 ### Docker
@@ -37,36 +56,79 @@ docker run --env-file .env -p 5000:5000 track-iot-device-location
 
 Returns all devices.
 
+**Request:**
+
 ```bash
 curl http://localhost:5000/devices
 ```
 
+**Response:**
+
+```json
+{
+  "devices": "..."
+}
+```
+
 ### `GET /devices/<sim_card_id>`
 
+Returns device location details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/devices/<sim_card_id>
+curl http://localhost:5000/devices/example-id
+```
+
+**Response:**
+
+```json
+{
+  "device_location": [
+    "..."
+  ]
+}
 ```
 
 ### `GET /devices/<sim_card_id>/location`
 
+Returns location only details.
+
+**Request:**
+
 ```bash
-curl http://localhost:5000/devices/<sim_card_id>/location
+curl http://localhost:5000/devices/example-id/location
+```
+
+**Response:**
+
+```json
+{
+  "location_only": [
+    "..."
+  ]
+}
 ```
 
 ### `GET /health`
 
-Health check and service status.
+Returns service health and operational metrics.
+
+**Request:**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
+**Response:**
+
 ```json
-{"status": "ok"}
+{
+  "status": "ok"
+}
 ```
 
 ## Resources
 
-- [Telnyx Developer Docs](https://developers.telnyx.com)
-- [Telnyx Portal](https://portal.telnyx.com)
-- [API Reference](https://developers.telnyx.com/api)
+- [Telnyx Developer Documentation](https://developers.telnyx.com)
+- [Telnyx Portal (dashboard)](https://portal.telnyx.com)
