@@ -72,6 +72,12 @@ def verify_folder(folder_path: Path, entry: dict, verbose: bool = False) -> list
     code_file = LANG_CODE_FILE.get(language, "app.py")
     dep_file = LANG_DEP_FILE.get(language, "requirements.txt")
 
+    # Edge Compute examples ship a func.toml + function/ package instead of a single
+    # app.py — treat func.toml as the code file for them.
+    is_edge = (folder_path / "func.toml").exists()
+    if is_edge:
+        code_file = "func.toml"
+
     # --- File existence checks ---
     required_files = [
         "README.md",
@@ -109,7 +115,7 @@ def verify_folder(folder_path: Path, entry: dict, verbose: bool = False) -> list
 
     # --- Code file checks ---
     code_path = folder_path / code_file
-    if code_path.exists() and code_path.stat().st_size > 0:
+    if code_path.exists() and code_path.stat().st_size > 0 and not is_edge:
         # Syntax checks
         if language == "python":
             try:

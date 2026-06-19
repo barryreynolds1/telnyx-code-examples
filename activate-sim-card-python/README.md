@@ -120,6 +120,22 @@ curl -X POST http://localhost:5000/sim-cards/example-id/activate \
 }
 ```
 
+## Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
+
+## Related Examples
+
+- [IoT Fleet Alert Escalation (Python)](../iot-fleet-alert-escalation-python)
+- [IoT Panic Button Voice Alert (Python)](../iot-panic-button-voice-alert-python)
+- [IoT Smart Building Voice Control (Python)](../iot-smart-building-voice-control-python)
+- [Monitor IoT Data Usage (Python)](../monitor-iot-data-usage-python)
+- [Provision Esim (Python)](../provision-esim-python)
+
 ## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)

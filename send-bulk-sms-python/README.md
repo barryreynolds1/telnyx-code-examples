@@ -118,6 +118,14 @@ curl http://localhost:5000/sms/bulk/status
 - **Connection refused on port 5000**: App isn't running. Run `python app.py` and check no other process uses port 5000.
 - **401 Unauthorized**: Your `TELNYX_API_KEY` is invalid. Generate a new one at [portal.telnyx.com/api-keys](https://portal.telnyx.com/api-keys).
 
+## Related Examples
+
+- [Abandoned Cart Recovery (Python)](../abandoned-cart-recovery-python)
+- [Accounting Tax Season Line (Python)](../accounting-tax-season-line-python)
+- [After Hours Nurse Triage (Python)](../after-hours-nurse-triage-python)
+- [AI Appointment Booking SMS Flow (Python)](../ai-appointment-booking-sms-flow-python)
+- [AI Appointment Reminder SMS Voice (Python)](../ai-appointment-reminder-sms-voice-python)
+
 ## Resources
 
 - [Messaging Guide](https://developers.telnyx.com/docs/messaging)

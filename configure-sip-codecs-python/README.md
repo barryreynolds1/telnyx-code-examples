@@ -127,6 +127,22 @@ curl http://localhost:5000/sip/connections/example-id
 }
 ```
 
+## Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
+
+## Related Examples
+
+- [Inbound SIP Routing (Python)](../inbound-sip-routing-python)
+- [Setup SIP Trunk (Python)](../setup-sip-trunk-python)
+- [SIP Failover Routing (Python)](../sip-failover-routing-python)
+- [SIP Load Balancer Health Check (Python)](../sip-load-balancer-health-check-python)
+- [SIP Trunking Failover Monitor (Python)](../sip-trunking-failover-monitor-python)
+
 ## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)

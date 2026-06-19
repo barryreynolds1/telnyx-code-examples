@@ -134,6 +134,22 @@ Receives [Telnyx Call Control](https://developers.telnyx.com/docs/voice/call-con
 }
 ```
 
+## Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
+
+## Related Examples
+
+- [Abandoned Cart Recovery (Python)](../abandoned-cart-recovery-python)
+- [Accounting Tax Season Line (Python)](../accounting-tax-season-line-python)
+- [After Hours Nurse Triage (Python)](../after-hours-nurse-triage-python)
+- [AI Appointment Booking SMS Flow (Python)](../ai-appointment-booking-sms-flow-python)
+- [AI Appointment Reminder SMS Voice (Python)](../ai-appointment-reminder-sms-voice-python)
+
 ## Resources
 
 - [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)

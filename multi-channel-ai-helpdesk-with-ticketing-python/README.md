@@ -201,6 +201,22 @@ Receives [Telnyx Messaging](https://developers.telnyx.com/docs/messaging) webhoo
 }
 ```
 
+## Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
+
+## Related Examples
+
+- [AI After Hours Emergency Triage (Python)](../ai-after-hours-emergency-triage-python)
+- [AI Assistant Knowledge Base (Python)](../ai-assistant-knowledge-base-python)
+- [AI Assistant Multi Tool (Python)](../ai-assistant-multi-tool-python)
+- [AI Assistant Phone Setup (Python)](../ai-assistant-phone-setup-python)
+- [AI Audiobook Narrator (Python)](../ai-audiobook-narrator-python)
+
 ## Resources
 
 - [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)

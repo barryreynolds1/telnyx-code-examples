@@ -88,6 +88,14 @@ curl -X POST http://localhost:5000/sip/setup \
 - **Connection refused on port 5000**: App isn't running. Run `python app.py` and check no other process uses port 5000.
 - **401 Unauthorized**: Your `TELNYX_API_KEY` is invalid. Generate a new one at [portal.telnyx.com/api-keys](https://portal.telnyx.com/api-keys).
 
+## Related Examples
+
+- [Configure SIP Codecs (Python)](../configure-sip-codecs-python)
+- [Inbound SIP Routing (Python)](../inbound-sip-routing-python)
+- [SIP Failover Routing (Python)](../sip-failover-routing-python)
+- [SIP Load Balancer Health Check (Python)](../sip-load-balancer-health-check-python)
+- [SIP Trunking Failover Monitor (Python)](../sip-trunking-failover-monitor-python)
+
 ## Resources
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
