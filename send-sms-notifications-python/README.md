@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/send-sms-notifications-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/send-sms-notifications-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -65,7 +54,6 @@ Create `app/models.py` to define the notification data structure:
 from datetime import datetime
 from enum import Enum
 
-
 class NotificationStatus(Enum):
     """Notification delivery status."""
     PENDING = "pending"
@@ -73,7 +61,6 @@ class NotificationStatus(Enum):
     DELIVERED = "delivered"
     FAILED = "failed"
     RETRY = "retry"
-
 
 class Notification:
     """In-memory notification record (use a database in production)."""
@@ -103,7 +90,6 @@ class Notification:
             "updated_at": self.updated_at.isoformat(),
         }
 
-
 # In-memory storage (replace with database in production)
 notifications_db = {}
 notification_counter = 0
@@ -116,7 +102,6 @@ import os
 import telnyx
 from datetime import datetime
 from app.models import Notification, NotificationStatus, notifications_db, notification_counter
-
 
 def send_notification(recipient: str, message: str, notification_type: str = "alert") -> dict:
     """
@@ -185,7 +170,6 @@ def send_notification(recipient: str, message: str, notification_type: str = "al
         notifications_db[notification.id] = notification
         raise
 
-
 def get_notification_status(notification_id: int) -> dict:
     """Retrieve notification status by ID."""
     if notification_id not in notifications_db:
@@ -193,7 +177,6 @@ def get_notification_status(notification_id: int) -> dict:
     
     notification = notifications_db[notification_id]
     return notification.to_dict()
-
 
 def list_notifications(status: str = None, limit: int = 50) -> list:
     """List all notifications, optionally filtered by status."""
@@ -206,7 +189,6 @@ def list_notifications(status: str = None, limit: int = 50) -> list:
     notifications.sort(key=lambda n: n.created_at, reverse=True)
     
     return [n.to_dict() for n in notifications[:limit]]
-
 
 def update_notification_status(message_id: str, status: str) -> None:
     """Update notification status based on webhook event (called by webhook handler)."""
@@ -225,7 +207,6 @@ from flask import Blueprint, jsonify, request
 from app.notifications import send_notification, get_notification_status, list_notifications, update_notification_status
 
 bp = Blueprint("notifications", __name__, url_prefix="/api")
-
 
 @bp.route("/notifications/send", methods=["POST"])
 def send_sms_notification():
@@ -269,7 +250,6 @@ def send_sms_notification():
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
 
-
 @bp.route("/notifications/<int:notification_id>", methods=["GET"])
 def get_notification(notification_id: int):
     """Retrieve notification status by ID."""
@@ -278,7 +258,6 @@ def get_notification(notification_id: int):
         return jsonify(notification), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
-
 
 @bp.route("/notifications", methods=["GET"])
 def list_all_notifications():
@@ -291,7 +270,6 @@ def list_all_notifications():
         return jsonify({"count": len(notifications), "notifications": notifications}), 200
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @bp.route("/webhooks/sms", methods=["POST"])
 def handle_sms_webhook():
@@ -344,7 +322,6 @@ Create `app/__init__.py` to initialize the Flask application:
 ```python
 from flask import Flask
 from config import Config
-
 
 def create_app(config_class=Config):
     """Application factory."""

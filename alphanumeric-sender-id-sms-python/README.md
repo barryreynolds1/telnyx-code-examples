@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/alphanumeric-sender-id-sms-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/alphanumeric-sender-id-sms-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -71,7 +60,6 @@ load_dotenv()
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 
-
 def validate_alphanumeric_sender_id(sender_id: str) -> bool:
     """Validate alphanumeric sender ID format (max 11 chars, alphanumeric only)."""
     if not sender_id or len(sender_id) > 11:
@@ -79,11 +67,9 @@ def validate_alphanumeric_sender_id(sender_id: str) -> bool:
     # Allow letters, numbers, and spaces (some regions allow spaces)
     return bool(re.match(r"^[A-Za-z0-9\s]+$", sender_id))
 
-
 def validate_recipient_number(to_number: str) -> bool:
     """Validate recipient phone number is in E.164 format."""
     return bool(to_number.startswith("+") and len(to_number) >= 10)
-
 
 def send_sms_with_alphanumeric_id(
     to_number: str, message: str, sender_id: str = None

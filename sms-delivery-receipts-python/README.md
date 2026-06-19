@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/sms-delivery-receipts-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/sms-delivery-receipts-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -80,13 +69,11 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 # Database configuration
 DB_PATH = "receipts.db"
 
-
 def get_db_connection():
     """Get a database connection with row factory for dict-like access."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def send_sms_with_tracking(to_number: str, message: str) -> dict:
     """Send SMS via Telnyx and store message record for tracking."""
@@ -128,7 +115,6 @@ def send_sms_with_tracking(to_number: str, message: str) -> dict:
         "to": to_number,
     }
 
-
 @app.route("/sms/send", methods=["POST"])
 def send_sms_endpoint():
     """HTTP endpoint to send SMS and begin tracking delivery."""
@@ -157,7 +143,6 @@ def send_sms_endpoint():
         return jsonify({"error": "Network error connecting to Telnyx"}), 503
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @app.route("/webhooks/message", methods=["POST"])
 def handle_message_webhook():
@@ -238,7 +223,6 @@ def handle_message_webhook():
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/messages/<message_id>", methods=["GET"])
 def get_message_status(message_id: str):
     """Retrieve message and delivery receipt status by message ID."""
@@ -290,7 +274,6 @@ def get_message_status(message_id: str):
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/messages", methods=["GET"])
 def list_messages():
     """List all messages with optional status filter."""
@@ -328,7 +311,6 @@ def list_messages():
         
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/shortcode-sms-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/shortcode-sms-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -80,7 +69,6 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 # In-memory storage for received messages (use a database in production)
 received_messages = []
-
 
 def send_shortcode_sms(to_number: str, message: str) -> dict:
     """Send SMS via shortcode and return JSON-serializable response data."""
@@ -112,7 +100,6 @@ def send_shortcode_sms(to_number: str, message: str) -> dict:
         "to": to_number,
         "segments": response.data.parts if hasattr(response.data, "parts") else 1,
     }
-
 
 def configure_messaging_profile(webhook_url: str) -> dict:
     """Configure messaging profile with webhook URL for inbound SMS."""
@@ -147,7 +134,6 @@ def configure_messaging_profile(webhook_url: str) -> dict:
         "webhook_url": webhook_url,
     }
 
-
 @app.route("/sms/send", methods=["POST"])
 def send_sms_endpoint():
     """HTTP endpoint to send SMS via shortcode."""
@@ -176,7 +162,6 @@ def send_sms_endpoint():
         return jsonify({"error": "Network error connecting to Telnyx"}), 503
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_inbound_sms():
@@ -229,18 +214,15 @@ def handle_inbound_sms():
         print(f"Webhook error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/messages/received", methods=["GET"])
 def list_received_messages():
     """Retrieve all received inbound messages."""
     return jsonify(received_messages), 200
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint for monitoring."""
     return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()}), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

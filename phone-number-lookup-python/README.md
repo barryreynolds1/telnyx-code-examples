@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/phone-number-lookup-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/phone-number-lookup-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -78,7 +67,6 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 lookup_cache = {}
 CACHE_TTL = timedelta(hours=24)
 
-
 def is_cache_valid(cached_entry: dict) -> bool:
     """Check if a cached entry is still valid based on TTL."""
     if not cached_entry:
@@ -88,7 +76,6 @@ def is_cache_valid(cached_entry: dict) -> bool:
         return False
     return datetime.utcnow() - cached_time < CACHE_TTL
 
-
 def get_cached_lookup(phone_number: str) -> dict:
     """Retrieve a lookup result from cache if valid."""
     if phone_number in lookup_cache:
@@ -97,14 +84,12 @@ def get_cached_lookup(phone_number: str) -> dict:
             return entry.get("data")
     return None
 
-
 def cache_lookup_result(phone_number: str, result: dict) -> None:
     """Store a lookup result in cache with timestamp."""
     lookup_cache[phone_number] = {
         "data": result,
         "cached_at": datetime.utcnow(),
     }
-
 
 def lookup_phone_number(phone_number: str) -> dict:
     """

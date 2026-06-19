@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/receive-mms-webhook-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/receive-mms-webhook-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -78,7 +67,6 @@ logger = logging.getLogger(__name__)
 # Initialize Telnyx client (not needed for receiving webhooks, but useful for future operations)
 import telnyx
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
-
 
 def download_media(media_url: str, filename: str) -> dict:
     """Download media attachment from Telnyx and save locally."""
@@ -106,7 +94,6 @@ def download_media(media_url: str, filename: str) -> dict:
             "status": "failed",
             "error": str(e),
         }
-
 
 def process_inbound_mms(payload: dict) -> dict:
     """Extract and process inbound MMS message data."""
@@ -144,7 +131,6 @@ def process_inbound_mms(payload: dict) -> dict:
         "media": media_list,
         "direction": "inbound",
     }
-
 
 @app.route("/webhooks/message", methods=["POST"])
 def receive_mms():
@@ -187,7 +173,6 @@ def receive_mms():
         logger.error(f"Unexpected error processing webhook: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/messages", methods=["GET"])
 def list_received_messages():
     """Retrieve list of received messages (for demonstration)."""
@@ -210,12 +195,10 @@ def list_received_messages():
         logger.error(f"Error listing messages: {str(e)}")
         return jsonify({"error": "Failed to list messages"}), 500
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint for monitoring."""
     return jsonify({"status": "healthy"}), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

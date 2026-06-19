@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/sms-opt-out-management-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/sms-opt-out-management-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -79,7 +68,6 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 
 # Initialize database on startup
 init_db()
-
 
 def send_sms(to_number: str, message: str) -> dict:
     """
@@ -123,7 +111,6 @@ def send_sms(to_number: str, message: str) -> dict:
         "to": to_number,
     }
 
-
 @app.route("/sms/send", methods=["POST"])
 def send_sms_endpoint():
     """HTTP endpoint to send SMS with opt-out checking."""
@@ -153,7 +140,6 @@ def send_sms_endpoint():
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
 
-
 @app.route("/optout/add", methods=["POST"])
 def add_optout_endpoint():
     """Manually add a phone number to the opt-out list."""
@@ -174,7 +160,6 @@ def add_optout_endpoint():
     result = add_optout(phone_number, reason=reason, source="manual")
     return jsonify(result), 200
 
-
 @app.route("/optout/remove", methods=["POST"])
 def remove_optout_endpoint():
     """Remove a phone number from the opt-out list."""
@@ -191,13 +176,11 @@ def remove_optout_endpoint():
     result = remove_optout(phone_number)
     return jsonify(result), 200
 
-
 @app.route("/optout/list", methods=["GET"])
 def list_optouts_endpoint():
     """Retrieve all opted-out phone numbers."""
     optouts = get_optout_list()
     return jsonify({"optouts": optouts, "count": len(optouts)}), 200
-
 
 @app.route("/optout/check", methods=["POST"])
 def check_optout_endpoint():
@@ -214,7 +197,6 @@ def check_optout_endpoint():
     
     opted_out = is_opted_out(phone_number)
     return jsonify({"phone_number": phone_number, "opted_out": opted_out}), 200
-
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms_webhook():
@@ -255,7 +237,6 @@ def handle_sms_webhook():
         return jsonify({"status": "opted_out", "phone_number": from_number}), 200
     
     return jsonify({"status": "processed"}), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

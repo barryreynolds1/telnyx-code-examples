@@ -161,6 +161,24 @@ Send and receive text messages with the [Telnyx SMS API](https://telnyx.com/prod
 | [whatsapp-sms-bridge-python](./whatsapp-sms-bridge-python/) | Python | WhatsApp-SMS Bridge — receive messages on WhatsApp and forward them via SMS, and vice versa. Bidirectional bridge between two messaging channels. |
 | [white-label-appointment-platform-python](./white-label-appointment-platform-python/) | Python | Multi-tenant SaaS that gives any service business their own AI phone line with booking, reminders, and calendar sync. Each tenant has own number, greeting, and config. |
 | [x402-usdc-account-funder-python](./x402-usdc-account-funder-python/) | Python | X402 USDC Account Funder — fund your Telnyx account with USDC cryptocurrency on the Base blockchain. |
+| [two-way-sms-chat-python](./two-way-sms-chat-python/) | Python | pip install -r requirements.txt. |
+| [sms-survey-bot-python](./sms-survey-bot-python/) | Python | pip install -r requirements.txt. |
+| [schedule-sms-messages-python](./schedule-sms-messages-python/) | Python | pip install -r requirements.txt. |
+| [alphanumeric-sender-id-sms-python](./alphanumeric-sender-id-sms-python/) | Python | pip install -r requirements.txt. |
+| [long-code-sms-python](./long-code-sms-python/) | Python | pip install -r requirements.txt. |
+| [toll-free-sms-python](./toll-free-sms-python/) | Python | pip install -r requirements.txt. |
+| [shortcode-sms-python](./shortcode-sms-python/) | Python | pip install -r requirements.txt. |
+| [receive-mms-webhook-python](./receive-mms-webhook-python/) | Python | pip install -r requirements.txt. |
+| [sms-delivery-receipts-python](./sms-delivery-receipts-python/) | Python | pip install -r requirements.txt. |
+| [phone-number-lookup-python](./phone-number-lookup-python/) | Python | pip install -r requirements.txt. |
+| [sms-opt-out-management-python](./sms-opt-out-management-python/) | Python | pip install -r requirements.txt. |
+| [sms-conversation-threading-python](./sms-conversation-threading-python/) | Python | pip install -r requirements.txt. |
+| [send-sms-notifications-python](./send-sms-notifications-python/) | Python | pip install -r requirements.txt. |
+| [sms-marketing-campaign-python](./sms-marketing-campaign-python/) | Python | pip install -r requirements.txt. |
+| [two-way-sms-chat-nodejs](./two-way-sms-chat-nodejs/) | Node.js | npm install. |
+| [send-mms-picture-message-nodejs](./send-mms-picture-message-nodejs/) | Node.js | npm install. |
+| [sms-auto-reply-bot-nodejs](./sms-auto-reply-bot-nodejs/) | Node.js | npm install. |
+| [sms-delivery-receipts-nodejs](./sms-delivery-receipts-nodejs/) | Node.js | npm install. |
 
 ## AI Assistants
 

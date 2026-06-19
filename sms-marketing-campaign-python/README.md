@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/sms-marketing-campaign-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/sms-marketing-campaign-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -84,13 +73,11 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 RATE_LIMIT_DELAY = 0.1  # 100ms between messages to stay under API limits
 MAX_MESSAGES_PER_SECOND = 10
 
-
 def get_db():
     """Get database connection with row factory for dict-like access."""
     conn = sqlite3.connect("marketing.db")
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def init_db():
     """Initialize database schema on startup."""
@@ -100,11 +87,9 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 def validate_phone_number(phone: str) -> bool:
     """Validate phone number is in E.164 format."""
     return phone.startswith("+") and len(phone) >= 10 and phone[1:].isdigit()
-
 
 def send_sms_message(to_number: str, message: str, campaign_id: str = None) -> dict:
     """Send SMS via Telnyx and return JSON-serializable response data."""
@@ -130,7 +115,6 @@ def send_sms_message(to_number: str, message: str, campaign_id: str = None) -> d
         "to": to_number,
         "campaign_id": campaign_id,
     }
-
 
 def create_campaign(name: str, message: str, recipients: list) -> dict:
     """Create a new marketing campaign and queue messages for delivery."""
@@ -163,7 +147,6 @@ def create_campaign(name: str, message: str, recipients: list) -> dict:
         }
     finally:
         conn.close()
-
 
 def send_campaign_batch(campaign_id: str, batch_size: int = 100) -> dict:
     """Send queued messages for a campaign with rate limiting."""
@@ -236,7 +219,6 @@ def send_campaign_batch(campaign_id: str, batch_size: int = 100) -> dict:
     finally:
         conn.close()
 
-
 def get_campaign_status(campaign_id: str) -> dict:
     """Get detailed status of a campaign."""
     conn = get_db()
@@ -275,7 +257,6 @@ def get_campaign_status(campaign_id: str) -> dict:
     finally:
         conn.close()
 
-
 # Flask Routes
 
 @app.route("/campaigns", methods=["POST"])
@@ -310,7 +291,6 @@ def create_campaign_endpoint():
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/campaigns/<campaign_id>/send", methods=["POST"])
 def send_campaign_endpoint(campaign_id):
     """Send queued messages for a campaign."""
@@ -335,7 +315,6 @@ def send_campaign_endpoint(campaign_id):
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/campaigns/<campaign_id>", methods=["GET"])
 def get_campaign_endpoint(campaign_id):
     """Get campaign status and delivery statistics."""
@@ -347,7 +326,6 @@ def get_campaign_endpoint(campaign_id):
         return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
-
 
 @app.route("/webhooks/message-status", methods=["POST"])
 def webhook_message_status():
@@ -389,12 +367,10 @@ def webhook_message_status():
     finally:
         conn.close()
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "healthy"}), 200
-
 
 if __name__ == "__main__":
     init_db()

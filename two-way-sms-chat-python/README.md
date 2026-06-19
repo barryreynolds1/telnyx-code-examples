@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/two-way-sms-chat-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/two-way-sms-chat-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -77,7 +66,6 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 # Simple in-memory storage for conversation state
 conversations = {}
 
-
 def send_sms(to_number: str, message: str) -> dict:
     """Send SMS via Telnyx and return JSON-serializable response data."""
     from_number = os.getenv("TELNYX_PHONE_NUMBER")
@@ -100,7 +88,6 @@ def send_sms(to_number: str, message: str) -> dict:
         "to": to_number,
         "text": message,
     }
-
 
 def process_inbound_message(from_number: str, message_text: str) -> str:
     """Process inbound SMS and generate appropriate response."""

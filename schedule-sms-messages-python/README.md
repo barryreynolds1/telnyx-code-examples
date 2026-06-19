@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/schedule-sms-messages-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/schedule-sms-messages-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -87,7 +76,6 @@ scheduled_jobs = {}
 # Configure logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 def send_scheduled_sms(job_id: str, to_number: str, message: str) -> None:
     """
@@ -134,7 +122,6 @@ def send_scheduled_sms(job_id: str, to_number: str, message: str) -> None:
         if job_id in scheduled_jobs:
             scheduled_jobs[job_id]["status"] = "failed"
             scheduled_jobs[job_id]["error"] = "Network connection error"
-
 
 @app.route("/sms/schedule", methods=["POST"])
 def schedule_sms():
@@ -214,7 +201,6 @@ def schedule_sms():
             "error": f"Invalid datetime format: {str(e)}"
         }), 400
 
-
 @app.route("/sms/scheduled/<job_id>", methods=["GET"])
 def get_scheduled_job(job_id: str):
     """Retrieve the status of a scheduled SMS job."""
@@ -223,7 +209,6 @@ def get_scheduled_job(job_id: str):
     
     job = scheduled_jobs[job_id]
     return jsonify(job), 200
-
 
 @app.route("/sms/scheduled", methods=["GET"])
 def list_scheduled_jobs():
@@ -239,7 +224,6 @@ def list_scheduled_jobs():
         for job in scheduled_jobs.values()
     ]
     return jsonify(jobs_list), 200
-
 
 @app.route("/sms/scheduled/<job_id>", methods=["DELETE"])
 def cancel_scheduled_job(job_id: str):
@@ -273,13 +257,11 @@ def cancel_scheduled_job(job_id: str):
         logger.error(f"Error cancelling job {job_id}: {str(e)}")
         return jsonify({"error": "Failed to cancel job"}), 500
 
-
 @app.errorhandler(Exception)
 def handle_error(error):
     """Global error handler for unhandled exceptions."""
     logger.error(f"Unhandled exception: {str(error)}")
     return jsonify({"error": "Internal server error"}), 500
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

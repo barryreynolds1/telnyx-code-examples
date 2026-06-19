@@ -40,22 +40,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/sms-conversation-threading-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/sms-conversation-threading-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -75,7 +64,6 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} i
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
 class Conversation(Base):
     """Represents a conversation thread between a contact and the application."""
     __tablename__ = "conversations"
@@ -85,7 +73,6 @@ class Conversation(Base):
     last_message_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     message_count = Column(Integer, default=0)
-
 
 class Message(Base):
     """Represents a single SMS message within a conversation."""
@@ -100,7 +87,6 @@ class Message(Base):
     status = Column(String, default="pending")  # pending, sent, delivered, failed
     created_at = Column(DateTime, default=datetime.utcnow)
     telnyx_message_id = Column(String, unique=True, index=True)
-
 
 # Create tables on module import
 Base.metadata.create_all(bind=engine)
@@ -124,7 +110,6 @@ app = Flask(__name__)
 # Initialize Telnyx client
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 
-
 def get_or_create_conversation(contact_number: str) -> str:
     """Get existing conversation or create new one for contact."""
     db = SessionLocal()
@@ -147,7 +132,6 @@ def get_or_create_conversation(contact_number: str) -> str:
         return conversation_id
     finally:
         db.close()
-
 
 def store_message(
     conversation_id: str,
@@ -197,7 +181,6 @@ def store_message(
     finally:
         db.close()
 
-
 def send_message_to_contact(to_number: str, body: str) -> dict:
     """Send outbound message and store in conversation thread."""
     from_number = os.getenv("TELNYX_PHONE_NUMBER")
@@ -230,7 +213,6 @@ def send_message_to_contact(to_number: str, body: str) -> dict:
     
     return message_data
 
-
 @app.route("/conversations", methods=["GET"])
 def list_conversations():
     """List all conversation threads."""
@@ -252,7 +234,6 @@ def list_conversations():
         ]), 200
     finally:
         db.close()
-
 
 @app.route("/conversations/<conversation_id>", methods=["GET"])
 def get_conversation(conversation_id: str):
@@ -292,7 +273,6 @@ def get_conversation(conversation_id: str):
     finally:
         db.close()
 
-
 @app.route("/conversations/<contact_number>/send", methods=["POST"])
 def send_to_contact(contact_number: str):
     """Send a message to a contact and add to conversation thread."""
@@ -317,7 +297,6 @@ def send_to_contact(contact_number: str):
         return jsonify({"error": "Network error connecting to Telnyx"}), 503
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_inbound_sms():
@@ -361,12 +340,10 @@ def handle_inbound_sms():
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "ok"}), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

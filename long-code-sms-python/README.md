@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/long-code-sms-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/long-code-sms-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -83,7 +72,6 @@ message_queue = []
 message_status = {}  # Maps message_id -> {status, timestamp, recipient}
 rate_limiter = defaultdict(list)  # Maps recipient -> [timestamps]
 
-
 def is_rate_limited(recipient: str) -> bool:
     """Check if recipient has exceeded rate limit (1 message per second)."""
     now = time.time()
@@ -95,7 +83,6 @@ def is_rate_limited(recipient: str) -> bool:
     
     rate_limiter[recipient].append(now)
     return False
-
 
 def queue_message(to_number: str, message: str, metadata: dict = None) -> dict:
     """Queue a message for sending with rate limiting."""
@@ -122,7 +109,6 @@ def queue_message(to_number: str, message: str, metadata: dict = None) -> dict:
     
     message_queue.append(queue_item)
     return {"queued": True, "position": len(message_queue)}
-
 
 def send_queued_message(queue_item: dict) -> dict:
     """Send a single message from the queue via Telnyx API."""
@@ -157,7 +143,6 @@ def send_queued_message(queue_item: dict) -> dict:
         }
         raise
 
-
 @app.route("/sms/queue", methods=["POST"])
 def queue_sms_endpoint():
     """Queue an SMS for sending with rate limiting."""
@@ -179,7 +164,6 @@ def queue_sms_endpoint():
     
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @app.route("/sms/send", methods=["POST"])
 def send_sms_endpoint():
@@ -227,7 +211,6 @@ def send_sms_endpoint():
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
 
-
 @app.route("/sms/status/<message_id>", methods=["GET"])
 def get_message_status(message_id: str):
     """Retrieve delivery status for a sent message."""
@@ -236,7 +219,6 @@ def get_message_status(message_id: str):
     
     status_data = message_status[message_id]
     return jsonify(status_data), 200
-
 
 @app.route("/webhooks/message", methods=["POST"])
 def handle_message_webhook():
@@ -290,7 +272,6 @@ def handle_message_webhook():
         # Acknowledge other event types
         return jsonify({"status": "acknowledged"}), 200
 
-
 @app.route("/sms/queue/process", methods=["POST"])
 def process_queue():
     """Process all queued messages (call this periodically or on-demand)."""
@@ -321,7 +302,6 @@ def process_queue():
         "results": results,
     }), 200
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
@@ -330,7 +310,6 @@ def health_check():
         "queue_size": len(message_queue),
         "tracked_messages": len(message_status),
     }), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

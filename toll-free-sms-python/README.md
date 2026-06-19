@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/toll-free-sms-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/toll-free-sms-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -87,7 +76,6 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 
 # Store message delivery status in memory (use a database in production)
 message_status_store = {}
-
 
 def send_tollfree_sms(to_number: str, message: str, messaging_profile_id: str = None) -> dict:
     """
@@ -162,12 +150,10 @@ def send_tollfree_sms(to_number: str, message: str, messaging_profile_id: str = 
         logger.error(f"Telnyx API error: {e.status_code} - {str(e)}")
         raise
 
-
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint for monitoring."""
     return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()}), 200
-
 
 @app.route("/sms/send", methods=["POST"])
 def send_sms_endpoint():
@@ -219,7 +205,6 @@ def send_sms_endpoint():
         logger.warning(f"Validation error: {str(e)}")
         return jsonify({"error": "Invalid request"}), 400
 
-
 @app.route("/sms/status/<message_id>", methods=["GET"])
 def get_message_status(message_id: str):
     """Retrieve cached message delivery status."""
@@ -227,7 +212,6 @@ def get_message_status(message_id: str):
         return jsonify({"error": "Message not found"}), 404
     
     return jsonify(message_status_store[message_id]), 200
-
 
 @app.route("/webhooks/message-status", methods=["POST"])
 def webhook_message_status():
@@ -270,20 +254,17 @@ def webhook_message_status():
         logger.error(f"Webhook processing error: {str(e)}")
         return jsonify({"error": "Webhook processing failed"}), 500
 
-
 @app.route("/sms/messages", methods=["GET"])
 def list_messages():
     """List all messages sent in this session with their current status."""
     messages = list(message_status_store.values())
     return jsonify({"count": len(messages), "messages": messages}), 200
 
-
 @app.errorhandler(Exception)
 def handle_error(error):
     """Global error handler for unhandled exceptions."""
     logger.error(f"Unhandled exception: {str(error)}", exc_info=True)
     return jsonify({"error": "Internal server error"}), 500
-
 
 if __name__ == "__main__":
     logger.info("Starting Telnyx Toll-Free SMS Flask application")

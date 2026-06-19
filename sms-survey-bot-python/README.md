@@ -38,22 +38,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/sms-survey-bot-python
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+pip install -r requirements.txt
+python app.py
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/sms-survey-bot-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 
@@ -80,7 +69,6 @@ app = Flask(__name__)
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 
 TELNYX_PHONE_NUMBER = os.getenv("TELNYX_PHONE_NUMBER")
-
 
 def start_survey(to_number: str) -> dict:
     """Initiate a survey by sending the first question to a participant."""
@@ -109,7 +97,6 @@ def start_survey(to_number: str) -> dict:
         "total_questions": len(SURVEY_QUESTIONS),
         "status": "survey_started",
     }
-
 
 def process_survey_response(from_number: str, message_text: str) -> dict:
     """Process inbound survey response and advance to next question or complete survey."""
@@ -187,7 +174,6 @@ def process_survey_response(from_number: str, message_text: str) -> dict:
         "total_questions": len(SURVEY_QUESTIONS),
     }
 
-
 @app.route("/survey/start", methods=["POST"])
 def start_survey_endpoint():
     """HTTP endpoint to initiate a survey for a participant."""
@@ -215,7 +201,6 @@ def start_survey_endpoint():
         return jsonify({"error": "Network error connecting to Telnyx"}), 503
     except ValueError as e:
         return jsonify({"error": "Invalid request"}), 400
-
 
 @app.route("/webhook/sms", methods=["POST"])
 def webhook_sms():
@@ -259,7 +244,6 @@ def webhook_sms():
     except Exception as e:
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/survey/results", methods=["GET"])
 def get_survey_results():
     """HTTP endpoint to retrieve survey results for all participants."""
@@ -278,7 +262,6 @@ def get_survey_results():
         "results": results,
     }), 200
 
-
 @app.route("/survey/participant/<participant>", methods=["GET"])
 def get_participant_results(participant):
     """HTTP endpoint to retrieve survey results for a specific participant."""
@@ -293,7 +276,6 @@ def get_participant_results(participant):
         "responses_count": len(state["responses"]),
         "responses": state["responses"],
     }), 200
-
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
