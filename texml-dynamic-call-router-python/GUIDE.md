@@ -1,0 +1,175 @@
+# Build a TeXML Dynamic Call Router
+
+TeXML Dynamic Call Router — time-of-day and caller-based routing with TeXML responses.
+
+## How It Works
+
+```
+  API Request
+        │
+        ▼
+  ┌──────────────────┐
+  │ Call Control      │
+  └────────┬─────────┘
+           │
+           ├──► TeXML
+           │
+           ├──► Routing / dispatch
+           │
+           ▼
+     Email
+```
+
+## Telnyx Products Used
+
+- **Migration**
+- **Number Porting** — phone number search, purchase, and configuration
+- **Voice** — programmatic call control with webhooks for every call state change
+
+## API Endpoints
+
+- **TeXML Webhooks**: Telnyx sends HTTP requests to your TeXML endpoints — [TeXML docs](https://developers.telnyx.com/docs/voice/texml)
+- **TeXML Dial**: Route calls to SIP, PSTN, or conference — [reference](https://developers.telnyx.com/docs/voice/texml/verbs/dial)
+- **TeXML Gather**: Collect DTMF or speech input — [reference](https://developers.telnyx.com/docs/voice/texml/verbs/gather)
+- **TeXML Say**: Text-to-speech — [reference](https://developers.telnyx.com/docs/voice/texml/verbs/say)
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with voice enabled
+- [Call Control Application](https://portal.telnyx.com/call-control/applications) configured with your webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/texml-dynamic-call-router-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (57 lines). Here's what each piece does.
+
+### Business Logic
+
+- **`route_call()`** — Processes route call request and returns result.
+- **`handle_recording()`** — Processes route call request and returns result.
+- **`add_vip()`** — Validates input and creates new vip.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/texml/route` | Route Call |
+| `POST` | `/texml/recording` | Handle Recording |
+| `POST` | `/vip` | Add Vip |
+| `GET` | `/calls` | List Calls |
+| `GET` | `/health` | Health check |
+
+The trigger endpoint kicks off the workflow:
+
+```python
+def route_call():
+    caller = request.form.get("From", "")
+    called = request.form.get("To", "")
+    now = datetime.utcnow()
+    hour = now.hour
+    is_business_hours = 14 <= hour <= 23  # 9am-6pm ET in UTC
+    is_vip = caller in vip_callers
+    call_log.append({"caller": caller, "called": called, "time": now.isoformat(), "business_hours": is_business_hours, "vip": is_vip})
+    if is_vip:
+        texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="female">Welcome back, valued customer. Connecting you now.</Say><Dial><Number>{BUSINESS_HOURS_NUMBER}</Number></Dial></Response>"""
+    elif is_business_hours:
+```
+
+The main endpoint processes the request:
+
+```python
+def route_call():
+    caller = request.form.get("From", "")
+    called = request.form.get("To", "")
+    now = datetime.utcnow()
+    hour = now.hour
+    is_business_hours = 14 <= hour <= 23  # 9am-6pm ET in UTC
+    is_vip = caller in vip_callers
+    call_log.append({"caller": caller, "called": called, "time": now.isoformat(), "business_hours": is_business_hours, "vip": is_vip})
+    if is_vip:
+        texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+**Trigger the workflow:**
+
+```bash
+curl -X POST http://localhost:5000/texml/route \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+12125559999"
+  }'
+```
+
+Or call your Telnyx number from any phone to trigger the full voice workflow.
+
+**Check results:**
+
+```bash
+curl http://localhost:5000/calls | python3 -m json.tool
+```
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Error recovery** — handle call failures gracefully with retry or SMS fallback
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Call Control quickstart](https://developers.telnyx.com/docs/voice/call-control)
+- [Telnyx Portal](https://portal.telnyx.com)

@@ -16,10 +16,9 @@ Thank you for your interest in contributing to Telnyx Code Examples! This reposi
 2. Create a new folder at the root level following the naming convention: `{action}-{resource}-{language}` (e.g., `send-sms-python`).
 3. Include all required files:
    - `README.md` with AEO-structured sections (see existing examples for format).
+   - `API.md` — typed endpoint reference; `GUIDE.md` — standalone tutorial.
    - Application code file (`app.py`, `server.js`, `main.go`, etc.).
    - Dependency file (`requirements.txt`, `package.json`, `go.mod`, etc.).
-   - `Dockerfile` for containerized deployment.
-   - `Makefile` with standard targets (`setup`, `run`, `test`, `docker-build`, `docker-run`).
    - `.env.example` with required environment variable placeholders.
 4. Run verification: `python scripts/verify.py`
 5. Submit a pull request with a clear description of the example.
@@ -28,17 +27,14 @@ Thank you for your interest in contributing to Telnyx Code Examples! This reposi
 
 Every example README must include these sections:
 
-- **Title** — Clear, action-oriented title.
-- **What Does This Example Do?** — Brief description of functionality.
-- **Who Is This For?** — Target audience.
-- **Why Telnyx?** — Value proposition referencing AI Communications Infrastructure.
-- **Prerequisites** — Required accounts, tools, and knowledge.
-- **Quick Start** — Three deployment options (Local, Docker, Manual).
-- **Implementation Details** — Key code walkthrough.
-- **Complete Code** — Reference to the extracted code file.
+- **Title** — Clear, action-oriented title, plus a one-line description.
+- **Why Telnyx** — Value proposition referencing AI Communications Infrastructure.
+- **Telnyx API Endpoints Used**, **Architecture**, **Environment Variables**.
+- **Setup** — Local run steps (clone, configure `.env`, install deps, run).
+- **API Reference** — Routes with curl + responses.
 - **Troubleshooting** — Common issues table.
-- **FAQ** — 3-5 structured Q&A pairs.
 - **Related Examples** — Links to related examples in this repo.
+- **Resources** — Contextual dev-docs / API / SDK / product / pricing links.
 
 ### Code Standards
 

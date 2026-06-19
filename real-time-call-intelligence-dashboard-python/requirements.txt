@@ -1,0 +1,5 @@
+flask
+requests
+python-dotenv
+telnyx>=4.0.0
+websockets

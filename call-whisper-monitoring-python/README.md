@@ -1,221 +1,188 @@
-# Whisper Prompt with Python and Flask
+---
+name: call-whisper-monitoring
+title: "Production-ready Flask application for Whisper-based call prompts via Telnyx."
+description: "Voice application. Built with Telnyx AI Assistants, Migration, Number Porting, SMS/MMS."
+language: python
+framework: flask
+telnyx_products: [AI Assistants, SMS/MMS, Voice, Call Recording]
+---
 
-## What Does This Example Do?
+# Production-ready Flask application for Whisper-based call prompts via Telnyx.
 
-Build a production-ready Flask application that initiates outbound calls and uses OpenAI's Whisper API to transcribe caller speech in real-time, then responds with AI-generated prompts. This tutorial demonstrates the Telnyx Voice API's call control capabilities combined with speech-to-text processing, webhook event handling, and dynamic call management using the Python SDK.
+Voice application. Built with Telnyx AI Assistants, Migration, Number Porting, SMS/MMS.
 
-## Who Is This For?
+## Telnyx API Endpoints Used
 
-- **Python developers** building voice features with Flask.
-- **Backend engineers** integrating telephony or messaging into existing applications.
-- **DevOps teams** looking for containerized, production-ready telecom examples.
-- **Startups and enterprises** replacing legacy telecom providers with a modern API-first platform.
+- **Call Control: Answer**: `POST /v2/calls/{id}/actions/answer` — [API reference](https://developers.telnyx.com/api/call-control/answer-call)
+- **Call Control: Speak (TTS)**: `POST /v2/calls/{id}/actions/speak` — [API reference](https://developers.telnyx.com/api/call-control/speak)
 
-## Why Telnyx?
+## Telnyx Webhook Events
 
-Telnyx is an **AI Communications Infrastructure** platform that gives developers a single API for [voice](https://telnyx.com/products/voice-ai-agents), [messaging](https://telnyx.com/products/sms-api), [SIP](https://telnyx.com/products/sip-trunks), [AI](https://telnyx.com/ai-assistants), and [IoT](https://telnyx.com/products/iot-sim-card) — no Frankenstack required.
+This app handles these webhook events ([Call Control docs](https://developers.telnyx.com/docs/api/v2/call-control)):
 
-- **Integrated platform** — [Voice](https://telnyx.com/products/voice-ai-agents), [SMS](https://telnyx.com/products/sms-api), [SIP trunking](https://telnyx.com/products/sip-trunks), [AI assistants](https://telnyx.com/ai-assistants), and [IoT SIM management](https://telnyx.com/products/iot-sim-card) under one roof. No stitching together multiple vendors.
-- **Global private network** — Calls and messages traverse the Telnyx-owned IP network for lower latency and higher reliability than the public internet.
-- **Developer-first** — SDKs for Python, Node.js, Go, Ruby, Java, and PHP. Comprehensive webhook event model. Sandbox environment for testing.
-- **Competitive pricing** — Pay-as-you-go with no minimums, contracts, or per-seat fees.
+- `call.answered` — Call connected — app begins interaction
+- `call.hangup` — Call ended — app cleans up session, triggers post-call processing
+- `call.recording.saved` — Call recording saved — URL available for download/processing
 
-## Prerequisites
+## Architecture
 
-- Python 3.8 or higher.
-- A Telnyx account with an active API key from the [Telnyx Portal](https://portal.telnyx.com).
-- A Telnyx phone number enabled for outbound calls.
-- A Telnyx Call Control Application configured with a webhook URL.
-- An OpenAI API key for Whisper transcription.
-- pip (Python package manager).
-- A publicly accessible URL for webhook callbacks (ngrok or similar for local development).
+```
+  Inbound Phone Call
+        │
+        ▼
+  ┌──────────────────┐
+  │ Call Control      │
+  └────────┬─────────┘
+           │
+           ├──► TTS
+           ├──► STT
+           ├──► Call Recording
+           │
+           ▼
+     Voice response
+```
 
-## Quick Start
+## Environment Variables
 
-### Option 1: Local (recommended)
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
+| `OPENAI_API_KEY` | `string` | `your_value` | **yes** | Openai api key | — |
+| `TELNYX_PHONE_NUMBER` | `string` | `your_value` | **yes** | Telnyx phone number | — |
+| `TELNYX_CONNECTION_ID` | `string` | `your_value` | **yes** | Telnyx connection id | — |
+| `FLASK_DEBUG` | `string` | `false` | no | Flask debug | — |
+
+## Setup
 
 ```bash
 git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/call-whisper-monitoring-python
-cp .env.example .env
-# Edit .env with your Telnyx API key and phone number
-make setup
-make run
+cp .env.example .env    # ← fill in your credentials
+pip install -r requirements.txt
+python app.py           # starts on http://localhost:5000
 ```
 
-### Option 2: Docker
+### Webhook Configuration
+
+1. Expose your local server:
+
+   ```bash
+   ngrok http 5000
+   ```
+
+2. Copy the HTTPS URL and configure in [Telnyx Portal](https://portal.telnyx.com):
+
+   - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
+
+## API Reference
+
+### `POST /calls/initiate`
+
+HTTP endpoint to initiate an outbound call.
 
 ```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/call-whisper-monitoring-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
+curl -X POST http://localhost:5000/calls/initiate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "+12125551234"
+  }'
 ```
 
-### Option 3: Manual
+**Response:**
 
-See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
-
-## Implementation Details
-
-Create `app.py` and initialize the Telnyx and OpenAI clients. Define helper functions to manage call state, transcribe audio, and generate responses:
-
-```python
-import os
-import json
-import telnyx
-from dotenv import load_dotenv
-from flask import Flask, jsonify, request
-from openai import OpenAI
-
-load_dotenv()
-
-app = Flask(__name__)
-
-# Initialize clients with the new SDK pattern
-telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# In-memory store for call state (use Redis in production)
-call_state = {}
-
-
-def initiate_call(to_number: str) -> dict:
-    """Initiate an outbound call and return call control ID."""
-    from_number = os.getenv("TELNYX_PHONE_NUMBER")
-    connection_id = os.getenv("TELNYX_CONNECTION_ID")
-    
-    if not from_number or not connection_id:
-        raise ValueError("TELNYX_PHONE_NUMBER and TELNYX_CONNECTION_ID must be set")
-    
-    if not to_number.startswith("+"):
-        raise ValueError("Phone number must be in E.164 format (e.g., +15551234567)")
-    
-    # Initiate the call using the Call Control API
-    response = telnyx_client.calls.dial(
-        from_=from_number,
-        to=to_number,
-        connection_id=connection_id,
-    )
-    
-    call_control_id = response.data.call_control_id
-    
-    # Store call state for webhook processing
-    call_state[call_control_id] = {
-        "to": to_number,
-        "from": from_number,
-        "status": "initiated",
-        "transcript": "",
-    }
-    
-    return {
-        "call_control_id": call_control_id,
-        "status": "initiated",
-        "to": to_number,
-    }
-
-
-def transcribe_audio(audio_url: str) -> str:
-    """Download audio from URL and transcribe using OpenAI Whisper."""
-    try:
-        # Download audio file from Telnyx
-        response = request.get(audio_url, timeout=10)
-        response.raise_for_status()
-        
-        # Transcribe using Whisper API
-        transcript_response = openai_client.audio.transcriptions.create(
-            model="whisper-1",
-            file=("audio.wav", response.content, "audio/wav"),
-        )
-        
-        return transcript_response.text
-    except Exception as e:
-        return f"Transcription failed: {str(e)}"
-
-
-def generate_prompt_response(transcript: str) -> str:
-    """Generate an AI response based on transcribed text."""
-    try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant on a phone call. Respond concisely in 1-2 sentences.",
-                },
-                {"role": "user", "content": transcript},
-            ],
-            max_tokens=100,
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Response generation failed: {str(e)}"
-
-
-def speak_response(call_control_id: str, text: str) -> dict:
-    """Use Telnyx Speak action to play text-to-speech response."""
-    try:
-        response = telnyx_client.calls.actions.speak(
-            call_control_id=call_control_id,
-            payload=text,
-            language="en-US",
-            voice="female",
-        )
-        return {"status": "speaking", "call_control_id": call_control_id}
-    except Exception as e:
-        return {"error": str(e)}
+```json
+{
+  "call_id": "v3:uMi2qMWHT-mLFGkEm4t9tA",
+  "status": "initiated",
+  "from": "+18005551234",
+  "to": "+12125559876"
+}
 ```
 
-## Complete Code
+### `GET /calls/<call_control_id>/status`
 
-See [`app.py`](./app.py) for the full implementation.
+Retrieve call status and transcript.
+
+```bash
+curl http://localhost:5000/calls/example-id/status
+```
+
+**Response:**
+
+```json
+{
+  "calls": [
+    {
+      "call_id": "v3:uMi2qMWHT-mLFGkEm4t9tA",
+      "from": "+18005551234",
+      "to": "+12125559876",
+      "duration_seconds": 145,
+      "status": "completed"
+    }
+  ]
+}
+```
+
+## Webhook Endpoints
+
+### `POST /webhooks/call`
+
+Receives [Telnyx Call Control](https://developers.telnyx.com/docs/voice/call-control) webhook events.
+
+**Events handled:** `call.answered`, `call.hangup`, `call.recording.saved`
+
+**Example payload:**
+
+```json
+{
+  "data": {
+    "event_type": "call.initiated",
+    "id": "0ccc7b54-4df3-4bca-a65a-3da1ecc777f0",
+    "occurred_at": "2026-07-15T14:30:00.000Z",
+    "payload": {
+      "call_control_id": "v3:uMi2qMWHT-mLFGkEm4t9tA",
+      "connection_id": "1494404757140276705",
+      "call_leg_id": "428c31b6-7af4-4bcb-b7f5-5013ef9657c1",
+      "call_session_id": "428c31b6-abcd-1234-5678-5013ef9657c1",
+      "client_state": null,
+      "from": "+12125551234",
+      "to": "+13105559876",
+      "direction": "incoming",
+      "state": "ringing"
+    },
+    "record_type": "event"
+  },
+  "meta": {
+    "attempt": 1,
+    "delivered_to": "https://your-server.example.com/webhooks/voice"
+  }
+}
+```
 
 ## Troubleshooting
 
-| Issue | Problem | Solution |
-|-------|---------|----------|
-| Authentication Error (401) | The endpoint returns `{"error": "Invalid API key"}` with HTTP 401. | Verify your `TELNYX_API_KEY` in the `.env` file matches the key shown in the [Telnyx Portal](https://portal.telnyx.com). Ensure there are no trailing spaces or quotes. Restart the Flask server after updating credentials. |
-| Connection ID Not Found | The call initiation fails with an error about invalid connection ID. | Confirm your `TELNYX_CONNECTION_ID` is set in the `.env` file and matches a Call Control Application ID from the Telnyx Portal. The connection ID links your phone number to the Call Control API. Verify the application has a webhook URL configured. |
-| Webhook Not Receiving Events | Call events are not triggering the webhook handler. | Ensure your `WEBHOOK_URL` in the `.env` file is publicly accessible and matches the webhook URL configured in your Call Control Application settings. Use ngrok (`ngrok http 5000`) to expose your local Flask server during development. Verify the webhook URL is reachable by testing with curl from an external machine. |
-| Whisper Transcription Fails | The transcription endpoint returns an error or empty transcript. | Verify your `OPENAI_API_KEY` is valid and has sufficient quota. Check that the audio file URL from the webhook is accessible and contains valid WAV audio. Ensure the OpenAI client is initialized correctly with the API key. |
-| Phone Number Format Error | You receive a 400 error stating "Phone number must be in E.164 format". | Ensure all phone numbers use E.164 format: start with `+`, followed by country code and number without spaces or dashes. Example: `+15551234567` (US) or `+447700900123` (UK). Update your test curl command to use properly formatted numbers. |
-
-## FAQ
-
-**Q: Do I need a Telnyx account to run this example?**
-
-Yes. Sign up at [portal.telnyx.com](https://portal.telnyx.com) to get an API key. Telnyx offers free trial credit for testing.
-
-**Q: Can I use this Voice example in production?**
-
-Yes. This example includes error handling, environment-based configuration, and a Dockerfile for containerized deployment. Review the security and scaling sections before deploying to production.
-
-**Q: What Python version do I need?**
-
-Python 3.8 or higher. Python 3.12+ is recommended.
-
-**Q: How is Telnyx different from Twilio?**
-
-Telnyx is an AI Communications Infrastructure platform with a private global network, integrated voice + messaging + AI + SIP + IoT under one API, and significantly lower pricing. No need to stitch together multiple vendors.
-
-**Q: Where do I get a Telnyx phone number?**
-
-Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
-
-## Resources
-
-- [Voice API Overview](https://developers.telnyx.com/docs/voice)
-- [Voice API Commands](https://developers.telnyx.com/docs/voice/programmable-voice/voice-api-commands-and-resources)
-- [AI Assistant Start](https://developers.telnyx.com/docs/voice/programmable-voice/ai-assistant-start)
-- [Call Control API Reference](https://developers.telnyx.com/api-reference/call-commands/dial)
-- [Python SDK](https://developers.telnyx.com/development/sdk/python)
-- [Telnyx Voice API](https://telnyx.com/products/voice-api)
-- [Voice AI Agents](https://telnyx.com/products/voice-ai-agents)
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
 
 ## Related Examples
 
-- [Handle Inbound Calls with Webhooks](/tutorials/voice/python/inbound-call-webhook).
-- [Record and Retrieve Call Audio](/tutorials/voice/python/call-recording).
-- [Transfer Calls Between Numbers](/tutorials/voice/python/call-transfer).
+- [Branded Caller Id Manager (Python)](../branded-caller-id-manager-python)
+- [Build Conference Calling (Python)](../build-conference-calling-python)
+- [Build IVR Phone Menu (Python)](../build-ivr-phone-menu-python)
+- [Bulk Number Validation Cleaner (Python)](../bulk-number-validation-cleaner-python)
+- [Call Analytics Dashboard Api (Python)](../call-analytics-dashboard-api-python)
+
+## Resources
+
+- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

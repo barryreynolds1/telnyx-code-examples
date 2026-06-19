@@ -1,0 +1,166 @@
+# Build a Production-ready Flask webhook endpoint for receiving inbound SMS via Telnyx
+
+SMS application. Built with Telnyx Migration, Number Porting.
+
+## How It Works
+
+```
+  Inbound SMS/MMS
+        │
+        ▼
+  ┌──────────────────┐
+  │ Telnyx Messaging  │ ── webhook delivery
+  │ Webhook           │
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ Validate + Parse  │ ── extract sender, text, media
+  └────────┬─────────┘
+           │
+           ├──► Log message
+           ├──► Process content
+           └──► Auto-reply (optional)
+```
+
+## Telnyx Products Used
+
+- **Migration**
+- **Number Porting** — phone number search, purchase, and configuration
+
+## API Endpoints
+
+- **Send Message (reply)**: `POST /v2/messages` — [API reference](https://developers.telnyx.com/api/messaging/send-message)
+
+## Webhook Events
+
+Telnyx delivers inbound messages and status updates via webhooks to your server.
+
+This app handles these webhook events ([Messaging docs](https://developers.telnyx.com/docs/api/v2/messaging)):
+- `message.received` — Inbound SMS/MMS received
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with messaging enabled
+- [Messaging Profile](https://portal.telnyx.com/messaging/profiles) with webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/receive-sms-webhook-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (85 lines). Here's what each piece does.
+
+### Handling Webhooks
+
+Webhook handlers process events from Telnyx:
+
+**`receive_sms_webhook()`** — Processes inbound SMS messages. Parses the customer's reply and routes to the appropriate business logic.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/webhooks/sms` | Telnyx webhook handler |
+
+The webhook handler is the core state machine. Each Telnyx event triggers the next action:
+
+```python
+    # Only process inbound SMS events
+    if event_type != "message.received":
+        return jsonify({"status": "ignored", "reason": f"Event type {event_type} not processed"}), 200
+    
+    try:
+        # Process the inbound message
+        message_info = process_inbound_sms(event_data)
+        
+        # Log or store the message (example: print to console)
+        print(f"Received SMS: message_id={message_info['message_id']}")
+        
+        # Return 200 OK to acknowledge receipt to Telnyx
+        return jsonify({
+            "status": "received",
+```
+
+Helper function that handles the core action:
+
+```python
+def process_inbound_sms(event_data: dict) -> dict:
+    """
+    Extract and validate inbound SMS data from webhook event.
+    
+    Args:
+        event_data: The 'data' object from the webhook payload.
+    
+    Returns:
+        Dictionary with extracted message details.
+    """
+    # Extract message attributes from the webhook event
+    message_id = event_data.get("id")
+    from_number = event_data.get("from", {}).get("phone_number")
+    to_number = event_data.get("to", [{}])[0].get("phone_number")
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Messaging Profile** → Inbound Webhook → `https://<id>.ngrok.io/webhooks/sms`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+Or text your Telnyx number to trigger the SMS workflow.
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Messaging quickstart](https://developers.telnyx.com/docs/messaging)
+- [Telnyx Portal](https://portal.telnyx.com)

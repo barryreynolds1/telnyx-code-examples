@@ -1,0 +1,175 @@
+# Build a SMS Keyword Auto-Responder — keyword-triggered responses with match analytics
+
+SMS Keyword Auto-Responder — keyword-triggered responses with match analytics.
+
+## How It Works
+
+```
+  Inbound SMS/MMS
+        │
+        ▼
+  ┌──────────────────┐
+  │ Telnyx Messaging  │
+  └────────┬─────────┘
+           │
+           └──► SMS notification
+```
+
+## Telnyx Products Used
+
+- **SMS/MMS** — send and receive messages with delivery receipts
+
+## API Endpoints
+
+- **Send Message**: `POST /v2/messages` — [API reference](https://developers.telnyx.com/api/messaging/send-message)
+
+## Webhook Events
+
+Telnyx delivers inbound messages and status updates via webhooks to your server.
+
+This app handles these webhook events ([Messaging docs](https://developers.telnyx.com/docs/api/v2/messaging)):
+- `message.received` — Inbound SMS/MMS received
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with messaging enabled
+- [Messaging Profile](https://portal.telnyx.com/messaging/profiles) with webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/sms-keyword-auto-responder-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (71 lines). Here's what each piece does.
+
+### Handling Webhooks
+
+Webhook handlers process events from Telnyx:
+
+**`handle_sms()`** — Processes inbound SMS messages. Parses the customer's reply and routes to the appropriate business logic.
+
+### Helper Functions
+
+- **`send_sms()`** — Sends an SMS via the Telnyx Messaging API. Wraps the `POST /v2/messages` call with error handling.
+
+### Business Logic
+
+- **`list_keywords()`** — Returns all keywords with metadata and pagination.
+- **`add_keyword()`** — Validates input and creates new keyword.
+- **`analytics()`** — Validates input and creates new keyword.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/webhooks/messaging` | Telnyx webhook handler |
+| `GET` | `/keywords` | List Keywords |
+| `GET` | `/keywords` | Add Keyword |
+| `GET` | `/analytics` | Analytics |
+| `GET` | `/health` | Health check |
+
+The webhook handler is the core state machine. Each Telnyx event triggers the next action:
+
+```python
+    data = payload.get("data", {})
+    if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
+        return jsonify({"status": "ignored"}), 200
+    from_number = data.get("from", {}).get("phone_number", "")
+    text = data.get("text", "").strip().upper()
+    message_log.append({"from": from_number, "text": text, "time": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
+    matched = False
+    for keyword, config in keywords.items():
+        if keyword in text:
+            send_sms(from_number, config["response"])
+            config["count"] += 1
+            matched = True
+            break
+    if not matched:
+```
+
+The trigger endpoint kicks off the workflow:
+
+```python
+def add_keyword():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
+    keyword = data.get("keyword", "").upper()
+    response = data.get("response", "")
+    keywords[keyword] = {"response": response, "count": 0}
+    return jsonify({"status": "added", "keyword": keyword}), 200
+
+@app.route("/analytics", methods=["GET"])
+def analytics():
+    total = sum(v["count"] for v in keywords.values())
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Messaging Profile** → Inbound Webhook → `https://<id>.ngrok.io/webhooks/sms`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+Or text your Telnyx number to trigger the SMS workflow.
+
+**Check results:**
+
+```bash
+curl http://localhost:5000/keywords | python3 -m json.tool
+```
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Messaging quickstart](https://developers.telnyx.com/docs/messaging)
+- [Telnyx Portal](https://portal.telnyx.com)

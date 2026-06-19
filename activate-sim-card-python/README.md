@@ -1,233 +1,146 @@
-# SIM Activation with Python and Flask
+---
+name: activate-sim-card
+title: "Production-ready Flask application for SIM card activation via Telnyx."
+description: "Production-ready Flask application for SIM card activation via Telnyx."
+language: python
+framework: flask
+telnyx_products: [IoT/SIM]
+---
 
-## What Does This Example Do?
+# Production-ready Flask application for SIM card activation via Telnyx.
 
-Build a production-ready Flask application that activates SIM cards using the Telnyx IoT API. This tutorial demonstrates how to retrieve SIM card details, activate SIMs with proper validation, handle telecom-specific errors, and manage credentials securely. You'll create endpoints to list SIM cards and activate them individually, with comprehensive error handling for production resilience.
+Production-ready Flask application for SIM card activation via Telnyx.
 
-## Who Is This For?
+## Telnyx API Endpoints Used
 
-- **Python developers** building iot features with Flask.
-- **Backend engineers** integrating telephony or messaging into existing applications.
-- **DevOps teams** looking for containerized, production-ready telecom examples.
-- **Startups and enterprises** replacing legacy telecom providers with a modern API-first platform.
+- **List SIM Cards**: `GET /v2/sim_cards` — [API reference](https://developers.telnyx.com/api/sim-cards/list-sim-cards)
+- **Retrieve SIM Card**: `GET /v2/sim_cards/{id}` — [API reference](https://developers.telnyx.com/api/sim-cards/get-sim-card)
+- **Activate SIM Card**: `PATCH /v2/sim_cards/{id}` — [API reference](https://developers.telnyx.com/api/sim-cards/update-sim-card)
 
-## Why Telnyx?
+## Architecture
 
-Telnyx is an **AI Communications Infrastructure** platform that gives developers a single API for voice, messaging, SIP, AI, and IoT — no Frankenstack required.
+```
+  ┌──────────────────┐
+  │ API Request      │
+  │ (SIM data /       │
+  │  sensor reading)   │
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ Threshold Check   │
+  └────────┬─────────┘
+           │
+           ▼
+     JSON response
+```
 
-- **Integrated platform** — Voice, SMS, SIP trunking, AI assistants, and IoT SIM management under one roof. No stitching together multiple vendors.
-- **Global private network** — Calls and messages traverse the Telnyx-owned IP network for lower latency and higher reliability than the public internet.
-- **Developer-first** — SDKs for Python, Node.js, Go, Ruby, Java, and PHP. Comprehensive webhook event model. Sandbox environment for testing.
-- **Competitive pricing** — Pay-as-you-go with no minimums, contracts, or per-seat fees.
+## Environment Variables
 
-## Prerequisites
+Copy `.env.example` to `.env` and fill in:
 
-- Python 3.8 or higher.
-- A Telnyx account with an active API key from the [Telnyx Portal](https://portal.telnyx.com).
-- At least one SIM card provisioned in your Telnyx account.
-- pip (Python package manager).
-- curl or Postman for testing HTTP endpoints.
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
+| `FLASK_DEBUG` | `string` | `false` | no | Flask debug | — |
 
-## Quick Start
-
-### Option 1: Local (recommended)
+## Setup
 
 ```bash
 git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/activate-sim-card-python
-cp .env.example .env
-# Edit .env with your Telnyx API key and phone number
-make setup
-make run
+cp .env.example .env    # ← fill in your credentials
+pip install -r requirements.txt
+python app.py           # starts on http://localhost:5000
 ```
 
-### Option 2: Docker
+## API Reference
+
+### `GET /sim-cards`
+
+HTTP endpoint to list all SIM cards.
 
 ```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/activate-sim-card-python
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
+curl http://localhost:5000/sim-cards
 ```
 
-### Option 3: Manual
+**Response:**
 
-See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
-
-## Implementation Details
-
-Create `app.py` and initialize the Telnyx client using the new pattern. Define helper functions to list and activate SIM cards with proper validation and error handling:
-
-```python
-import os
-import telnyx
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
-
-
-def list_sim_cards() -> list:
-    """Retrieve all SIM cards and return JSON-serializable list."""
-    response = client.sim_cards.list()
-    
-    # Extract serializable data — SDK objects are NOT JSON-serializable
-    return [
-        {
-            "id": sim.id,
-            "iccid": sim.iccid,
-            "status": sim.status,
-            "sim_card_group_id": sim.sim_card_group_id,
-        }
-        for sim in response.data
-    ]
-
-
-def get_sim_card(sim_card_id: str) -> dict:
-    """Retrieve a single SIM card by ID and return JSON-serializable data."""
-    response = client.sim_cards.retrieve(sim_card_id)
-    
-    # Extract serializable data from the response object
-    return {
-        "id": response.data.id,
-        "iccid": response.data.iccid,
-        "status": response.data.status,
-        "sim_card_group_id": response.data.sim_card_group_id,
+```json
+{
+  "items": [
+    {
+      "id": "item-001",
+      "status": "active",
+      "created_at": "2026-07-15T14:30:00Z"
     }
+  ]
+}
+```
 
+### `GET /sim-cards/<sim_card_id>`
 
-def activate_sim_card(sim_card_id: str) -> dict:
-    """Activate a SIM card and return JSON-serializable response data."""
-    if not sim_card_id:
-        raise ValueError("SIM card ID is required")
-    
-    # Call the activate method with the SIM card ID
-    response = client.sim_cards.activate(sim_card_id)
-    
-    # Extract serializable data from the response object
-    return {
-        "id": response.data.id,
-        "iccid": response.data.iccid,
-        "status": response.data.status,
-        "sim_card_group_id": response.data.sim_card_group_id,
+HTTP endpoint to retrieve a single SIM card.
+
+```bash
+curl http://localhost:5000/sim-cards/example-id
+```
+
+**Response:**
+
+```json
+{
+  "items": [
+    {
+      "id": "item-001",
+      "status": "active",
+      "created_at": "2026-07-15T14:30:00Z"
     }
+  ]
+}
 ```
 
-Now add Flask routes with comprehensive error handling:
+### `POST /sim-cards/<sim_card_id>/activate`
 
-```python
-from flask import Flask, jsonify, request
+HTTP endpoint to activate a SIM card.
 
-app = Flask(__name__)
-
-
-@app.route("/sim-cards", methods=["GET"])
-def list_sims():
-    """HTTP endpoint to list all SIM cards."""
-    try:
-        sims = list_sim_cards()
-        return jsonify({"data": sims}), 200
-        
-    except telnyx.AuthenticationError:
-        return jsonify({"error": "Invalid API key"}), 401
-    except telnyx.RateLimitError:
-        return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
-    except telnyx.APIStatusError as e:
-        return jsonify({"error": "API request failed", "status_code": e.status_code}), e.status_code
-    except telnyx.APIConnectionError:
-        return jsonify({"error": "Network error connecting to Telnyx"}), 503
-
-
-@app.route("/sim-cards/<sim_card_id>", methods=["GET"])
-def get_sim(sim_card_id):
-    """HTTP endpoint to retrieve a single SIM card."""
-    try:
-        sim = get_sim_card(sim_card_id)
-        return jsonify(sim), 200
-        
-    except telnyx.AuthenticationError:
-        return jsonify({"error": "Invalid API key"}), 401
-    except telnyx.RateLimitError:
-        return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
-    except telnyx.APIStatusError as e:
-        return jsonify({"error": "API request failed", "status_code": e.status_code}), e.status_code
-    except telnyx.APIConnectionError:
-        return jsonify({"error": "Network error connecting to Telnyx"}), 503
-
-
-@app.route("/sim-cards/<sim_card_id>/activate", methods=["POST"])
-def activate_sim(sim_card_id):
-    """HTTP endpoint to activate a SIM card."""
-    try:
-        result = activate_sim_card(sim_card_id)
-        return jsonify({"message": "SIM card activated successfully", "data": result}), 200
-        
-    except telnyx.AuthenticationError:
-        return jsonify({"error": "Invalid API key"}), 401
-    except telnyx.RateLimitError:
-        return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
-    except telnyx.APIStatusError as e:
-        return jsonify({"error": "API request failed", "status_code": e.status_code}), e.status_code
-    except telnyx.APIConnectionError:
-        return jsonify({"error": "Network error connecting to Telnyx"}), 503
-    except ValueError as e:
-        return jsonify({"error": "Invalid request"}), 400
-
-
-if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+```bash
+curl -X POST http://localhost:5000/sim-cards/example-id/activate \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
-## Complete Code
+**Response:**
 
-See [`app.py`](./app.py) for the full implementation.
+```json
+{
+  "id": "item-1750280400",
+  "status": "created",
+  "created_at": "2026-07-15T14:30:00Z"
+}
+```
 
 ## Troubleshooting
 
-| Issue | Problem | Solution |
-|-------|---------|----------|
-| Authentication Error (401) | The endpoint returns `{"error": "Invalid API key"}` with HTTP 401. | Verify your `TELNYX_API_KEY` in the `.env` file matches the key shown in the [Telnyx Portal](https://portal.telnyx.com). Ensure there are no trailing spaces or quotes. If the key was regenerated recently, update your environment file and restart the Flask server. |
-| SIM Card Not Found (404) | You receive a 404 error or "SIM card not found" message when retrieving or activating a SIM. | Confirm the SIM card ID is correct by first running the `/sim-cards` endpoint to list all available SIM cards. Copy the exact `id` value from the response and use it in subsequent requests. Verify the SIM card exists in your Telnyx account via the Portal. |
-| Environment Variable Not Set | The application raises an error about missing `TELNYX_API_KEY` on startup or first request. | Confirm your `.env` file exists in the same directory as `app.py` and contains the variable. Ensure the file is named exactly `.env` (not `.env.txt` or `env`). The `load_dotenv()` call must execute before `os.getenv()` is called—verify this import order in your code. |
-| Rate Limit Error (429) | The endpoint returns `{"error": "Rate limit exceeded. Please slow down."}` with HTTP 429. | You have exceeded the Telnyx API rate limit. Implement exponential backoff in your client code and retry requests after a delay. Check the [Telnyx documentation](https://developers.telnyx.com) for current rate limits and contact support if you need higher limits. |
-| Network Connection Error (503) | The endpoint returns `{"error": "Network error connecting to Telnyx"}` with HTTP 503. | Verify your internet connection is active and stable. Check that the Telnyx API endpoint is reachable by testing with `curl https://api.telnyx.com/v2/sim_cards` (you may get a 401, which is expected). If the issue persists, the Telnyx service may be temporarily unavailable—check the [Telnyx status page](https://status.telnyx.com). |
-
-## FAQ
-
-**Q: Do I need a Telnyx account to run this example?**
-
-Yes. Sign up at [portal.telnyx.com](https://portal.telnyx.com) to get an API key. Telnyx offers free trial credit for testing.
-
-**Q: Can I use this IoT example in production?**
-
-Yes. This example includes error handling, environment-based configuration, and a Dockerfile for containerized deployment. Review the security and scaling sections before deploying to production.
-
-**Q: What Python version do I need?**
-
-Python 3.8 or higher. Python 3.12+ is recommended.
-
-**Q: How is Telnyx different from Twilio?**
-
-Telnyx is an AI Communications Infrastructure platform with a private global network, integrated voice + messaging + AI + SIP + IoT under one API, and significantly lower pricing. No need to stitch together multiple vendors.
-
-**Q: Where do I get a Telnyx phone number?**
-
-Log into the [Telnyx Portal](https://portal.telnyx.com), navigate to Numbers > Search & Buy, and purchase a number with the capabilities you need (SMS, voice, or both).
-
-## Resources
-
-- [IoT SIM Get Started](https://developers.telnyx.com/docs/iot-sim/get-started)
-- [SIM Card API Reference](https://developers.telnyx.com/api-reference/sim-cards/get-all-sim-cards)
-- [Python SDK](https://developers.telnyx.com/development/sdk/python)
-- [Telnyx IoT SIM Cards](https://telnyx.com/products/iot-sim-card)
-- [IoT Data Plans Pricing](https://telnyx.com/pricing/iot-data-plans)
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
 
 ## Related Examples
 
-- [Monitor SIM Card Data Usage](/tutorials/iot/python/data-usage-monitoring).
-- [Configure Custom APN Settings](/tutorials/iot/python/apn-configuration).
-- [Handle SIM Status Change Webhooks](/tutorials/iot/python/sim-status-webhook).
+- [IoT Fleet Alert Escalation (Python)](../iot-fleet-alert-escalation-python)
+- [IoT Panic Button Voice Alert (Python)](../iot-panic-button-voice-alert-python)
+- [IoT Smart Building Voice Control (Python)](../iot-smart-building-voice-control-python)
+- [Monitor IoT Data Usage (Python)](../monitor-iot-data-usage-python)
+- [Provision Esim (Python)](../provision-esim-python)
+
+## Resources
+
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

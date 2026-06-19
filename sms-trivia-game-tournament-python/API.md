@@ -1,0 +1,132 @@
+## `POST /tournament/create`
+
+Create a new tournament.
+
+### Request
+
+```json
+{
+  "name": "Jane Smith",
+  "category": "category-value",
+  "rounds": "rounds-value"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | no | Display name or label |
+| `category` | `string` | no | Category |
+| `rounds` | `string` | no | Rounds |
+
+### Response `200`
+
+```json
+{
+  "error": "invalid request body"
+}
+```
+
+**Try it:**
+
+```bash
+curl -X POST http://localhost:5000/tournament/create \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Jane Smith", "category": "category-value", "rounds": "rounds-value"}'
+```
+
+---
+
+## `POST /webhooks/messaging`
+
+Receives Telnyx Messaging webhook events. Called automatically by Telnyx for inbound messages — do not call directly.
+
+---
+
+**Try it:**
+
+```bash
+curl -X POST http://localhost:5000/webhooks/messaging
+```
+
+## `POST /tournament/<tid>/next`
+
+Next round.
+
+### Response `200`
+
+```json
+{
+  "error": "invalid request body"
+}
+```
+
+**Try it:**
+
+```bash
+curl -X POST http://localhost:5000/tournament/example-id/next \
+  -H "Content-Type: application/json" \
+  -d '{"error": "invalid request body"}'
+```
+
+---
+
+## `GET /tournament/<tid>/leaderboard`
+
+Leaderboard.
+
+### Response `200`
+
+```json
+{
+  "error": "Not found"
+}
+```
+
+**Try it:**
+
+```bash
+curl http://localhost:5000/tournament/example-id/leaderboard
+```
+
+---
+
+## `GET /health`
+
+Health check and service status.
+
+### Response `200`
+
+```json
+{
+  "status": "ok",
+  "tournaments": "<string>"
+}
+```
+
+**Try it:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+---
+
+## Status Values
+
+Records use these status values: `active`, `answered`, `finished`, `ignored`, `info`, `joined`, `lobby`, `ok`
+
+## Error Handling
+
+All endpoints return JSON. On error:
+
+```json
+{
+  "error": "Not found"
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Success |
+| `400` | Bad request — missing or invalid fields |
+| `500` | Server error |

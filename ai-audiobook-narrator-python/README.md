@@ -1,0 +1,130 @@
+---
+name: ai-audiobook-narrator
+title: "AI Audiobook Narrator"
+description: "Submit text, AI Inference chunks into chapters with pacing/emotion markup, TTS narrates each chapter with consistent voice, stores final audio in Telnyx Cloud Storage."
+language: python
+framework: flask
+telnyx_products: [AI Inference, Cloud Storage]
+integrations: []
+channel: [voice, api]
+---
+
+# AI Audiobook Narrator
+
+Submit text, AI Inference chunks into chapters with pacing/emotion markup, TTS narrates each chapter with consistent voice, stores final audio in Telnyx Cloud Storage.
+
+## Telnyx API Endpoints Used
+
+- **AI Inference (chapter split)**: `POST /v2/ai/chat/completions` -- [ref](https://developers.telnyx.com/api/inference/chat-completions)
+- **TTS Generate (narration)**: `POST /v2/ai/generate` -- [ref](https://developers.telnyx.com/api/inference/generate)
+- **Cloud Storage (S3-compatible)**: `PutObject` via the AWS SDK (boto3) against `https://{region}.telnyxcloudstorage.com` -- [docs](https://developers.telnyx.com/docs/cloud-storage)
+
+## Architecture
+
+```
+  API Request
+        │
+        ▼
+  ┌──────────────────┐
+  │ AI Inference      │ ── direction cues, rewrites
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ TTS Generation    │ ── render audio
+  │ (multiple takes/  │
+  │  voices/languages)│
+  └────────┬─────────┘
+           │
+           ├──► Cloud Storage
+           └──► Cloud Storage (final assets)
+```
+
+## How It Works
+
+1. Sends conversation to Telnyx AI Inference for processing
+2. Converts response to speech via Telnyx TTS
+3. Stores results in Telnyx Cloud Storage (S3-compatible, via boto3) and returns a presigned GET URL for each chapter
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
+- **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
+- **Integrated storage** — S3-compatible storage co-located with voice and AI infrastructure.
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|------------------|
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | AI Inference model | [Docs](https://developers.telnyx.com/docs/inference/models) |
+| `TTS_MODEL` | `string` | `telnyx/tts` | no | TTS model name | [Docs](https://developers.telnyx.com/docs/inference) |
+| `BUCKET_NAME` | `string` | `audiobooks` | no | Cloud Storage bucket | [Portal](https://portal.telnyx.com/storage) |
+| `TELNYX_STORAGE_REGION` | `string` | `us-central-1` | no | Cloud Storage region (selects the S3 endpoint host) | [Docs](https://developers.telnyx.com/docs/cloud-storage) |
+| `DEFAULT_VOICE` | `string` | `nova` | no | Default narrator voice | [Docs](https://developers.telnyx.com/docs/inference) |
+
+## Setup
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-audiobook-narrator-python
+cp .env.example .env
+pip install -r requirements.txt
+python app.py
+```
+
+### Webhook Configuration
+
+```bash
+ngrok http 5000
+```
+
+Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
+- Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
+
+## API Reference
+
+### `POST /books/narrate`
+
+```bash
+curl -X POST http://localhost:5000/books/narrate \
+  -H "Content-Type: application/json" \
+  -d '{"title": "The Future of Infrastructure", "text": "Chapter 1: The shift from...", "voice": "nova"}'
+```
+
+**Response:**
+
+```json
+{"book_id": "book-a1b2c3d4", "title": "The Future of Infrastructure", "chapters": 5, "total_audio_mb": 12.4, "storage_urls": ["https://us-central-1.telnyxcloudstorage.com/audiobooks/book-a1b2c3d4/chapter-01.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&..."]}
+```
+
+### `GET /health`
+
+```bash
+curl http://localhost:5000/health
+```
+
+```json
+{"status": "ok"}
+```
+
+## Troubleshooting
+
+- **Connection refused on port 5000**: App isn't running. Run `python app.py` and check no other process uses port 5000.
+- **401 Unauthorized**: Your `TELNYX_API_KEY` is invalid. Generate a new one at [portal.telnyx.com/api-keys](https://portal.telnyx.com/api-keys).
+- **AI response slow/empty**: Verify model name. See available models at [developers.telnyx.com](https://developers.telnyx.com/docs/inference/list-models).
+
+## Related Examples
+
+- [run-llm-inference-python](../run-llm-inference-python/) - Standalone inference
+- [build-voice-ai-agent-python](../build-voice-ai-agent-python/) - Voice AI agent
+
+## Resources
+
+- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+- [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Telnyx Portal](https://portal.telnyx.com)

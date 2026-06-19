@@ -3,21 +3,39 @@
 
 import os
 import json
+import requests
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from openai import OpenAI
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 
 # Initialize clients with the new SDK pattern
-telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # In-memory store for call state (use Redis in production)
 call_state = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(call_state)
+
 
 
 def initiate_call(to_number: str) -> dict:
@@ -59,7 +77,7 @@ def transcribe_audio(audio_url: str) -> str:
     """Download audio from URL and transcribe using OpenAI Whisper."""
     try:
         # Download audio file from Telnyx
-        response = request.get(audio_url, timeout=10)
+        response = requests.get(audio_url, timeout=10)
         response.raise_for_status()
         
         # Transcribe using Whisper API
@@ -110,6 +128,8 @@ def speak_response(call_control_id: str, text: str) -> dict:
 def initiate_call_endpoint():
     """HTTP endpoint to initiate an outbound call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -138,7 +158,14 @@ def initiate_call_endpoint():
 @app.route("/webhooks/call", methods=["POST"])
 def handle_call_webhook():
     """Webhook endpoint to handle Telnyx call events."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        telnyx_client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "No payload"}), 400
@@ -209,5 +236,10 @@ def get_call_status(call_control_id):
         return jsonify({"error": "Network error"}), 503
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

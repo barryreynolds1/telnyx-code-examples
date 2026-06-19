@@ -1,0 +1,187 @@
+# Build a Real-Time Call Intelligence Dashboard
+
+Real-Time Call Intelligence Dashboard — live transcription, sentiment analysis, and competitor detection.
+
+## How It Works
+
+```
+  Inbound Phone Call
+        │
+        ▼
+  ┌──────────────────┐
+  │ AI Inference      │ ── direction cues, rewrites
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ TTS Generation    │ ── render audio
+  │ (multiple takes/  │
+  │  voices/languages)│
+  └────────┬─────────┘
+           │
+           ├──► JSON response
+           └──► Download / stream
+```
+
+## Telnyx Products Used
+
+- **AI Inference** — LLM inference with OpenAI-compatible API, runs on Telnyx infrastructure
+
+## API Endpoints
+
+- **AI Inference**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
+
+## Webhook Events
+
+Telnyx uses webhooks for call control — you don't poll for state. Each event tells you what happened, and your response tells Telnyx what to do next.
+
+This app handles these webhook events ([Call Control docs](https://developers.telnyx.com/docs/api/v2/call-control)) ([Messaging docs](https://developers.telnyx.com/docs/api/v2/messaging)):
+- `call.answered` — Call connected — app begins interaction
+- `call.hangup` — Call ended — app cleans up session, triggers post-call processing
+- `call.initiated` — New inbound or outbound call detected
+- `call.transcription` — Real-time transcription chunk received
+- `message.received` — Inbound SMS/MMS received
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with voice enabled
+- [Call Control Application](https://portal.telnyx.com/call-control/applications) configured with your webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/real-time-call-intelligence-dashboard-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (167 lines). Here's what each piece does.
+
+### Handling Webhooks
+
+This is the core of the app — a state machine driven by Telnyx webhook events. Each event triggers the next step:
+
+**`handle_voice()`** — The voice webhook handler — the core state machine. Each Telnyx event triggers the next action in the call flow.
+
+### Business Logic
+
+- **`analyze_segment()`** — Sends conversation context to Telnyx AI Inference and returns the model's response. Uses the OpenAI-compatible chat completions endpoint.
+- **`dashboard()`** — Processes dashboard request and returns result.
+- **`api_calls()`** — Processes dashboard request and returns result.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/webhooks/voice` | Telnyx webhook handler |
+| `GET` | `/dashboard` | Dashboard |
+| `GET` | `/api/calls` | Api Calls |
+| `GET` | `/health` | Health check |
+
+The webhook handler is the core state machine. Each Telnyx event triggers the next action:
+
+```python
+
+    if event_type == "call.initiated" and data.get("direction") == "incoming":
+        call_intel[call_control_id] = {
+            "from_number": data.get("from", "unknown"),
+            "to_number": data.get("to", "unknown"),
+            "transcript": [],
+            "sentiment_scores": [],
+            "avg_sentiment": 0.5,
+            "competitor_mentions": [],
+            "alerts": [],
+            "latest_text": "",
+            "start_time": time.time(),
+            "duration": 0,
+        }
+```
+
+Helper function that handles the core action:
+
+```python
+def analyze_segment(text):
+    """Analyze a transcript segment for sentiment and signals."""
+    messages = [
+        {"role": "system", "content": (
+            "Analyze this call segment. Return JSON: "
+            "sentiment (0.0-1.0, 0=negative, 1=positive), "
+            "competitor_mentioned (string or null), "
+            "objection_detected (boolean), "
+            "buying_signal (boolean), "
+            "suggested_response (string or null — coaching tip for the rep if sentiment is low or objection detected)."
+        )},
+        {"role": "user", "content": text},
+    ]
+    try:
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+Or call your Telnyx number from any phone to trigger the full voice workflow.
+
+**Check results:**
+
+```bash
+curl http://localhost:5000/dashboard | python3 -m json.tool
+```
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Error recovery** — handle call failures gracefully with retry or SMS fallback
+- **Prompt engineering** — tune the AI prompts for your specific domain and tone
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Call Control quickstart](https://developers.telnyx.com/docs/voice/call-control)
+- [AI Inference docs](https://developers.telnyx.com/docs/inference)
+- [Telnyx Portal](https://portal.telnyx.com)

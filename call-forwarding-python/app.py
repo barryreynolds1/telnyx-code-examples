@@ -6,16 +6,33 @@ import json
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 
 # Initialize Telnyx client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # In-memory store for active calls (use Redis in production)
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 
 def forward_call(call_control_id: str, to_number: str) -> dict:
@@ -90,7 +107,14 @@ def handle_call_webhook():
     Telnyx sends call.initiated, call.answered, and call.hangup events here.
     This handler implements call forwarding logic.
     """
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "No payload received"}), 400
@@ -208,4 +232,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

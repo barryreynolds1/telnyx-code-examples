@@ -173,6 +173,8 @@ def list_connections():
 def create_connection():
     """HTTP endpoint to create a new SIP connection with codec configuration."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -225,5 +227,10 @@ def get_connection(connection_id):
         return jsonify({"error": "Network error connecting to Telnyx"}), 503
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

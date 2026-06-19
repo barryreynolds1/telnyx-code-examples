@@ -102,6 +102,8 @@ def clone_assistant_endpoint(assistant_id: str):
         return jsonify({"error": "assistant_id is required"}), 400
     
     data = request.get_json() or {}
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     # Extract optional override parameters from request body
     new_name = data.get("name")
@@ -127,5 +129,10 @@ def clone_assistant_endpoint(assistant_id: str):
         return jsonify({"error": "Invalid request"}), 400
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

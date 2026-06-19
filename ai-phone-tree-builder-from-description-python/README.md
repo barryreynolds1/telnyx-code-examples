@@ -1,0 +1,131 @@
+---
+name: ai-phone-tree-builder-from-description
+title: "AI Phone Tree Builder"
+description: "AI Phone Tree Builder — describe your business in English, AI creates a working phone system."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
+# AI Phone Tree Builder
+
+AI Phone Tree Builder — describe your business in English, AI creates a working phone system.
+
+## Telnyx API Endpoints Used
+
+- **AI Inference**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
+
+## Architecture
+
+```
+  API Request
+        │
+        ▼
+  ┌──────────────────┐
+  │ Answer + Greet    │ ── TTS welcome message
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ Listen for Input  │
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ AI Inference      │
+  │ • Business logic   │
+  └────────┬─────────┘
+           │ ◄──── conversation loop
+           │
+           ▼
+     JSON response
+```
+
+## How It Works
+
+1. Sends conversation to Telnyx AI Inference for processing
+2. Transfers call to human agent when needed
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
+- **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Telnyx AI Inference model name | [Portal](https://developers.telnyx.com/docs/inference/models) |
+| `PORT` | `integer` | `5000` | no | HTTP server port | — |
+
+## Setup
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/ai-phone-tree-builder-from-description-python
+cp .env.example .env    # ← fill in your credentials
+pip install -r requirements.txt
+python app.py           # starts on http://localhost:5000
+```
+
+## API Reference
+
+### `POST /generate`
+
+Describe your business, get a complete AI Assistant + TeXML phone tree.
+
+```bash
+curl -X POST http://localhost:5000/generate \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Response:**
+
+```json
+{
+  "id": "item-1750280400",
+  "status": "created",
+  "created_at": "2026-07-15T14:30:00Z"
+}
+```
+
+### `GET /health`
+
+Returns health
+
+```bash
+curl http://localhost:5000/health
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "uptime_seconds": 3842,
+  "active_sessions": 2,
+  "version": "1.0.0"
+}
+```
+
+## Troubleshooting
+
+- **Connection refused on port 5000**: App isn't running. Run `python app.py` and check no other process uses port 5000.
+- **401 Unauthorized**: Your `TELNYX_API_KEY` is invalid. Generate a new one at [portal.telnyx.com/api-keys](https://portal.telnyx.com/api-keys).
+- **AI response slow/empty**: Verify model name. See available models at [developers.telnyx.com](https://developers.telnyx.com/docs/inference/list-models).
+
+## Related Examples
+
+- [run-llm-inference-python](../run-llm-inference-python/) - Standalone inference
+- [build-voice-ai-agent-python](../build-voice-ai-agent-python/) - Voice AI agent
+
+## Resources
+
+- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Telnyx Portal](https://portal.telnyx.com)

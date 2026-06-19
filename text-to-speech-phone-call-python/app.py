@@ -5,16 +5,33 @@ import os
 import telnyx
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+import threading, time as _ttl_time
 
 load_dotenv()
 
 app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # In-memory store for active calls (use a database in production)
 active_calls = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(active_calls)
+
 
 
 def initiate_call(to_number: str) -> dict:
@@ -87,6 +104,8 @@ def hangup_call(call_control_id: str) -> dict:
 def initiate_call_endpoint():
     """HTTP endpoint to initiate an outbound call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -116,6 +135,8 @@ def initiate_call_endpoint():
 def speak_endpoint(call_control_id):
     """HTTP endpoint to play TTS on an active call."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -158,7 +179,14 @@ def hangup_endpoint(call_control_id):
 @app.route("/webhooks/call", methods=["POST"])
 def handle_call_webhook():
     """Webhook endpoint to receive Call Control events."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not payload:
         return jsonify({"error": "No payload"}), 400
@@ -200,5 +228,10 @@ def get_calls_status():
     return jsonify({"active_calls": active_calls}), 200
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

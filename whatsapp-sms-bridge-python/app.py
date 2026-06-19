@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""WhatsApp-SMS Bridge — receive messages on WhatsApp and forward them via SMS, and vice versa. Bidirectional bridge between two messaging channels."""
+import os, json, time, requests, telnyx
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+import threading, time as _ttl_time
+load_dotenv()
+app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
+TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
+TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
+SMS_NUMBER = os.getenv("SMS_NUMBER")
+WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER")
+MESSAGING_PROFILE_ID = os.getenv("MESSAGING_PROFILE_ID", "")
+bridges = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(bridges)
+
+message_log = []
+
+def send_sms(to, text):
+    try:
+        resp = requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+            json={"from": SMS_NUMBER, "to": to, "text": text, "messaging_profile_id": MESSAGING_PROFILE_ID}, timeout=10)
+        return resp.ok
+    except Exception: return False
+
+def send_whatsapp(to, text):
+    try:
+        resp = requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
+            json={"from": WHATSAPP_NUMBER, "to": to, "text": text, "messaging_profile_id": MESSAGING_PROFILE_ID, "type": "whatsapp"}, timeout=10)
+        return resp.ok
+    except Exception: return False
+
+@app.route("/bridge", methods=["POST"])
+def create_bridge():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
+    sms_user = data.get("sms_number")
+    whatsapp_user = data.get("whatsapp_number")
+    bridges[sms_user] = {"whatsapp": whatsapp_user, "direction": "sms_to_whatsapp"}
+    bridges[whatsapp_user] = {"sms": sms_user, "direction": "whatsapp_to_sms"}
+    return jsonify({"status": "bridged", "sms": sms_user, "whatsapp": whatsapp_user}), 200
+
+@app.route("/webhooks/messaging", methods=["POST"])
+def handle_message():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
+    payload = request.get_json()
+    if not payload:
+        return jsonify({"error": "invalid request body"}), 400
+    data = payload.get("data", {})
+    p = data.get("payload", {})
+    if data.get("event_type") != "message.received" or p.get("direction") != "inbound":
+        return jsonify({"status": "ignored"}), 200
+    from_number = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "")
+    msg_type = p.get("type", "sms")
+    bridge = bridges.get(from_number)
+    if not bridge:
+        return jsonify({"status": "no_bridge"}), 200
+    log_entry = {"from": from_number, "text": text, "type": msg_type, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    if bridge.get("direction") == "sms_to_whatsapp":
+        target = bridge["whatsapp"]
+        success = send_whatsapp(target, f"[SMS from {from_number}] {text}")
+        log_entry["forwarded_to"] = target
+        log_entry["channel"] = "whatsapp"
+    elif bridge.get("direction") == "whatsapp_to_sms":
+        target = bridge["sms"]
+        success = send_sms(target, f"[WhatsApp from {from_number}] {text}")
+        log_entry["forwarded_to"] = target
+        log_entry["channel"] = "sms"
+    else:
+        success = False
+    log_entry["success"] = success
+    message_log.append(log_entry)
+    return jsonify({"status": "forwarded" if success else "failed"}), 200
+
+@app.route("/bridges", methods=["GET"])
+def list_bridges():
+    return jsonify({"bridges": bridges}), 200
+
+@app.route("/messages", methods=["GET"])
+def list_messages():
+    return jsonify({"messages": message_log[-50:]}), 200
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok", "bridges": len(bridges) // 2, "messages": len(message_log)}), 200
+
+if __name__ == "__main__":
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

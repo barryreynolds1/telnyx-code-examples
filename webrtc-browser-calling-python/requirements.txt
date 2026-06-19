@@ -1,5 +1,5 @@
 fastapi
 pydantic
 python-dotenv
-telnyx
+telnyx>=4.0.0
 uvicorn

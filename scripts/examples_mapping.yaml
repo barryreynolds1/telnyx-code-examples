@@ -431,3 +431,1087 @@ examples:
     language: go
     framework: gin
     folder: activate-sim-card-go
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Full-corpus registration (180 examples)
+  # ─────────────────────────────────────────────────────────────────────
+  - product: ai
+    use_case: ai-after-hours-emergency-triage
+    language: python
+    framework: flask
+    folder: ai-after-hours-emergency-triage-python
+
+  - product: ai
+    use_case: ai-assistant-knowledge-base
+    language: python
+    framework: flask
+    folder: ai-assistant-knowledge-base-python
+
+  - product: ai
+    use_case: ai-assistant-multi-tool
+    language: python
+    framework: flask
+    folder: ai-assistant-multi-tool-python
+
+  - product: ai
+    use_case: ai-assistant-phone-setup
+    language: python
+    framework: flask
+    folder: ai-assistant-phone-setup-python
+
+  - product: ai
+    use_case: ai-audiobook-narrator
+    language: python
+    framework: flask
+    folder: ai-audiobook-narrator-python
+
+  - product: ai
+    use_case: ai-billing-dispute-resolution-agent
+    language: python
+    framework: flask
+    folder: ai-billing-dispute-resolution-agent-python
+
+  - product: ai
+    use_case: ai-call-center-quality-scorer
+    language: python
+    framework: flask
+    folder: ai-call-center-quality-scorer-python
+
+  - product: ai
+    use_case: ai-cold-caller-objection-trainer
+    language: python
+    framework: flask
+    folder: ai-cold-caller-objection-trainer-python
+
+  - product: ai
+    use_case: ai-competitive-win-loss-call-analyzer
+    language: python
+    framework: flask
+    folder: ai-competitive-win-loss-call-analyzer-python
+
+  - product: ai
+    use_case: ai-compliance-quiz-phone
+    language: python
+    framework: flask
+    folder: ai-compliance-quiz-phone-python
+
+  - product: ai
+    use_case: ai-conference-moderator
+    language: python
+    framework: flask
+    folder: ai-conference-moderator-python
+
+  - product: ai
+    use_case: ai-conference-note-taker
+    language: python
+    framework: flask
+    folder: ai-conference-note-taker-python
+
+  - product: ai
+    use_case: ai-content-translator
+    language: python
+    framework: flask
+    folder: ai-content-translator-python
+
+  - product: ai
+    use_case: ai-customer-churn-predictor
+    language: python
+    framework: flask
+    folder: ai-customer-churn-predictor-python
+
+  - product: ai
+    use_case: ai-customer-winback-caller
+    language: python
+    framework: flask
+    folder: ai-customer-winback-caller-python
+
+  - product: ai
+    use_case: ai-debt-collection-compliance-agent
+    language: python
+    framework: flask
+    folder: ai-debt-collection-compliance-agent-python
+
+  - product: ai
+    use_case: ai-deposition-assistant
+    language: python
+    framework: flask
+    folder: ai-deposition-assistant-python
+
+  - product: ai
+    use_case: ai-event-rsvp-phone-line
+    language: python
+    framework: flask
+    folder: ai-event-rsvp-phone-line-python
+
+  - product: ai
+    use_case: ai-hiring-phone-screen
+    language: python
+    framework: flask
+    folder: ai-hiring-phone-screen-python
+
+  - product: ai
+    use_case: ai-insurance-claims-intake-voice
+    language: python
+    framework: flask
+    folder: ai-insurance-claims-intake-voice-python
+
+  - product: ai
+    use_case: ai-language-learning-phone-tutor
+    language: python
+    framework: flask
+    folder: ai-language-learning-phone-tutor-python
+
+  - product: ai
+    use_case: ai-live-call-participant
+    language: python
+    framework: flask
+    folder: ai-live-call-participant-python
+
+  - product: ai
+    use_case: ai-medical-appointment-prep-caller
+    language: python
+    framework: flask
+    folder: ai-medical-appointment-prep-caller-python
+
+  - product: ai
+    use_case: ai-meeting-action-tracker
+    language: python
+    framework: flask
+    folder: ai-meeting-action-tracker-python
+
+  - product: ai
+    use_case: ai-negotiation-practice-phone
+    language: python
+    framework: flask
+    folder: ai-negotiation-practice-phone-python
+
+  - product: ai
+    use_case: ai-phone-story-hotline
+    language: python
+    framework: flask
+    folder: ai-phone-story-hotline-python
+
+  - product: ai
+    use_case: ai-phone-tree-builder-from-description
+    language: python
+    framework: flask
+    folder: ai-phone-tree-builder-from-description-python
+
+  - product: ai
+    use_case: ai-podcast-call-in-show
+    language: python
+    framework: flask
+    folder: ai-podcast-call-in-show-python
+
+  - product: ai
+    use_case: ai-podcast-post-producer
+    language: python
+    framework: flask
+    folder: ai-podcast-post-producer-python
+
+  - product: ai
+    use_case: ai-podcast-producer
+    language: python
+    framework: flask
+    folder: ai-podcast-producer-python
+
+  - product: ai
+    use_case: ai-powered-ivr-replacement
+    language: python
+    framework: flask
+    folder: ai-powered-ivr-replacement-python
+
+  - product: ai
+    use_case: ai-price-quote-phone-agent
+    language: python
+    framework: flask
+    folder: ai-price-quote-phone-agent-python
+
+  - product: ai
+    use_case: ai-property-management-maintenance-line
+    language: python
+    framework: flask
+    folder: ai-property-management-maintenance-line-python
+
+  - product: ai
+    use_case: ai-real-estate-showing-scheduler
+    language: python
+    framework: flask
+    folder: ai-real-estate-showing-scheduler-python
+
+  - product: ai
+    use_case: ai-real-time-translation-bridge
+    language: python
+    framework: flask
+    folder: ai-real-time-translation-bridge-python
+
+  - product: ai
+    use_case: ai-receptionist-with-booking-tools
+    language: python
+    framework: flask
+    folder: ai-receptionist-with-booking-tools-python
+
+  - product: ai
+    use_case: ai-restaurant-reservation-voice-agent
+    language: python
+    framework: flask
+    folder: ai-restaurant-reservation-voice-agent-python
+
+  - product: ai
+    use_case: ai-sales-call-with-live-crm-updates
+    language: python
+    framework: flask
+    folder: ai-sales-call-with-live-crm-updates-python
+
+  - product: ai
+    use_case: ai-sales-coach-whisper
+    language: python
+    framework: flask
+    folder: ai-sales-coach-whisper-python
+
+  - product: ai
+    use_case: ai-sales-demo-booking-agent
+    language: python
+    framework: flask
+    folder: ai-sales-demo-booking-agent-python
+
+  - product: ai
+    use_case: ai-standup-facilitator-phone
+    language: python
+    framework: flask
+    folder: ai-standup-facilitator-phone-python
+
+  - product: ai
+    use_case: ai-tech-support-voice-agent
+    language: python
+    framework: flask
+    folder: ai-tech-support-voice-agent-python
+
+  - product: ai
+    use_case: ai-video-dubbing-pipeline
+    language: python
+    framework: flask
+    folder: ai-video-dubbing-pipeline-python
+
+  - product: ai
+    use_case: ai-voice-agent-with-function-calling
+    language: python
+    framework: flask
+    folder: ai-voice-agent-with-function-calling-python
+
+  - product: ai
+    use_case: ai-voice-memo-to-email
+    language: python
+    framework: flask
+    folder: ai-voice-memo-to-email-python
+
+  - product: ai
+    use_case: ai-voice-survey-sentiment-tracker
+    language: python
+    framework: flask
+    folder: ai-voice-survey-sentiment-tracker-python
+
+  - product: ai
+    use_case: ai-voicemail-transcription-forwarding
+    language: python
+    framework: flask
+    folder: ai-voicemail-transcription-forwarding-python
+
+  - product: ai
+    use_case: ai-voiceover-studio
+    language: python
+    framework: flask
+    folder: ai-voiceover-studio-python
+
+  - product: ai
+    use_case: build-voice-ai-agent
+    language: nodejs
+    framework: express
+    folder: build-voice-ai-agent-nodejs
+
+  - product: ai
+    use_case: build-voice-ai-agent
+    language: python
+    framework: flask
+    folder: build-voice-ai-agent-python
+
+  - product: ai
+    use_case: call-recording-ai-summarizer
+    language: python
+    framework: flask
+    folder: call-recording-ai-summarizer-python
+
+  - product: ai
+    use_case: click-to-call-webrtc-with-ai-assist
+    language: python
+    framework: flask
+    folder: click-to-call-webrtc-with-ai-assist-python
+
+  - product: ai
+    use_case: compliance-call-recorder-ai-auditor
+    language: python
+    framework: flask
+    folder: compliance-call-recorder-ai-auditor-python
+
+  - product: ai
+    use_case: conference-call-with-ai-summary
+    language: python
+    framework: flask
+    folder: conference-call-with-ai-summary-python
+
+  - product: ai
+    use_case: fax-to-ai-document-processor
+    language: python
+    framework: flask
+    folder: fax-to-ai-document-processor-python
+
+  - product: ai
+    use_case: full-stack-ai-contact-center
+    language: python
+    framework: flask
+    folder: full-stack-ai-contact-center-python
+
+  - product: ai
+    use_case: global-ip-failover-monitor
+    language: python
+    framework: flask
+    folder: global-ip-failover-monitor-python
+
+  - product: ai
+    use_case: insurance-claims-intake
+    language: python
+    framework: flask
+    folder: insurance-claims-intake-python
+
+  - product: ai
+    use_case: maintenance-request-dispatch
+    language: python
+    framework: flask
+    folder: maintenance-request-dispatch-python
+
+  - product: ai
+    use_case: missions-ai-task-runner
+    language: python
+    framework: flask
+    folder: missions-ai-task-runner-python
+
+  - product: ai
+    use_case: multi-channel-ai-helpdesk-with-ticketing
+    language: python
+    framework: flask
+    folder: multi-channel-ai-helpdesk-with-ticketing-python
+
+  - product: ai
+    use_case: multi-party-ai-training-call
+    language: python
+    framework: flask
+    folder: multi-party-ai-training-call-python
+
+  - product: ai
+    use_case: omnichannel-ai-receptionist
+    language: python
+    framework: flask
+    folder: omnichannel-ai-receptionist-python
+
+  - product: ai
+    use_case: policy-renewal-campaign
+    language: python
+    framework: flask
+    folder: policy-renewal-campaign-python
+
+  - product: ai
+    use_case: restaurant-reservation-waitlist
+    language: python
+    framework: flask
+    folder: restaurant-reservation-waitlist-python
+
+  - product: ai
+    use_case: run-llm-inference
+    language: nodejs
+    framework: express
+    folder: run-llm-inference-nodejs
+
+  - product: ai
+    use_case: run-llm-inference
+    language: python
+    framework: flask
+    folder: run-llm-inference-python
+
+  - product: ai
+    use_case: storage-voicemail-archive
+    language: python
+    framework: flask
+    folder: storage-voicemail-archive-python
+
+  - product: ai
+    use_case: texml-voicemail-drop
+    language: python
+    framework: flask
+    folder: texml-voicemail-drop-python
+
+  - product: ai
+    use_case: three-way-ai-interpreter
+    language: python
+    framework: flask
+    folder: three-way-ai-interpreter-python
+
+  - product: ai
+    use_case: video-room-ai-meeting-moderator
+    language: python
+    framework: flask
+    folder: video-room-ai-meeting-moderator-python
+
+  - product: ai
+    use_case: video-room-ai-moderator
+    language: python
+    framework: flask
+    folder: video-room-ai-moderator-python
+
+  - product: ai
+    use_case: voice-journal-daily-log
+    language: python
+    framework: flask
+    folder: voice-journal-daily-log-python
+
+  - product: ai
+    use_case: warm-transfer-ai-briefing
+    language: python
+    framework: flask
+    folder: warm-transfer-ai-briefing-python
+
+  - product: ai
+    use_case: webhook-debugger-ai-assistant
+    language: python
+    framework: flask
+    folder: webhook-debugger-ai-assistant-python
+
+  - product: ai
+    use_case: webrtc-ai-interpreter-live-calls
+    language: python
+    framework: flask
+    folder: webrtc-ai-interpreter-live-calls-python
+
+  - product: iot
+    use_case: iot-fleet-alert-escalation
+    language: python
+    framework: flask
+    folder: iot-fleet-alert-escalation-python
+
+  - product: iot
+    use_case: iot-panic-button-voice-alert
+    language: python
+    framework: flask
+    folder: iot-panic-button-voice-alert-python
+
+  - product: iot
+    use_case: iot-smart-building-voice-control
+    language: python
+    framework: flask
+    folder: iot-smart-building-voice-control-python
+
+  - product: iot
+    use_case: sim-fleet-data-usage-anomaly-detector
+    language: python
+    framework: flask
+    folder: sim-fleet-data-usage-anomaly-detector-python
+
+  - product: iot
+    use_case: voice-activated-iot-command
+    language: python
+    framework: flask
+    folder: voice-activated-iot-command-python
+
+  - product: iot
+    use_case: wireless-fleet-activation-portal
+    language: python
+    framework: flask
+    folder: wireless-fleet-activation-portal-python
+
+  - product: sip
+    use_case: sip-load-balancer-health-check
+    language: python
+    framework: flask
+    folder: sip-load-balancer-health-check-python
+
+  - product: sip
+    use_case: sip-trunking-failover-monitor
+    language: python
+    framework: flask
+    folder: sip-trunking-failover-monitor-python
+
+  - product: sms
+    use_case: abandoned-cart-recovery
+    language: python
+    framework: flask
+    folder: abandoned-cart-recovery-python
+
+  - product: sms
+    use_case: accounting-tax-season-line
+    language: python
+    framework: flask
+    folder: accounting-tax-season-line-python
+
+  - product: sms
+    use_case: after-hours-nurse-triage
+    language: python
+    framework: flask
+    folder: after-hours-nurse-triage-python
+
+  - product: sms
+    use_case: ai-appointment-booking-sms-flow
+    language: python
+    framework: flask
+    folder: ai-appointment-booking-sms-flow-python
+
+  - product: sms
+    use_case: ai-appointment-reminder-sms-voice
+    language: python
+    framework: flask
+    folder: ai-appointment-reminder-sms-voice-python
+
+  - product: sms
+    use_case: autonomous-outbound-sales-agent
+    language: python
+    framework: flask
+    folder: autonomous-outbound-sales-agent-python
+
+  - product: sms
+    use_case: billing-anomaly-detector
+    language: python
+    framework: flask
+    folder: billing-anomaly-detector-python
+
+  - product: sms
+    use_case: cdr-usage-analytics-dashboard
+    language: python
+    framework: flask
+    folder: cdr-usage-analytics-dashboard-python
+
+  - product: sms
+    use_case: cloud-storage-media-cdn
+    language: python
+    framework: flask
+    folder: cloud-storage-media-cdn-python
+
+  - product: sms
+    use_case: e911-address-validator
+    language: python
+    framework: flask
+    folder: e911-address-validator-python
+
+  - product: sms
+    use_case: ecommerce-order-status-bot
+    language: python
+    framework: flask
+    folder: ecommerce-order-status-bot-python
+
+  - product: sms
+    use_case: edge-compute-webhook-proxy
+    language: python
+    framework: edge
+    folder: edge-compute-webhook-proxy-python
+
+  - product: sms
+    use_case: edge-mcp-server-deploy
+    language: python
+    framework: edge
+    folder: edge-mcp-server-deploy-python
+
+  - product: sms
+    use_case: elearning-course-narrator
+    language: python
+    framework: flask
+    folder: elearning-course-narrator-python
+
+  - product: sms
+    use_case: emergency-mass-notification-system
+    language: python
+    framework: flask
+    folder: emergency-mass-notification-system-python
+
+  - product: sms
+    use_case: fraud-alert-verification
+    language: python
+    framework: flask
+    folder: fraud-alert-verification-python
+
+  - product: sms
+    use_case: global-lead-response-engine
+    language: python
+    framework: flask
+    folder: global-lead-response-engine-python
+
+  - product: sms
+    use_case: hosted-messaging-campaign-manager
+    language: python
+    framework: flask
+    folder: hosted-messaging-campaign-manager-python
+
+  - product: sms
+    use_case: hotel-guest-services
+    language: python
+    framework: flask
+    folder: hotel-guest-services-python
+
+  - product: sms
+    use_case: interview-screen-scheduler
+    language: python
+    framework: flask
+    folder: interview-screen-scheduler-python
+
+  - product: sms
+    use_case: isv-notification-engine
+    language: python
+    framework: flask
+    folder: isv-notification-engine-python
+
+  - product: sms
+    use_case: ivr-prompt-generator
+    language: python
+    framework: flask
+    folder: ivr-prompt-generator-python
+
+  - product: sms
+    use_case: law-firm-client-intake
+    language: python
+    framework: flask
+    folder: law-firm-client-intake-python
+
+  - product: sms
+    use_case: marketplace-comms-bridge
+    language: python
+    framework: flask
+    folder: marketplace-comms-bridge-python
+
+  - product: sms
+    use_case: media-stream-custom-audio-mixer
+    language: python
+    framework: flask
+    folder: media-stream-custom-audio-mixer-python
+
+  - product: sms
+    use_case: media-stream-live-transcription
+    language: python
+    framework: flask
+    folder: media-stream-live-transcription-python
+
+  - product: sms
+    use_case: messaging-campaign-ab-test-optimizer
+    language: python
+    framework: flask
+    folder: messaging-campaign-ab-test-optimizer-python
+
+  - product: sms
+    use_case: migrate-from-elevenlabs
+    language: python
+    framework: flask
+    folder: migrate-from-elevenlabs-python
+
+  - product: sms
+    use_case: migrate-from-twilio
+    language: python
+    framework: flask
+    folder: migrate-from-twilio-python
+
+  - product: sms
+    use_case: migrate-from-vapi
+    language: python
+    framework: flask
+    folder: migrate-from-vapi-python
+
+  - product: sms
+    use_case: missions-workflow-orchestrator
+    language: python
+    framework: flask
+    folder: missions-workflow-orchestrator-python
+
+  - product: sms
+    use_case: mms-photo-inventory-tracker
+    language: python
+    framework: flask
+    folder: mms-photo-inventory-tracker-python
+
+  - product: sms
+    use_case: mms-receipt-scanner-expense-tracker
+    language: python
+    framework: flask
+    folder: mms-receipt-scanner-expense-tracker-python
+
+  - product: sms
+    use_case: multi-channel-appointment-confirmation
+    language: python
+    framework: flask
+    folder: multi-channel-appointment-confirmation-python
+
+  - product: sms
+    use_case: multi-language-customer-survey
+    language: python
+    framework: flask
+    folder: multi-language-customer-survey-python
+
+  - product: sms
+    use_case: patient-appointment-engine
+    language: python
+    framework: flask
+    folder: patient-appointment-engine-python
+
+  - product: sms
+    use_case: payment-reminder-escalation
+    language: python
+    framework: flask
+    folder: payment-reminder-escalation-python
+
+  - product: sms
+    use_case: podcast-episode-repurposer
+    language: python
+    framework: flask
+    folder: podcast-episode-repurposer-python
+
+  - product: sms
+    use_case: podcast-highlight-clipper
+    language: python
+    framework: flask
+    folder: podcast-highlight-clipper-python
+
+  - product: sms
+    use_case: post-service-followup-engine
+    language: python
+    framework: flask
+    folder: post-service-followup-engine-python
+
+  - product: sms
+    use_case: prescription-refill-line
+    language: python
+    framework: flask
+    folder: prescription-refill-line-python
+
+  - product: sms
+    use_case: programmable-hold-experience
+    language: python
+    framework: flask
+    folder: programmable-hold-experience-python
+
+  - product: sms
+    use_case: rcs-rich-card-product-catalog
+    language: python
+    framework: flask
+    folder: rcs-rich-card-product-catalog-python
+
+  - product: sms
+    use_case: rent-collection-escalation
+    language: python
+    framework: flask
+    folder: rent-collection-escalation-python
+
+  - product: sms
+    use_case: returns-processor
+    language: python
+    framework: flask
+    folder: returns-processor-python
+
+  - product: sms
+    use_case: service-booking-dispatch
+    language: python
+    framework: flask
+    folder: service-booking-dispatch-python
+
+  - product: sms
+    use_case: shift-fill-engine
+    language: python
+    framework: flask
+    folder: shift-fill-engine-python
+
+  - product: sms
+    use_case: smart-ivr-ab-tester
+    language: python
+    framework: flask
+    folder: smart-ivr-ab-tester-python
+
+  - product: sms
+    use_case: sms-appointment-no-show-predictor
+    language: python
+    framework: flask
+    folder: sms-appointment-no-show-predictor-python
+
+  - product: sms
+    use_case: sms-chatbot-with-conversation-memory
+    language: python
+    framework: flask
+    folder: sms-chatbot-with-conversation-memory-python
+
+  - product: sms
+    use_case: sms-drip-campaign-engine
+    language: python
+    framework: flask
+    folder: sms-drip-campaign-engine-python
+
+  - product: sms
+    use_case: sms-emergency-check-in
+    language: python
+    framework: flask
+    folder: sms-emergency-check-in-python
+
+  - product: sms
+    use_case: sms-escape-room-game
+    language: python
+    framework: flask
+    folder: sms-escape-room-game-python
+
+  - product: sms
+    use_case: sms-keyword-auto-responder
+    language: python
+    framework: flask
+    folder: sms-keyword-auto-responder-python
+
+  - product: sms
+    use_case: sms-poll-voting-system
+    language: python
+    framework: flask
+    folder: sms-poll-voting-system-python
+
+  - product: sms
+    use_case: sms-trivia-game-tournament
+    language: python
+    framework: flask
+    folder: sms-trivia-game-tournament-python
+
+  - product: sms
+    use_case: toll-free-sms-campaign-manager
+    language: python
+    framework: flask
+    folder: toll-free-sms-campaign-manager-python
+
+  - product: sms
+    use_case: verify-multi-channel-auth
+    language: python
+    framework: flask
+    folder: verify-multi-channel-auth-python
+
+  - product: sms
+    use_case: verify-phone-number-otp-flow
+    language: python
+    framework: flask
+    folder: verify-phone-number-otp-flow-python
+
+  - product: sms
+    use_case: whatsapp-order-tracking-notifications
+    language: python
+    framework: flask
+    folder: whatsapp-order-tracking-notifications-python
+
+  - product: sms
+    use_case: whatsapp-sms-bridge
+    language: python
+    framework: flask
+    folder: whatsapp-sms-bridge-python
+
+  - product: sms
+    use_case: white-label-appointment-platform
+    language: python
+    framework: flask
+    folder: white-label-appointment-platform-python
+
+  - product: sms
+    use_case: x402-usdc-account-funder
+    language: python
+    framework: flask
+    folder: x402-usdc-account-funder-python
+
+  - product: voice
+    use_case: branded-caller-id-manager
+    language: python
+    framework: flask
+    folder: branded-caller-id-manager-python
+
+  - product: voice
+    use_case: bulk-number-validation-cleaner
+    language: python
+    framework: flask
+    folder: bulk-number-validation-cleaner-python
+
+  - product: voice
+    use_case: call-analytics-dashboard-api
+    language: python
+    framework: flask
+    folder: call-analytics-dashboard-api-python
+
+  - product: voice
+    use_case: call-queue-with-hold-music
+    language: python
+    framework: flask
+    folder: call-queue-with-hold-music-python
+
+  - product: voice
+    use_case: call-sentiment-live-escalation
+    language: python
+    framework: flask
+    folder: call-sentiment-live-escalation-python
+
+  - product: voice
+    use_case: call-whisper-screen-pop
+    language: python
+    framework: flask
+    folder: call-whisper-screen-pop-python
+
+  - product: voice
+    use_case: cloud-storage-call-archive
+    language: python
+    framework: flask
+    folder: cloud-storage-call-archive-python
+
+  - product: voice
+    use_case: cnam-caller-id-lookup-enrichment
+    language: python
+    framework: flask
+    folder: cnam-caller-id-lookup-enrichment-python
+
+  - product: voice
+    use_case: commercial-voiceover-generator
+    language: python
+    framework: flask
+    folder: commercial-voiceover-generator-python
+
+  - product: voice
+    use_case: conference-live-poll-dtmf
+    language: python
+    framework: flask
+    folder: conference-live-poll-dtmf-python
+
+  - product: voice
+    use_case: deepfake-voice-detector
+    language: python
+    framework: flask
+    folder: deepfake-voice-detector-python
+
+  - product: voice
+    use_case: fax-to-structured-data-pipeline
+    language: python
+    framework: flask
+    folder: fax-to-structured-data-pipeline-python
+
+  - product: voice
+    use_case: live-podcast-call-in
+    language: python
+    framework: flask
+    folder: live-podcast-call-in-python
+
+  - product: voice
+    use_case: media-stream-voice-cloak
+    language: python
+    framework: flask
+    folder: media-stream-voice-cloak-python
+
+  - product: voice
+    use_case: multi-number-identity-router
+    language: python
+    framework: flask
+    folder: multi-number-identity-router-python
+
+  - product: voice
+    use_case: multilingual-voiceover-kit
+    language: python
+    framework: flask
+    folder: multilingual-voiceover-kit-python
+
+  - product: voice
+    use_case: number-lookup-fraud-screener
+    language: python
+    framework: flask
+    folder: number-lookup-fraud-screener-python
+
+  - product: voice
+    use_case: number-lookup-lead-enrichment
+    language: python
+    framework: flask
+    folder: number-lookup-lead-enrichment-python
+
+  - product: voice
+    use_case: number-porting-status-tracker
+    language: python
+    framework: flask
+    folder: number-porting-status-tracker-python
+
+  - product: voice
+    use_case: number-reputation-monitor-auto-rotate
+    language: python
+    framework: flask
+    folder: number-reputation-monitor-auto-rotate-python
+
+  - product: voice
+    use_case: number-search-and-purchase-api
+    language: python
+    framework: flask
+    folder: number-search-and-purchase-api-python
+
+  - product: voice
+    use_case: number-warmup-reputation-builder
+    language: python
+    framework: flask
+    folder: number-warmup-reputation-builder-python
+
+  - product: voice
+    use_case: porting-loa-automation
+    language: python
+    framework: flask
+    folder: porting-loa-automation-python
+
+  - product: voice
+    use_case: porting-order-tracker-dashboard
+    language: python
+    framework: flask
+    folder: porting-order-tracker-dashboard-python
+
+  - product: voice
+    use_case: real-time-call-intelligence-dashboard
+    language: python
+    framework: flask
+    folder: real-time-call-intelligence-dashboard-python
+
+  - product: voice
+    use_case: smart-number-geo-assignment
+    language: python
+    framework: flask
+    folder: smart-number-geo-assignment-python
+
+  - product: voice
+    use_case: texml-dynamic-call-router
+    language: python
+    framework: flask
+    folder: texml-dynamic-call-router-python
+
+  - product: voice
+    use_case: video-voiceover-replacement
+    language: python
+    framework: flask
+    folder: video-voiceover-replacement-python
+
+  - product: voice
+    use_case: video-webinar-recording-manager
+    language: python
+    framework: flask
+    folder: video-webinar-recording-manager-python
+
+  - product: voice
+    use_case: voice-to-slack-bridge
+    language: python
+    framework: flask
+    folder: voice-to-slack-bridge-python
+
+  - product: voice
+    use_case: voice-verified-identity-2fa
+    language: python
+    framework: flask
+    folder: voice-verified-identity-2fa-python
+
+  - product: voice
+    use_case: voiceover-audition-generator
+    language: python
+    framework: flask
+    folder: voiceover-audition-generator-python
+
+  - product: voice
+    use_case: wireguard-private-voice-network
+    language: python
+    framework: flask
+    folder: wireguard-private-voice-network-python
+

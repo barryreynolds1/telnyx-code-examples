@@ -1,0 +1,193 @@
+# Build a Media Stream Custom Audio Mixer
+
+Media Stream Custom Audio Mixer — mix custom audio into live calls via WebSocket-based media streaming.
+
+## How It Works
+
+```
+  Inbound Phone Call
+        │
+        ▼
+  ┌──────────────────┐
+  │ Call Control      │
+  └────────┬─────────┘
+           │
+           ├──► Media Streaming
+           │
+           ▼
+     JSON response
+```
+
+## Telnyx Products Used
+
+- **Voice** — programmatic call control with webhooks for every call state change
+
+## API Endpoints
+
+- **Call Control: Answer**: `POST /v2/calls/{id}/actions/answer` — [API reference](https://developers.telnyx.com/api/call-control/answer-call)
+- **Call Control: Start Playback**: `POST /v2/calls/{id}/actions/playback_start` — [API reference](https://developers.telnyx.com/api/call-control/start-playback)
+- **Call Control: Start Streaming**: `POST /v2/calls/{id}/actions/streaming_start` — [API reference](https://developers.telnyx.com/api/call-control/start-streaming)
+- **Call Control: Stop Streaming**: `POST /v2/calls/{id}/actions/streaming_stop` — [API reference](https://developers.telnyx.com/api/call-control/stop-streaming)
+
+## Webhook Events
+
+Telnyx uses webhooks for call control — you don't poll for state. Each event tells you what happened, and your response tells Telnyx what to do next.
+
+This app handles these webhook events ([Call Control docs](https://developers.telnyx.com/docs/api/v2/call-control)):
+- `call.answered` — Call connected — app begins interaction
+- `call.hangup` — Call ended — app cleans up session, triggers post-call processing
+- `call.initiated` — New inbound or outbound call detected
+- `streaming.started` — Media stream connection established
+- `streaming.stopped` — Media stream connection closed
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with voice enabled
+- [Call Control Application](https://portal.telnyx.com/call-control/applications) configured with your webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/media-stream-custom-audio-mixer-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (79 lines). Here's what each piece does.
+
+### Handling Webhooks
+
+This is the core of the app — a state machine driven by Telnyx webhook events. Each event triggers the next step:
+
+**`handle_voice()`** — The voice webhook handler — the core state machine. Each Telnyx event triggers the next action in the call flow.
+
+### Business Logic
+
+- **`inject_audio()`** — Makes an API call and processes the response.
+- **`list_streams()`** — Returns all streams with metadata and pagination.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/webhooks/voice` | Telnyx webhook handler |
+| `POST` | `/streams/<ccid>/inject` | Inject Audio |
+| `GET` | `/streams` | List Streams |
+| `GET` | `/stream-log` | Get Log |
+| `GET` | `/health` | Health check |
+
+The webhook handler is the core state machine. Each Telnyx event triggers the next action:
+
+```python
+    ccid = data.get("call_control_id")
+    if event_type == "call.initiated" and data.get("direction") == "incoming":
+        try:
+            requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
+        except Exception:
+            pass
+        return jsonify({"status": "answering"}), 200
+    elif event_type == "call.answered":
+        try:
+            requests.post(f"{API}/calls/{ccid}/actions/streaming_start", headers=headers,
+                json={"stream_url": os.getenv("STREAM_WEBSOCKET_URL", "wss://your-server/stream", timeout=10),
+                    "stream_track": "both_tracks", "enable_dialogflow": False}, timeout=10)
+            active_streams[ccid] = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ"), "status": "streaming"}
+        except Exception as e:
+```
+
+The trigger endpoint kicks off the workflow:
+
+```python
+def inject_audio(ccid):
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
+    audio_url = data.get("audio_url")
+    if audio_url:
+        try:
+            requests.post(f"{API}/calls/{ccid}/actions/playback_start", headers=headers,
+                json={"audio_url": audio_url, "overlay": data.get("overlay", True, timeout=10)}, timeout=10)
+            return jsonify({"status": "injecting", "audio": audio_url}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+**Trigger the workflow:**
+
+```bash
+curl -X POST http://localhost:5000/streams/<ccid>/inject \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Welcome to our platform. We help businesses communicate better.",
+    "voice": "female",
+    "language": "en-US"
+  }'
+```
+
+Or call your Telnyx number from any phone to trigger the full voice workflow.
+
+**Check results:**
+
+```bash
+curl http://localhost:5000/streams | python3 -m json.tool
+```
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Error recovery** — handle call failures gracefully with retry or SMS fallback
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Call Control quickstart](https://developers.telnyx.com/docs/voice/call-control)
+- [Telnyx Portal](https://portal.telnyx.com)

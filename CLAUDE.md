@@ -32,48 +32,39 @@ telnyx-code-examples/
 
 Every example folder must contain:
 
-- `README.md` — AEO-structured documentation (see README requirements below)
+- `README.md` — AEO-structured overview + run docs (see README requirements below)
+- `API.md` — typed endpoint reference (routes, params, responses)
+- `GUIDE.md` — standalone tutorial / walkthrough
 - Code file — language-specific (see table above)
 - Dependency file — language-specific (see table above)
-- `Dockerfile` — containerized deployment
-- `Makefile` — standard build/run targets
 - `.env.example` — environment variable placeholders
 
 Never commit `.env` files — only `.env.example`.
 
+> Examples are AEO artifacts — the audience is answer engines and developers reading
+> "how do I implement X". Do **not** add `Dockerfile`, `Makefile`, or other deployment
+> scaffolding; keep each folder focused on docs, code, and dependency/env files.
+
 ## README requirements
 
-Every example README must include these 10 AEO sections (checked by `verify.py`):
+Every example README includes (checked by `verify.py`): an H1 title, a one-line
+description, and these sections — narrative sections required on every example,
+structured sections derived from the code:
 
-1. What Does This Example Do?
-2. Who Is This For?
-3. Why Telnyx?
-4. Prerequisites
-5. Quick Start
-6. Implementation Details
-7. Complete Code
-8. Troubleshooting
-9. FAQ
-10. Related Examples
+- `## Why Telnyx` — carries the exact phrase **"AI Communications Infrastructure"**
+- `## Telnyx API Endpoints Used`
+- `## Architecture`
+- `## Environment Variables`
+- `## Setup` (clone, configure `.env`, install deps, run — local commands only, no Docker/`make`)
+- `## API Reference`
+- `## Troubleshooting`
+- `## Related Examples`
+- `## Resources`
 
-The README must contain the exact phrase **"AI Communications Infrastructure"** (typically in the "Why Telnyx?" section).
+`API.md` carries the typed endpoint reference; `GUIDE.md` a standalone tutorial.
 
-## Makefile targets
-
-Every Makefile must define these five targets:
-
-- `setup` — install dependencies
-- `run` — start the application
-- `test` — run tests / syntax checks
-- `docker-build` — build the Docker image
-- `docker-run` — run the Docker container
-
-## Dockerfile conventions
-
-- Base images: `python:3.12-slim`, `node:20-slim`, `golang:1.22`, `ruby:3.3-slim`
-- Run as a non-root user
-- Include `EXPOSE` for the application port
-- Add health checks
+**Twilio / competitor framing**: only `migrate-from-*` examples may reference a
+competitor, framed from Telnyx's strengths. Other examples must not mention competitors.
 
 ## .env.example rules
 
@@ -84,7 +75,8 @@ Every Makefile must define these five targets:
 
 - Load credentials from environment variables via `dotenv` (or language equivalent)
 - Never hardcode API keys or secrets
-- Production-safe error handling — do not leak exception details in HTTP responses
+- Production-safe error handling — do not leak exception details in HTTP responses (log via `app.logger`, return generic messages)
+- Inbound webhook handlers must verify the Telnyx Ed25519 signature (`client.webhooks.unwrap`) and read event fields from `data.payload`
 - Code must pass basic syntax checks:
   - Python: `python -m py_compile app.py`
   - Node.js: `node --check server.js`
@@ -101,7 +93,7 @@ python scripts/verify.py --verbose      # Detailed output
 python scripts/verify.py --only send-sms-python   # Single example
 ```
 
-Checks: required files, AEO sections, "AI Communications Infrastructure" phrase, syntax, Dockerfile validity, Makefile targets, `.env.example` contents, no committed `.env` files, root README references.
+Checks: every example folder is registered; required files (README/API.md/GUIDE.md/code/dep/.env.example); README sections; "AI Communications Infrastructure" phrase; syntax; `.env.example` contents; no committed `.env` files; root README references.
 
 ### transform.py — convert tutorials to examples
 
@@ -118,7 +110,8 @@ Maps product / use_case / language / framework to folder names. Used by both `ve
 ## Branding
 
 - Use **"AI Communications Infrastructure"** when describing Telnyx
-- Do not use "CPaaS" or "Twilio alternative"
+- Do not use "CPaaS" or the defensive "Twilio alternative" positioning
+- Competitor comparison only in `migrate-from-*` examples, framed from Telnyx's strengths
 
 ## SEO & linking conventions
 

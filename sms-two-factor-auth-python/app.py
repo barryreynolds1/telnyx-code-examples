@@ -7,6 +7,7 @@ import time
 from dotenv import load_dotenv
 import telnyx
 from flask import Flask, jsonify, request
+import threading, time as _ttl_time
 
 load_dotenv()
 
@@ -18,6 +19,21 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 # In-memory OTP storage: {phone_number: {"code": "123456", "expires_at": timestamp, "attempts": 0}}
 # For production, use Redis or a database with TTL support
 otp_store = {}
+
+def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
+    def _cleanup():
+        while True:
+            _ttl_time.sleep(interval)
+            cutoff = _ttl_time.time() - ttl_seconds
+            for store in stores:
+                expired = [k for k, v in store.items()
+                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
+                for k in expired:
+                    store.pop(k, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
+
+_start_ttl_cleanup(otp_store)
+
 
 # Configuration
 OTP_LENGTH = 6
@@ -112,6 +128,8 @@ def get_otp_status(phone_number: str) -> dict:
 def request_otp():
     """Request an OTP to be sent to the provided phone number."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -149,6 +167,8 @@ def request_otp():
 def verify_otp_endpoint():
     """Verify the OTP code provided by the user."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -197,5 +217,10 @@ def otp_status():
     return jsonify(status), 200
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

@@ -116,17 +116,19 @@ def send_bulk_sms(recipients: List[str], message: str) -> Dict[str, Any]:
                 "error": "Rate limit exceeded. Consider increasing BULK_SMS_DELAY.",
             })
         except telnyx.APIStatusError as e:
+            app.logger.exception("Telnyx API error sending SMS to recipient")
             results["failed"] += 1
             results["errors"].append({
                 "recipient": recipient,
-                "error": f"API error: {str(e)}",
+                "error": "Could not send message due to an API error",
                 "status_code": e.status_code,
             })
         except ValueError as e:
+            app.logger.error("Validation error sending SMS to recipient: %s", e)
             results["failed"] += 1
             results["errors"].append({
                 "recipient": recipient,
-                "error": str(e),
+                "error": "Invalid recipient",
             })
     
     results["completed_at"] = datetime.utcnow().isoformat()
@@ -137,6 +139,8 @@ def send_bulk_sms(recipients: List[str], message: str) -> Dict[str, Any]:
 def send_bulk_sms_endpoint():
     """HTTP endpoint to send bulk SMS messages."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -173,5 +177,10 @@ def bulk_sms_status():
     }), 200
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

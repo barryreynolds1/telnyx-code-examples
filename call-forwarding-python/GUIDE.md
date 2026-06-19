@@ -1,0 +1,189 @@
+# Build a Production-ready Flask application for call forwarding via Telnyx Voice API
+
+Production-ready Flask application for call forwarding via Telnyx Voice API.
+
+## How It Works
+
+```
+  Inbound Phone Call
+        │
+        ▼
+  ┌──────────────────┐
+  │ Call Control      │
+  └────────┬─────────┘
+           │
+           │
+           ├──► Routing / dispatch
+           │
+           ▼
+     JSON response
+```
+
+## Telnyx Products Used
+
+- **Migration**
+- **Number Porting** — phone number search, purchase, and configuration
+- **Voice** — programmatic call control with webhooks for every call state change
+
+## API Endpoints
+
+- **Call Control: Answer**: `POST /v2/calls/{id}/actions/answer` — [API reference](https://developers.telnyx.com/api/call-control/answer-call)
+
+## Webhook Events
+
+Telnyx uses webhooks for call control — you don't poll for state. Each event tells you what happened, and your response tells Telnyx what to do next.
+
+This app handles these webhook events ([Call Control docs](https://developers.telnyx.com/docs/api/v2/call-control)):
+- `call.answered` — Call connected — app begins interaction
+- `call.hangup` — Call ended — app cleans up session, triggers post-call processing
+- `call.initiated` — New inbound or outbound call detected
+
+## Prerequisites
+
+- Python 3.8+
+- [Telnyx account](https://portal.telnyx.com/sign-up) with funded balance
+- [API key](https://portal.telnyx.com/api-keys)
+- [Phone number](https://portal.telnyx.com/numbers/my-numbers) with voice enabled
+- [Call Control Application](https://portal.telnyx.com/call-control/applications) configured with your webhook URL
+- [ngrok](https://ngrok.com) for exposing your local server to Telnyx webhooks
+
+## Step 1: Set Up the Project
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/call-forwarding-python
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Edit `.env` with your Telnyx credentials. Each variable links to where you find it in the [Telnyx Portal](https://portal.telnyx.com).
+
+## Step 2: Understand the Code
+
+Everything lives in `app.py` (211 lines). Here's what each piece does.
+
+### Handling Webhooks
+
+This is the core of the app — a state machine driven by Telnyx webhook events. Each event triggers the next step:
+
+**`handle_call_webhook()`** — Handles Telnyx webhook events. Routes each event type to the appropriate handler.
+
+### Business Logic
+
+- **`get_call_status()`** — Queries active call state from in-memory session store.
+- **`hangup_call_endpoint()`** — Terminates active call via Call Control hangup.
+- **`health_check()`** — Health check endpoint for monitoring and load balancer probes.
+
+### All Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/webhooks/call` | Telnyx webhook handler |
+| `GET` | `/calls/status/<call_control_id>` | Get Call Status |
+| `POST` | `/calls/hangup/<call_control_id>` | Hangup Call Endpoint |
+| `GET` | `/health` | Health check |
+
+The webhook handler is the core state machine. Each Telnyx event triggers the next action:
+
+```python
+    try:
+        if event_type == "call.initiated":
+            # Store call metadata for tracking
+            active_calls[call_control_id] = {
+                "from": from_number,
+                "initiated_at": payload.get("data", {}).get("occurred_at"),
+            }
+            
+            # Answer the call automatically
+            answer_call(call_control_id)
+            
+            # Forward to the configured destination
+            forward_to = os.getenv("FORWARD_TO_NUMBER")
+            if not forward_to:
+```
+
+The trigger endpoint kicks off the workflow:
+
+```python
+def hangup_call_endpoint(call_control_id: str):
+    """
+    Manually terminate an active call.
+    
+    Args:
+        call_control_id: The unique identifier for the call to terminate.
+    
+    Returns:
+        JSON with hangup confirmation.
+    """
+    try:
+        result = hangup_call(call_control_id)
+```
+
+## Step 3: Run It
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`.
+
+In a separate terminal, expose your server for webhooks:
+
+```bash
+ngrok http 5000
+```
+
+Copy the HTTPS URL and set it in the [Telnyx Portal](https://portal.telnyx.com):
+
+- **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
+
+## Step 4: Test It
+
+**Health check:**
+
+```bash
+curl http://localhost:5000/health
+```
+
+**Trigger the workflow:**
+
+```bash
+curl -X POST http://localhost:5000/calls/hangup/<call_control_id> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+12125559999"
+  }'
+```
+
+Or call your Telnyx number from any phone to trigger the full voice workflow.
+
+**Check results:**
+
+```bash
+curl http://localhost:5000/calls/status/<call_control_id> | python3 -m json.tool
+```
+
+## Going to Production
+
+This example uses in-memory storage for simplicity. For production:
+
+- **Database** — replace the in-memory dict/list with PostgreSQL or Redis
+- **Authentication** — add API key validation on your endpoints
+- **Webhook verification** — validate Telnyx webhook signatures ([docs](https://developers.telnyx.com/docs/api/v2/overview#webhook-signing))
+- **Error recovery** — handle call failures gracefully with retry or SMS fallback
+- **Monitoring** — add structured logging and health check alerts
+- **Rate limiting** — protect your endpoints from abuse
+
+## Run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Resources
+
+- [Source code and reference](./README.md)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Call Control quickstart](https://developers.telnyx.com/docs/voice/call-control)
+- [Telnyx Portal](https://portal.telnyx.com)

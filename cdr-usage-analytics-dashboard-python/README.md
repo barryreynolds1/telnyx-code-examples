@@ -1,0 +1,234 @@
+---
+name: cdr-usage-analytics-dashboard
+title: "CDR Usage Analytics Dashboard"
+description: "Pull Call Detail Records, build usage analytics with cost breakdowns, peak-hour analysis, and AI-powered insights."
+language: python
+framework: flask
+telnyx_products: [AI Inference]
+---
+
+# CDR Usage Analytics Dashboard
+
+Pull Call Detail Records, build usage analytics with cost breakdowns, peak-hour analysis, and AI-powered insights.
+
+## Telnyx API Endpoints Used
+
+- **AI Inference**: `POST /v2/ai/chat/completions` — [API reference](https://developers.telnyx.com/api/inference/chat-completions)
+
+## Architecture
+
+```
+  API Request
+        │
+        ▼
+  ┌──────────────────┐
+  │ Your App          │
+  └────────┬─────────┘
+           │
+           ├──► Telnyx AI Inference
+           ├──► Telnyx CDR / Billing
+           │
+           ├──► Summarization
+           │
+           ▼
+     JSON response
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Type | Example | Required | Description | Where to get it |
+|----------|------|---------|----------|-------------|-----------------|
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
+| `AI_MODEL` | `string` | `moonshotai/Kimi-K2.6` | no | Telnyx AI Inference model name | [Portal](https://developers.telnyx.com/docs/inference/models) |
+| `PORT` | `integer` | `5000` | no | HTTP server port | — |
+
+## Setup
+
+```bash
+git clone https://github.com/team-telnyx/telnyx-code-examples.git
+cd telnyx-code-examples/cdr-usage-analytics-dashboard-python
+cp .env.example .env    # ← fill in your credentials
+pip install -r requirements.txt
+python app.py           # starts on http://localhost:5000
+```
+
+## API Reference
+
+### `GET /cdrs`
+
+Returns cdrs
+
+```bash
+curl http://localhost:5000/cdrs
+```
+
+**Response:**
+
+```json
+{
+  "items": [
+    {
+      "id": "item-001",
+      "status": "active",
+      "created_at": "2026-07-15T14:30:00Z"
+    }
+  ]
+}
+```
+
+### `GET /analytics/summary`
+
+Returns summary
+
+```bash
+curl http://localhost:5000/analytics/summary
+```
+
+**Response:**
+
+```json
+{
+  "period": "2026-07-15",
+  "total_calls": 1247,
+  "avg_duration_seconds": 186,
+  "inbound": 823,
+  "outbound": 424,
+  "peak_hour": "14:00",
+  "cost_usd": 42.18
+}
+```
+
+### `GET /analytics/peak-hours`
+
+Returns peak-hours
+
+```bash
+curl http://localhost:5000/analytics/peak-hours
+```
+
+**Response:**
+
+```json
+{
+  "period": "2026-07-15",
+  "total_calls": 1247,
+  "avg_duration_seconds": 186,
+  "inbound": 823,
+  "outbound": 424,
+  "peak_hour": "14:00",
+  "cost_usd": 42.18
+}
+```
+
+### `GET /analytics/top-routes`
+
+Returns top-routes
+
+```bash
+curl http://localhost:5000/analytics/top-routes
+```
+
+**Response:**
+
+```json
+{
+  "period": "2026-07-15",
+  "total_calls": 1247,
+  "avg_duration_seconds": 186,
+  "inbound": 823,
+  "outbound": 424,
+  "peak_hour": "14:00",
+  "cost_usd": 42.18
+}
+```
+
+### `GET /analytics/ai-insights`
+
+Returns ai-insights
+
+```bash
+curl http://localhost:5000/analytics/ai-insights
+```
+
+**Response:**
+
+```json
+{
+  "period": "2026-07-15",
+  "total_calls": 1247,
+  "avg_duration_seconds": 186,
+  "inbound": 823,
+  "outbound": 424,
+  "peak_hour": "14:00",
+  "cost_usd": 42.18
+}
+```
+
+### `GET /analytics/daily`
+
+Returns daily
+
+```bash
+curl http://localhost:5000/analytics/daily
+```
+
+**Response:**
+
+```json
+{
+  "period": "2026-07-15",
+  "total_calls": 1247,
+  "avg_duration_seconds": 186,
+  "inbound": 823,
+  "outbound": 424,
+  "peak_hour": "14:00",
+  "cost_usd": 42.18
+}
+```
+
+### `GET /health`
+
+Returns health
+
+```bash
+curl http://localhost:5000/health
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "uptime_seconds": 3842,
+  "active_sessions": 2,
+  "version": "1.0.0"
+}
+```
+
+## Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Invalid or missing API key | Verify `TELNYX_API_KEY` in `.env` matches your key in the [Portal](https://portal.telnyx.com/api-keys) |
+| Webhook not received | Local server not publicly reachable | Expose it with a tunnel (e.g. ngrok) and set the webhook URL in the [Telnyx Portal](https://portal.telnyx.com) |
+| `422 Unprocessable Entity` | Missing or malformed request fields | Check the request body against the API Reference above |
+
+## Related Examples
+
+- [Abandoned Cart Recovery (Python)](../abandoned-cart-recovery-python)
+- [Accounting Tax Season Line (Python)](../accounting-tax-season-line-python)
+- [After Hours Nurse Triage (Python)](../after-hours-nurse-triage-python)
+- [AI Appointment Booking SMS Flow (Python)](../ai-appointment-booking-sms-flow-python)
+- [AI Appointment Reminder SMS Voice (Python)](../ai-appointment-reminder-sms-voice-python)
+
+## Resources
+
+- [AI Inference Guide](https://developers.telnyx.com/docs/inference)
+- [Telnyx Developer Docs](https://developers.telnyx.com)
+- [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

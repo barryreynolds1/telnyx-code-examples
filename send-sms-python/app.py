@@ -44,6 +44,8 @@ def send_sms(to_number: str, message: str) -> dict:
 def send_sms_endpoint():
     """HTTP endpoint to send single SMS."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -70,5 +72,10 @@ def send_sms_endpoint():
         return jsonify({"error": "Invalid request"}), 400
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

@@ -53,6 +53,8 @@ def chat_with_assistant(assistant_id: str, user_message: str) -> dict:
 def chat_endpoint():
     """HTTP endpoint to chat with an AI Assistant."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "invalid request body"}), 400
     
     if not data:
         return jsonify({"error": "Request body required"}), 400
@@ -82,5 +84,10 @@ def chat_endpoint():
         return jsonify({"error": "Invalid request"}), 400
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)
