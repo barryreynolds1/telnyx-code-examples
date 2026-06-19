@@ -214,3 +214,53 @@ make setup && make run
 - [Call Control quickstart](https://developers.telnyx.com/docs/voice/call-control)
 - [AI Inference docs](https://developers.telnyx.com/docs/inference)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+
+## Production Checklist
+
+Before deploying to production, verify each item:
+
+### Authentication and Security
+- [ ] API key stored in environment variable or secrets manager, never in code
+- [ ] `TELNYX_PUBLIC_KEY` set for webhook signature verification
+- [ ] HTTPS endpoint for all webhooks (Telnyx rejects HTTP in production)
+- [ ] Input validation on all webhook payloads
+- [ ] Rate limiting on public-facing API endpoints
+
+### Webhook Reliability
+- [ ] Webhook endpoint returns 200 within 5 seconds (Telnyx retries on timeout)
+- [ ] Idempotent webhook handling (same event delivered twice produces same result)
+- [ ] Webhook failover URL configured in Telnyx Portal
+- [ ] Dead letter queue or logging for failed webhook processing
+
+### Error Handling and Retries
+- [ ] `timeout=` set on all outbound HTTP requests (recommended: 10-15s)
+- [ ] Retry logic with exponential backoff for Telnyx API calls
+- [ ] Graceful fallback when AI inference is slow or unavailable (e.g., transfer to human)
+- [ ] Circuit breaker for external service dependencies (Slack, CRM, etc.)
+
+### Latency
+- [ ] AI model selected for latency profile (smaller models for real-time voice)
+- [ ] System prompts optimized for short responses (1-2 sentences for phone)
+- [ ] Streaming TTS enabled where supported
+- [ ] Latency measured and logged per call (`inference_ms`, `tts_ms`)
+
+### Observability
+- [ ] Structured logging with call IDs for correlation
+- [ ] Health check endpoint (`/health`) returning service status
+- [ ] Alerting on webhook processing errors
+- [ ] Call duration and AI response time metrics exported
+
+### Compliance
+- [ ] Call recording disclosure (if recording is enabled)
+- [ ] GDPR/CCPA data handling for call transcripts and AI logs
+- [ ] PCI compliance if handling payment information by voice
+- [ ] HIPAA compliance if handling healthcare data (BAA with Telnyx)
+
+### Deployment
+- [ ] Application runs behind a reverse proxy (nginx, Caddy) in production
+- [ ] Process manager (systemd, PM2, Docker) for auto-restart
+- [ ] Environment-specific configuration (dev/staging/prod API keys)
+- [ ] Database or Redis for session state (not in-memory dicts for multi-process)
+- [ ] Horizontal scaling plan (sticky sessions or shared state for active calls)
+

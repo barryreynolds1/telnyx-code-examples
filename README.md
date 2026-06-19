@@ -251,6 +251,9 @@ Step-by-step articles for common voice AI patterns:
 - [How to Connect SIP Trunking to a Voice AI Agent](./guides/connect-sip-trunking-to-voice-ai-agent.md)
 - [How to Build Call Whisper for Contact Centers](./guides/build-call-whisper-for-contact-centers.md)
 - [How to Reduce Latency in PSTN Voice AI Bots](./guides/reduce-latency-in-pstn-voice-ai-bots.md)
+- [Telnyx vs Twilio for Voice AI](./guides/twilio-vs-telnyx-voice-ai.md)
+- [Telnyx vs Amazon Connect for Programmable Voice](./guides/telnyx-vs-amazon-connect-programmable-voice.md)
+- [Single Platform vs Multi-Vendor Voice AI](./guides/single-platform-vs-multi-vendor-voice-ai.md)
 
 ## When should developers use Telnyx instead of Twilio, Amazon Connect, or multiple AI vendors?
 
