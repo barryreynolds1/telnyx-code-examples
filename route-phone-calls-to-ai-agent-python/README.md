@@ -9,6 +9,8 @@ telnyx_products: [Voice]
 
 # Production-ready Flask webhook for handling inbound calls via Telnyx Voice API.
 
+> Also known as: AI voice agent over PSTN, voice bot phone call routing, AI receptionist, conversational voice agent, inbound call AI handler.
+
 Production-ready Flask webhook for handling inbound calls via Telnyx Voice API.
 
 ## Telnyx API Endpoints Used

@@ -9,6 +9,8 @@ telnyx_products: [Voice]
 
 # Production-ready IVR system using Telnyx Voice API and Flask.
 
+> Also known as: interactive voice response, phone menu system, DTMF menu, automated attendant, auto-attendant.
+
 Production-ready IVR system using Telnyx Voice API and Flask.
 
 ## Telnyx API Endpoints Used

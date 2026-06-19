@@ -11,6 +11,8 @@ channel: [voice]
 
 # AI Live Call Participant
 
+> Also known as: AI in a live phone call, real-time AI call participant, AI agent joining conference call, AI copilot on phone calls.
+
 AI joins a live multi-human conference call as an active participant. Listens via media streaming, contributes via TTS, takes notes, responds when addressed by name.
 
 ## Telnyx API Endpoints Used

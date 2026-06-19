@@ -9,6 +9,8 @@ telnyx_products: [AI Inference]
 
 # Run LLM inference on Telnyx — OpenAI-compatible chat completions API.
 
+> Also known as: Telnyx inference API, LLM API, AI text generation, OpenAI-compatible inference, serverless LLM.
+
 Application powered by Telnyx AI Inference. Built with Telnyx AI Inference, Migration, Number Porting, SMS/MMS.
 
 ## Telnyx API Endpoints Used

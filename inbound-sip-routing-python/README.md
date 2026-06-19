@@ -9,6 +9,8 @@ telnyx_products: []
 
 # Flask application for managing inbound SIP routing with Telnyx.
 
+> Also known as: SIP call routing, inbound DID routing, SIP trunk call handling, PBX inbound routing.
+
 Application. Built with Telnyx Migration, Number Porting.
 
 ## Telnyx API Endpoints Used

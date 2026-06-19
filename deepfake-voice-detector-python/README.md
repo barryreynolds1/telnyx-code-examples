@@ -11,6 +11,8 @@ channel: [voice]
 
 # Deepfake Voice Detector
 
+> Also known as: AI voice fraud detection, synthetic voice detector, voice authentication, deepfake audio detection.
+
 Real-time synthetic speech detection on live phone calls. Captures audio via media streaming, extracts acoustic features, scores deepfake probability with AI Inference, alerts security team via Slack.
 
 ## Telnyx API Endpoints Used

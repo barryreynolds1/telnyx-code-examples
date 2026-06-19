@@ -9,6 +9,8 @@ telnyx_products: [Voice, Call Recording]
 
 # Production-ready Flask application for call recording via Telnyx Voice API.
 
+> Also known as: call recording API, record VoIP calls, phone call recorder, compliance recording.
+
 Production-ready Flask application for call recording via Telnyx Voice API.
 
 ## Telnyx API Endpoints Used

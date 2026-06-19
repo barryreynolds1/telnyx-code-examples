@@ -10,6 +10,8 @@ channel: [voice, sms]
 
 # Omnichannel AI Receptionist — one AI brain across voice, SMS, and WhatsApp.
 
+> Also known as: AI receptionist, virtual receptionist, automated front desk, AI answering service.
+
 Voice and SMS application powered by Telnyx AI Inference. Built with Telnyx AI Assistants, AI Inference, Migration, Number Porting.
 
 ## Telnyx API Endpoints Used

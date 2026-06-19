@@ -10,6 +10,8 @@ channel: [sms]
 
 # Send SMS
 
+> Also known as: send text message API, SMS API Python, programmatic SMS, Telnyx messaging API.
+
 Send an SMS message using the Telnyx Messaging API. Supports delivery status webhooks.
 
 ## Telnyx API Endpoints Used

@@ -10,6 +10,8 @@ channel: [voice]
 
 # Full-Stack AI Contact Center
 
+> Also known as: AI call center, cloud contact center, automated customer service, AI-powered support center.
+
 Full-Stack AI Contact Center — complete contact center: IVR + queue + AI agent assist + recording + live analytics.
 
 ## Telnyx API Endpoints Used

@@ -10,6 +10,8 @@ channel: [voice]
 
 # Build a complete voice AI agent with Telnyx
 
+> Also known as: voice AI agent, conversational AI phone bot, AI-powered phone answering, voice bot with LLM, real-time voice assistant.
+
 Build a complete voice AI agent with Telnyx — inbound call handling, AI conversation, and call control.
 
 ## Telnyx API Endpoints Used

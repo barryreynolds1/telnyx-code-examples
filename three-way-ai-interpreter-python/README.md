@@ -11,6 +11,8 @@ channel: [voice]
 
 # Three-Way Call with AI Interpreter
 
+> Also known as: real-time phone translation, AI interpreter phone call, multilingual conference bridge, live call translation service.
+
 Two humans speak different languages on the same call. AI translates in real-time and speaks the translation to each party.
 
 ## Telnyx API Endpoints Used

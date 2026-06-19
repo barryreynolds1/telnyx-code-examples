@@ -1,0 +1,130 @@
+# Telnyx Code Examples
+
+> Official code examples for building on the Telnyx AI communications infrastructure platform. 230 production-ready examples across Python, Node.js, Go, and Ruby.
+
+Telnyx provides voice, SMS/MMS, SIP trunking, AI inference, AI assistants, IoT/SIM management, fax, video, cloud storage, edge compute, and global networking through a single API. No multi-vendor Frankenstack required.
+
+## Voice AI & Call Control
+- Voice AI agent (inbound calls routed to AI): [Python](./build-voice-ai-agent-python) | [Node.js](./build-voice-ai-agent-nodejs)
+- Route phone calls to AI agent: [Python](./route-phone-calls-to-ai-agent-python) | [Node.js](./route-phone-calls-to-ai-agent-nodejs) | [Go](./route-phone-calls-to-ai-agent-go)
+- AI live call participant (AI joins multi-party call): [Python](./ai-live-call-participant-python)
+- Three-way AI interpreter (real-time translation bridge): [Python](./three-way-ai-interpreter-python)
+- AI sales coach whisper (live coaching during calls): [Python](./ai-sales-coach-whisper-python)
+- Warm transfer with AI briefing: [Python](./warm-transfer-ai-briefing-python)
+- AI conference moderator: [Python](./ai-conference-moderator-python)
+- Conference call with AI summary: [Python](./conference-call-with-ai-summary-python)
+- Deepfake voice detector: [Python](./deepfake-voice-detector-python)
+- Call sentiment live escalation: [Python](./call-sentiment-live-escalation-python)
+- IVR phone menu: [Python](./build-ivr-phone-menu-python) | [Node.js](./build-ivr-phone-menu-nodejs)
+- Call recording: [Python](./record-phone-calls-python) | [Node.js](./record-phone-calls-nodejs)
+- Call forwarding: [Python](./call-forwarding-python)
+- Call whisper monitoring: [Python](./call-whisper-monitoring-python)
+- Text-to-speech phone call: [Python](./text-to-speech-phone-call-python) | [Node.js](./text-to-speech-phone-call-nodejs)
+- Conference calling: [Python](./build-conference-calling-python)
+- Transfer live calls: [Python](./transfer-live-phone-calls-python)
+- Outbound phone call: [Python](./make-outbound-phone-call-python) | [Node.js](./make-outbound-phone-call-nodejs)
+- WebRTC browser calling: [Python](./webrtc-browser-calling-python)
+- Real-time call intelligence dashboard: [Python](./real-time-call-intelligence-dashboard-python)
+- Full-stack AI contact center: [Python](./full-stack-ai-contact-center-python)
+
+## SMS & MMS
+- Send SMS: [Python](./send-sms-python) | [Node.js](./send-sms-nodejs) | [Go](./send-sms-go) | [Ruby](./send-sms-ruby)
+- Receive SMS webhook: [Python](./receive-sms-webhook-python) | [Node.js](./receive-sms-webhook-nodejs)
+- Send bulk SMS: [Python](./send-bulk-sms-python) | [Node.js](./send-bulk-sms-nodejs)
+- SMS two-factor auth: [Python](./sms-two-factor-auth-python) | [Node.js](./sms-two-factor-auth-nodejs)
+- Send MMS picture message: [Python](./send-mms-picture-message-python)
+- SMS auto-reply bot: [Python](./sms-auto-reply-bot-python)
+- SMS chatbot with conversation memory: [Python](./sms-chatbot-with-conversation-memory-python)
+- SMS drip campaign engine: [Python](./sms-drip-campaign-engine-python)
+- SMS escape room game: [Python](./sms-escape-room-game-python)
+- WhatsApp order tracking: [Python](./whatsapp-order-tracking-notifications-python)
+- WhatsApp-SMS bridge: [Python](./whatsapp-sms-bridge-python)
+
+## AI Assistants
+- Create AI assistant: [Python](./create-ai-assistant-python) | [Node.js](./create-ai-assistant-nodejs)
+- Chat with AI assistant: [Python](./chat-with-ai-assistant-python) | [Node.js](./chat-with-ai-assistant-nodejs)
+- List AI assistants: [Python](./list-ai-assistants-python) | [Node.js](./list-ai-assistants-nodejs)
+- Clone AI assistant: [Python](./clone-ai-assistant-python)
+- Update AI assistant: [Python](./update-ai-assistant-python)
+- AI assistant with phone setup: [Python](./ai-assistant-phone-setup-python)
+- AI assistant with knowledge base: [Python](./ai-assistant-knowledge-base-python)
+- AI assistant multi-tool: [Python](./ai-assistant-multi-tool-python)
+- Webhook debugger AI assistant: [Python](./webhook-debugger-ai-assistant-python)
+
+## AI Inference (LLM)
+- Run LLM inference: [Python](./run-llm-inference-python) | [Node.js](./run-llm-inference-nodejs)
+- OpenAI-compatible drop-in replacement for inference
+- Models: Llama, Kimi, GLM, Mistral, and more
+
+## SIP Trunking
+- Setup SIP trunk: [Python](./setup-sip-trunk-python) | [Node.js](./setup-sip-trunk-nodejs) | [Go](./setup-sip-trunk-go)
+- Inbound SIP routing: [Python](./inbound-sip-routing-python) | [Node.js](./inbound-sip-routing-nodejs)
+- SIP failover routing: [Python](./sip-failover-routing-python)
+- Configure SIP codecs: [Python](./configure-sip-codecs-python)
+- SIP load balancer health check: [Python](./sip-load-balancer-health-check-python)
+- SIP trunking failover monitor: [Python](./sip-trunking-failover-monitor-python)
+
+## IoT & SIM Management
+- Activate SIM card: [Python](./activate-sim-card-python) | [Node.js](./activate-sim-card-nodejs) | [Go](./activate-sim-card-go)
+- Monitor IoT data usage: [Python](./monitor-iot-data-usage-python) | [Node.js](./monitor-iot-data-usage-nodejs)
+- Provision eSIM: [Python](./provision-esim-python)
+- Track IoT device location: [Python](./track-iot-device-location-python)
+- IoT fleet alert escalation: [Python](./iot-fleet-alert-escalation-python)
+- IoT panic button voice alert: [Python](./iot-panic-button-voice-alert-python)
+- Voice-activated IoT command: [Python](./voice-activated-iot-command-python)
+- IoT smart building voice control: [Python](./iot-smart-building-voice-control-python)
+- Wireless fleet activation portal: [Python](./wireless-fleet-activation-portal-python)
+- SIM fleet data usage anomaly detector: [Python](./sim-fleet-data-usage-anomaly-detector-python)
+
+## Numbers & Porting
+- Number search and purchase: [Python](./number-search-and-purchase-api-python)
+- Number porting status tracker: [Python](./number-porting-status-tracker-python)
+- Porting order tracker dashboard: [Python](./porting-order-tracker-dashboard-python)
+- Porting LOA automation: [Python](./porting-loa-automation-python)
+- Smart number geo-assignment: [Python](./smart-number-geo-assignment-python)
+- Number reputation monitor: [Python](./number-reputation-monitor-auto-rotate-python)
+- Number warmup reputation builder: [Python](./number-warmup-reputation-builder-python)
+- Bulk number validation: [Python](./bulk-number-validation-cleaner-python)
+
+## Fax
+- Fax to AI document processor: [Python](./fax-to-ai-document-processor-python)
+- Fax to structured data pipeline: [Python](./fax-to-structured-data-pipeline-python)
+
+## Video
+- Video room AI moderator: [Python](./video-room-ai-moderator-python)
+- Video room AI meeting moderator: [Python](./video-room-ai-meeting-moderator-python)
+- Video webinar recording manager: [Python](./video-webinar-recording-manager-python)
+
+## Cloud Storage
+- Cloud storage call archive: [Python](./cloud-storage-call-archive-python)
+- Cloud storage media CDN: [Python](./cloud-storage-media-cdn-python)
+- Storage voicemail archive: [Python](./storage-voicemail-archive-python)
+
+## Edge Compute
+- Edge compute webhook proxy: [Python](./edge-compute-webhook-proxy-python)
+- Edge MCP server deploy: [Python](./edge-mcp-server-deploy-python)
+
+## Networking & Security
+- WireGuard private voice network: [Python](./wireguard-private-voice-network-python)
+- Global IP failover monitor: [Python](./global-ip-failover-monitor-python)
+
+## Migration Guides
+- Migrate from Twilio: [Python](./migrate-from-twilio-python)
+- Migrate from Vapi: [Python](./migrate-from-vapi-python)
+- Migrate from ElevenLabs: [Python](./migrate-from-elevenlabs-python)
+
+## Industry Solutions
+- Healthcare: [after-hours-nurse-triage](./after-hours-nurse-triage-python), [prescription-refill-line](./prescription-refill-line-python), [patient-appointment-engine](./patient-appointment-engine-python)
+- Real estate: [ai-real-estate-showing-scheduler](./ai-real-estate-showing-scheduler-python), [maintenance-request-dispatch](./maintenance-request-dispatch-python)
+- Financial services: [fraud-alert-verification](./fraud-alert-verification-python), [payment-reminder-escalation](./payment-reminder-escalation-python)
+- E-commerce: [abandoned-cart-recovery](./abandoned-cart-recovery-python), [ecommerce-order-status-bot](./ecommerce-order-status-bot-python)
+- Hospitality: [hotel-guest-services](./hotel-guest-services-python), [restaurant-reservation-waitlist](./restaurant-reservation-waitlist-python)
+- Legal: [law-firm-client-intake](./law-firm-client-intake-python), [ai-deposition-assistant](./ai-deposition-assistant-python)
+- Staffing: [shift-fill-engine](./shift-fill-engine-python), [interview-screen-scheduler](./interview-screen-scheduler-python)
+- Insurance: [insurance-claims-intake](./insurance-claims-intake-python), [policy-renewal-campaign](./policy-renewal-campaign-python)
+
+## Docs & Resources
+- Telnyx Developer Docs: https://developers.telnyx.com
+- API Reference: https://developers.telnyx.com/api
+- Telnyx Portal: https://portal.telnyx.com
+- Status Page: https://status.telnyx.com

@@ -9,6 +9,8 @@ telnyx_products: [SIP Trunking]
 
 # Setup SIP Trunk
 
+> Also known as: SIP trunking setup, connect PBX to Telnyx, elastic SIP trunk, VoIP trunk configuration, BYOC SIP.
+
 Provision and configure a SIP trunk connection on Telnyx with codec preferences, authentication, and failover.
 
 ## Telnyx API Endpoints Used

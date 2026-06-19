@@ -9,6 +9,8 @@ telnyx_products: [Voice]
 
 # Production-ready Flask application for text-to-speech calls via Telnyx.
 
+> Also known as: TTS phone call, text to speech over PSTN, voice synthesis during call, automated voice message.
+
 Production-ready Flask application for text-to-speech calls via Telnyx.
 
 ## Telnyx API Endpoints Used

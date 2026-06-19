@@ -9,6 +9,8 @@ telnyx_products: [AI Assistants]
 
 # Create AI Assistant
 
+> Also known as: build AI agent, create voice bot, LLM-powered assistant, custom AI chatbot.
+
 Create a new Telnyx AI Assistant with a system prompt, model selection, and tool configuration.
 
 ## Telnyx API Endpoints Used

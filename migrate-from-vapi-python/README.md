@@ -10,6 +10,8 @@ channel: [voice]
 
 # Migrate from Vapi
 
+> Also known as: Vapi alternative, switch from Vapi, Vapi migration, voice AI platform migration.
+
 Migrate from Vapi — import Vapi voice agents to Telnyx AI Assistants with voice, prompt, and tool configuration mapping.
 
 ## Telnyx API Endpoints Used

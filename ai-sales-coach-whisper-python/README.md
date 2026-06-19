@@ -11,6 +11,8 @@ channel: [voice]
 
 # AI Sales Coach (Whisper)
 
+> Also known as: real-time sales coaching, call coaching AI, sales whisper agent, live deal assist.
+
 AI coach listens to a live sales call and whispers real-time suggestions to the rep only. Customer never hears the AI. Generates post-call scorecard.
 
 ## Telnyx API Endpoints Used

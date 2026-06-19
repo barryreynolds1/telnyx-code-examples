@@ -10,6 +10,8 @@ channel: [sms]
 
 # Migrate from Twilio
 
+> Also known as: Twilio alternative, switch from Twilio, Twilio migration guide, Twilio to Telnyx.
+
 Migrate from Twilio — complete Twilio-to-Telnyx migration tool: numbers, messaging profiles, voice apps, and webhook configs.
 
 ## Telnyx API Endpoints Used

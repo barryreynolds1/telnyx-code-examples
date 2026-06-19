@@ -10,6 +10,8 @@ channel: [voice]
 
 # Migrate from ElevenLabs
 
+> Also known as: ElevenLabs alternative, switch from ElevenLabs, ElevenLabs migration, TTS platform migration.
+
 Migrate from ElevenLabs — import ElevenLabs voice configurations to Telnyx TTS with voice mapping and cost comparison.
 
 ## Telnyx API Endpoints Used

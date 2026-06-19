@@ -11,6 +11,8 @@ channel: [voice]
 
 # Warm Transfer with AI Briefing
 
+> Also known as: warm handoff with context, AI-assisted call transfer, agent briefing on transfer, smart call routing.
+
 When an agent transfers a call, AI summarizes the conversation and briefs the next agent before connecting. No cold handoffs.
 
 ## Telnyx API Endpoints Used

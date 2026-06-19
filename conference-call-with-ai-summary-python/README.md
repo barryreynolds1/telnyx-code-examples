@@ -10,6 +10,8 @@ channel: [voice]
 
 # Conference Call with AI Summary
 
+> Also known as: AI meeting notes, conference call transcription, automated meeting summary, call minutes generator.
+
 Conference Call with AI Summary — multi-party conference with transcription and AI post-call summary.
 
 ## Telnyx API Endpoints Used

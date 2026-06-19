@@ -9,6 +9,8 @@ telnyx_products: [AI Assistants, SMS/MMS, Voice, Call Recording]
 
 # Production-ready Flask application for Whisper-based call prompts via Telnyx.
 
+> Also known as: call whisper, agent coaching, live call monitoring, supervisor barge-in, silent call monitoring.
+
 Voice application. Built with Telnyx AI Assistants, Migration, Number Porting, SMS/MMS.
 
 ## Telnyx API Endpoints Used
