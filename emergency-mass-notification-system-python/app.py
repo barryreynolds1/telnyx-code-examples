@@ -6,11 +6,12 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 ALERT_NUMBER = os.getenv("ALERT_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
+ACK_DIGIT = "1"  # DTMF digit recipients press to acknowledge the alert
 
 notifications = {}  # notification_id -> {message, contacts, delivery_status}
 
@@ -62,6 +63,11 @@ def send_notification():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -78,12 +84,15 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="dtmf speech", timeout_secs=10, min_digits=1, max_digits=1)
         return jsonify({"status": "waiting_ack"}), 200
     elif event_type == "call.gather.ended":
+        p = payload.get("data", {}).get("payload", {})
+        digit = p.get("digits")
+        acknowledged = digit == ACK_DIGIT
         for nid, notif in notifications.items():
             for phone, d in notif["delivery"].items():
                 if d.get("call_control_id") == ccid:
-                    d["voice"] = "acknowledged"
+                    d["voice"] = "acknowledged" if acknowledged else "not_acknowledged"
         client.calls.actions.hangup(ccid)
-        return jsonify({"status": "acknowledged"}), 200
+        return jsonify({"status": "acknowledged" if acknowledged else "not_acknowledged"}), 200
     elif event_type == "call.hangup":
         return jsonify({"status": "ended"}), 200
     return jsonify({"status": "ok"}), 200

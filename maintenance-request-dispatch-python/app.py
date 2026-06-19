@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Maintenance Request Dispatch - tenant texts issue, AI categorizes and estimates cost, auto-dispatches vendor for routine work, manager approves orders over $500 via SMS reply."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -46,6 +47,11 @@ def dispatch_vendor(category, wo):
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400

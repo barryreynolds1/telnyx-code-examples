@@ -40,7 +40,8 @@ def audit_elevenlabs():
         return jsonify({"elevenlabs_voices": audit, "total": len(audit),
             "auto_mappable": sum(1 for a in audit if "Neural" in a.get("telnyx_equivalent", ""))}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("ElevenLabs audit failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/migrate/voice-config", methods=["POST"])
 def migrate_voice():
@@ -87,8 +88,9 @@ def test_tts():
             json={"text": text, "voice": voice, "model": "telnyx/tts-ultra-clara"}, timeout=15)
         return jsonify({"status": "generated", "voice": voice}), resp.status_code
     except Exception as e:
+        app.logger.exception("TTS generation failed")
         return jsonify({"note": "TTS endpoint may vary. Use within AI Assistant for voice calls.",
-            "error": str(e)}), 200
+            "error": "transcription failed"}), 200
 
 @app.route("/migration-log", methods=["GET"])
 def get_log():

@@ -125,14 +125,16 @@ def create_audition():
                 url = upload_to_storage(key, audio)
                 voice_result["storage_url"] = url
             except Exception as e:
-                voice_result["storage_error"] = str(e)
+                app.logger.exception("storage upload failed for voice %s", voice_cfg["id"])
+                voice_result["storage_error"] = "audio upload failed"
 
             auditions[audition_id]["voices"].append(voice_result)
         except Exception as e:
+            app.logger.exception("voice rendering failed for voice %s", voice_cfg["id"])
             auditions[audition_id]["voices"].append({
                 "voice_id": voice_cfg["id"],
                 "voice_name": voice_cfg["name"],
-                "error": str(e)
+                "error": "voice rendering failed"
             })
 
     # Step 2: AI ranks voices for this script
@@ -162,7 +164,8 @@ Return JSON array ranked best to worst, each with:
     except json.JSONDecodeError:
         auditions[audition_id]["ranking"] = [{"voice_id": "nova", "rank": 1, "score": 80, "reasoning": ranking_raw[:200]}]
     except Exception as e:
-        auditions[audition_id]["ranking_error"] = str(e)
+        app.logger.exception("voice ranking failed for audition %s", audition_id)
+        auditions[audition_id]["ranking_error"] = "voice ranking failed"
 
     # Step 3: SMS notify decision-makers with top pick
     if notify_phones and auditions[audition_id]["ranking"]:

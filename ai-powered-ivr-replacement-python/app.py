@@ -5,6 +5,7 @@ import os
 import json
 import time
 import requests
+import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 
@@ -12,6 +13,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
@@ -82,6 +85,11 @@ def create_assistant_with_ab_test():
 @app.route("/webhooks/assistant", methods=["POST"])
 def handle_assistant_webhook():
     """Handle AI Assistant events — the assistant manages the call flow automatically."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
@@ -161,4 +169,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

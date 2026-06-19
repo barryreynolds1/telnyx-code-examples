@@ -1,4 +1,4 @@
 flask
 python-dotenv
-telnyx
+telnyx>=4.0.0
 requests

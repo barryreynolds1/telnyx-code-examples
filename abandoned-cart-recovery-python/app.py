@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Abandoned Cart Recovery - SMS 1h after abandon with incentive, AI voice call 24h later if no purchase. Integrates with Shopify webhooks and Stripe for discount codes."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -26,7 +27,7 @@ def make_call(to, client_state):
     try:
         requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps(client_state, timeout=10).encode().hex()}, timeout=10)
+                "client_state": base64.b64encode(json.dumps(client_state).encode()).decode()}, timeout=10)
     except Exception:
         pass
 
@@ -78,15 +79,21 @@ def run_call_recovery():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     cs = {}
-    if data.get("client_state"):
-        try: cs = json.loads(bytes.fromhex(data["client_state"]).decode())
+    if p.get("client_state"):
+        try: cs = json.loads(base64.b64decode(p["client_state"]))
         except Exception: pass
     if event == "call.answered":
         name = cs.get("name", "there")
@@ -98,8 +105,8 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type": "speech", "end_silence_timeout_secs": 2, "timeout_secs": 10, "language_code": "en-US"}, timeout=10)
     elif event == "call.gather.ended":
-        speech = data.get("speech", {}).get("result", "")
-        caller = data.get("to", "")
+        speech = p.get("speech", {}).get("result", "")
+        caller = p.get("to", "")
         if speech and any(w in speech.lower() for w in ["yes", "sure", "yeah", "okay", "send"]):
             cart = next((c for c in abandoned_carts if c["id"] == cs.get("cart_id")), None)
             if cart:

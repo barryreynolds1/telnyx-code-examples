@@ -74,7 +74,8 @@ def chat():
             return jsonify(final.json()), 200
         return jsonify(result), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("chat request failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/tools", methods=["GET"])
 def list_tools():

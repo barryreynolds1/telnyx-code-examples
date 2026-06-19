@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Fax to AI Document Processor — receive fax, AI extracts data, forwards structured summary."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -21,16 +23,22 @@ def call_inference(messages, max_tokens=400):
 
 @app.route("/webhooks/fax", methods=["POST"])
 def handle_fax():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event_type = data.get("event_type")
     if event_type == "fax.received":
-        fax_id = data.get("fax_id")
-        from_number = data.get("from")
-        media_url = data.get("media_url")
-        pages = data.get("page_count", 0)
+        fax_id = p.get("fax_id")
+        from_number = p.get("from")
+        media_url = p.get("media_url")
+        pages = p.get("page_count", 0)
         messages = [{"role": "system", "content": "A fax has been received. Classify the document type and extract key data. Return JSON: document_type (invoice/contract/medical_form/prescription/legal/other), sender (string), summary (2-3 sentences), key_fields (object of extracted values), priority (low/normal/urgent), action_required (string or null)."},
             {"role": "user", "content": f"Fax from {from_number}, {pages} pages. Fax ID: {fax_id}"}]
         try:

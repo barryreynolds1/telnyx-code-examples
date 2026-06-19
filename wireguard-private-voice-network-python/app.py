@@ -39,7 +39,8 @@ def create_network():
             networks[net_id] = result.get("data", {})
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create network")
+        return jsonify({"error": "could not create network"}), 500
 
 @app.route("/networks", methods=["GET"])
 def list_networks():
@@ -47,7 +48,8 @@ def list_networks():
         resp = requests.get(f"{API}/networks", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list networks")
+        return jsonify({"error": "could not list networks"}), 500
 
 @app.route("/interfaces", methods=["POST"])
 def create_interface():
@@ -62,7 +64,8 @@ def create_interface():
             interfaces[iface["id"]] = iface
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create WireGuard interface")
+        return jsonify({"error": "could not create interface"}), 500
 
 @app.route("/peers", methods=["POST"])
 def create_peer():
@@ -74,7 +77,8 @@ def create_peer():
                 "connection_name": data.get("name", "sip-endpoint")}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create WireGuard peer")
+        return jsonify({"error": "could not create peer"}), 500
 
 @app.route("/interfaces/<iface_id>/config", methods=["GET"])
 def get_config(iface_id):
@@ -84,7 +88,8 @@ def get_config(iface_id):
             resp = requests.get(f"{API}/wireguard_interfaces/{iface_id}", headers=headers, timeout=15)
             iface = resp.json().get("data", {})
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            app.logger.exception("Failed to fetch WireGuard interface config")
+            return jsonify({"error": "could not retrieve interface config"}), 500
     config = f"""[Interface]
 PrivateKey = <YOUR_PRIVATE_KEY>
 Address = {iface.get('interface_address', '10.0.0.2/24')}

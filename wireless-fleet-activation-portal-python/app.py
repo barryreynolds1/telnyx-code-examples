@@ -16,7 +16,8 @@ def list_sims():
         if resp.ok:
             return jsonify(resp.json()), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list SIM cards")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Failed"}), 500
 
 @app.route("/sims/activate", methods=["POST"])
@@ -34,7 +35,8 @@ def activate_sims():
             results.append({"sim_id": sim_id, "status": status})
             activation_log.append({"sim_id": sim_id, "status": status, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
         except Exception as e:
-            results.append({"sim_id": sim_id, "status": "error", "error": str(e)})
+            app.logger.exception("Failed to activate SIM %s", sim_id)
+            results.append({"sim_id": sim_id, "status": "error", "error": "could not activate sim"})
     return jsonify({"results": results, "activated": sum(1 for r in results if r["status"] == "activated")}), 200
 
 @app.route("/sims/deactivate", methods=["POST"])

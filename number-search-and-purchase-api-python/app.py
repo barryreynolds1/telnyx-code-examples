@@ -24,7 +24,8 @@ def search_numbers():
             numbers = resp.json().get("data", [])
             return jsonify({"numbers": [{"number": n.get("phone_number"), "features": n.get("features", []), "cost": n.get("cost_information", {}), "region": n.get("region_information", [])} for n in numbers], "total": len(numbers)}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Number search failed")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Search failed"}), 500
 
 @app.route("/numbers/purchase", methods=["POST"])
@@ -45,7 +46,8 @@ def purchase_number():
             else:
                 results.append({"number": number, "status": "failed", "error": resp.text})
         except Exception as e:
-            results.append({"number": number, "status": "error", "error": str(e)})
+            app.logger.exception("Number purchase failed")
+            results.append({"number": number, "status": "error", "error": "could not purchase number"})
     return jsonify({"results": results}), 200
 
 @app.route("/numbers/inventory", methods=["GET"])
@@ -55,7 +57,8 @@ def list_inventory():
         if resp.ok:
             return jsonify(resp.json()), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Inventory listing failed")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Failed"}), 500
 
 @app.route("/health", methods=["GET"])

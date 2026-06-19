@@ -84,7 +84,8 @@ def send_warmup():
             return jsonify({"error": resp.text}), resp.status_code
     except Exception as e:
         wp["errors"] += 1
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to send warmup message")
+        return jsonify({"error": "could not send message"}), 500
 
 @app.route("/warmup/status", methods=["GET"])
 def warmup_status():

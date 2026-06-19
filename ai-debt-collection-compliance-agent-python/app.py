@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """AI Debt Collection Compliance Agent — FDCPA-compliant outbound collection with real-time guardrails."""
-import os, json, time, requests, telnyx
+import os, re, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -66,16 +66,23 @@ def start_collection():
             active_calls[ccid] = {"debtor": data, "conversation": [{"role": "system", "content": SYSTEM_PROMPT}], "compliance_checks": []}
         return jsonify({"status": "calling", "call_control_id": ccid}), 200
     except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to start collection call")
+        return jsonify({"error": "could not start call"}), 500
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
     if event_type == "call.answered" and call:
         debtor = call["debtor"]
@@ -88,12 +95,13 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=2, timeout_secs=15, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if not speech:
             client.calls.actions.speak(ccid, payload="I didn't catch that. Can you hear me okay?", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200
-        stop_words = ["stop calling", "do not contact", "cease", "leave me alone", "dont call"]
-        if any(sw in speech.lower() for sw in stop_words):
+        stop_words = ["stop calling", "do not call", "dont call", "stop contacting", "do not contact", "remove me", "leave me alone"]
+        normalized_speech = re.sub(r"[^a-z0-9 ]", "", speech.lower())
+        if any(re.sub(r"[^a-z0-9 ]", "", sw) in normalized_speech for sw in stop_words):
             client.calls.actions.speak(ccid, payload="I understand. We will stop contacting you at this number. Have a good day.", voice="female", language_code="en-US")
             call["debtor"]["do_not_contact"] = True
             return jsonify({"status": "dnc_acknowledged"}), 200

@@ -8,7 +8,7 @@ import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -79,12 +79,18 @@ def start_survey():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
     survey = active_surveys.get(ccid)
 
     if event_type == "call.answered" and survey:
@@ -97,7 +103,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=3, timeout_secs=20, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and survey:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if speech:
             survey["answers"].append({"question": SURVEY_QUESTIONS[survey["question_index"]], "answer": speech})
             survey["question_index"] += 1

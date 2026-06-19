@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Payment Reminder Escalation - invoice overdue: day 1 SMS, day 7 voice call with payment link, day 14 escalation to collections with full context. Integrates with Stripe/QuickBooks."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -47,13 +48,13 @@ def run_reminders():
             try:
                 requests.post(f"{API}/calls", headers=headers,
                     json={"to": inv["contact_phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                        "client_state": json.dumps({"inv_id": inv["id"], "msg": f"This is a courtesy call about invoice {inv['id']} for ${inv['amount']:.2f}, now {days_overdue} days past due. Please arrange payment at your earliest convenience."}, timeout=10).encode().hex()}, timeout=10)
+                        "client_state": base64.b64encode(json.dumps({"inv_id": inv["id"], "msg": f"This is a courtesy call about invoice {inv['id']} for ${inv['amount']:.2f}, now {days_overdue} days past due. Please arrange payment at your earliest convenience."}).encode()).decode()}, timeout=10)
             except Exception: pass
             entry["action"] = "voice_call"
         else:
             entry["action"] = "collections_escalation"
             if COLLECTIONS_SLACK:
-                try: requests.post(COLLECTIONS_SLACK, json={"text": f"COLLECTIONS: {inv['company']} - ${inv['amount']:.2f} - {days_overdue} days overdue. Contact: {inv['contact_phone']}. {sum(1 for l in reminder_log if l.get('invoice_id', timeout=10)==inv['id'])} prior attempts."}, timeout=5)
+                try: requests.post(COLLECTIONS_SLACK, json={"text": f"COLLECTIONS: {inv['company']} - ${inv['amount']:.2f} - {days_overdue} days overdue. Contact: {inv['contact_phone']}. {sum(1 for l in reminder_log if l.get('invoice_id')==inv['id'])} prior attempts."}, timeout=5)
                 except Exception: pass
         reminder_log.append(entry)
         results.append(entry)
@@ -61,15 +62,21 @@ def run_reminders():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     if event == "call.answered":
         cs = {}
-        try: cs = json.loads(bytes.fromhex(data.get("client_state","")).decode())
+        try: cs = json.loads(base64.b64decode(p.get("client_state","")))
         except Exception: pass
         if cs.get("msg"):
             requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,

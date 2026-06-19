@@ -12,7 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
@@ -26,12 +26,14 @@ def process_inbound_sms(event_data: dict) -> dict:
     Returns:
         Dictionary with extracted message details.
     """
-    # Extract message attributes from the webhook event
+    # Extract message attributes from the webhook event.
+    # id stays at the data level; operational fields live under data["payload"].
+    p = event_data.get("payload", {})
     message_id = event_data.get("id")
-    from_number = event_data.get("from", {}).get("phone_number")
-    to_number = event_data.get("to", [{}])[0].get("phone_number")
-    text = event_data.get("text", "")
-    received_at = event_data.get("received_at")
+    from_number = p.get("from", {}).get("phone_number")
+    to_number = p.get("to", [{}])[0].get("phone_number")
+    text = p.get("text", "")
+    received_at = p.get("received_at")
     
     # Return JSON-serializable data
     return {
@@ -50,6 +52,11 @@ def receive_sms_webhook():
     
     Telnyx sends a POST request with event type 'message.received' for inbound SMS.
     """
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -80,7 +87,7 @@ def receive_sms_webhook():
         
     except Exception as e:
         # Log the error but still return 200 to prevent Telnyx retries
-        print(f"Error processing webhook: {str(e)}")
+        app.logger.exception("Error processing webhook")
         return jsonify({"status": "error"}), 200
 
 
@@ -90,4 +97,4 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

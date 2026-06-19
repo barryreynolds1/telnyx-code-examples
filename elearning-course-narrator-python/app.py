@@ -120,8 +120,9 @@ Guidelines:
     except json.JSONDecodeError:
         modules = [{"module_number": 1, "module_title": "Full Content", "narration": content[:3000], "learning_objectives": [], "estimated_minutes": 5}]
     except Exception as e:
+        app.logger.exception("Failed to structure course content")
         courses[course_id]["status"] = "failed"
-        courses[course_id]["error"] = str(e)
+        courses[course_id]["error"] = "internal error"
         return jsonify(courses[course_id]), 500
 
     # Step 2: TTS narrate each module
@@ -153,7 +154,8 @@ Guidelines:
                 url = upload_to_storage(key, audio)
                 module_data["storage_url"] = url
             except Exception as e:
-                module_data["storage_error"] = str(e)
+                app.logger.exception("Failed to upload module audio to storage")
+                module_data["storage_error"] = "storage upload failed"
 
             courses[course_id]["modules"].append(module_data)
             courses[course_id]["total_audio_bytes"] += len(audio)
@@ -165,10 +167,11 @@ Guidelines:
                 "file": f"module-{module_data['number']:02d}.mp3"
             })
         except Exception as e:
+            app.logger.exception("Failed to narrate module")
             courses[course_id]["modules"].append({
                 "number": mod.get("module_number", 0),
                 "title": mod.get("module_title", ""),
-                "error": str(e)
+                "error": "module narration failed"
             })
 
     # Upload course manifest

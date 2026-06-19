@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """IoT Panic Button Voice Alert — IoT device triggers SIM-based alert, system calls emergency contacts with location and status."""
-import os, json, time, requests, telnyx
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 ALERT_NUMBER = os.getenv("ALERT_NUMBER")
@@ -29,7 +29,7 @@ def trigger_alert():
         try:
             resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
                 json={"to": contact, "from": ALERT_NUMBER, "connection_id": CONNECTION_ID,
-                    "client_state": json.dumps({"alert_id": alert_id, "device": device["name"], "location": device["location"]}, timeout=10).encode().hex()}, timeout=10)
+                    "client_state": base64.b64encode(json.dumps({"alert_id": alert_id, "device": device["name"], "location": device["location"]}).encode()).decode()}, timeout=10)
             alert["calls_made"].append({"contact": contact, "status": "calling"})
         except Exception:
             alert["calls_made"].append({"contact": contact, "status": "failed"})
@@ -42,16 +42,22 @@ def trigger_alert():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    cs_hex = data.get("client_state", "")
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
+    cs_raw = p.get("client_state", "")
     cs = {}
-    if cs_hex:
-        try: cs = json.loads(bytes.fromhex(cs_hex).decode())
+    if cs_raw:
+        try: cs = json.loads(base64.b64decode(cs_raw))
         except Exception: pass
     if event_type == "call.answered":
         device = cs.get("device", "unknown device")
@@ -62,7 +68,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="dtmf", timeout_secs=15, min_digits=1, max_digits=1)
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended":
-        digits = data.get("digits", "")
+        digits = p.get("digits", "")
         if digits == "1":
             client.calls.actions.speak(ccid, payload="Alert acknowledged. Dispatch team notified. Stay safe.", voice="female", language_code="en-US")
         elif digits == "2":

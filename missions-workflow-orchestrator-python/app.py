@@ -15,14 +15,15 @@ def create_mission():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/missions", headers=headers,
-            json={"name": data.get("name", timeout=10), "description": data.get("description"),
+            json={"name": data.get("name"), "description": data.get("description"),
                 "status": data.get("status", "draft"),
                 "tasks": data.get("tasks", [])}, timeout=15)
         result = resp.json()
         local_missions.append(result)
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create mission")
+        return jsonify({"error": "could not create mission"}), 500
 
 @app.route("/missions", methods=["GET"])
 def list_missions():
@@ -30,7 +31,8 @@ def list_missions():
         resp = requests.get(f"{API}/missions", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e), "local": local_missions}), 500
+        app.logger.exception("Failed to list missions")
+        return jsonify({"error": "could not list missions", "local": local_missions}), 500
 
 @app.route("/missions/<mission_id>", methods=["GET"])
 def get_mission(mission_id):
@@ -38,18 +40,20 @@ def get_mission(mission_id):
         resp = requests.get(f"{API}/missions/{mission_id}", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to get mission")
+        return jsonify({"error": "could not retrieve mission"}), 500
 
 @app.route("/missions/<mission_id>/tasks", methods=["POST"])
 def add_task(mission_id):
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/missions/{mission_id}/tasks", headers=headers,
-            json={"name": data.get("name", timeout=10), "type": data.get("type", "action"),
+            json={"name": data.get("name"), "type": data.get("type", "action"),
                 "config": data.get("config", {}), "depends_on": data.get("depends_on", [])}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to add task to mission")
+        return jsonify({"error": "could not add task"}), 500
 
 @app.route("/missions/<mission_id>/run", methods=["POST"])
 def run_mission(mission_id):
@@ -57,7 +61,8 @@ def run_mission(mission_id):
         resp = requests.post(f"{API}/missions/{mission_id}/runs", headers=headers, json={}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to run mission")
+        return jsonify({"error": "could not start mission run"}), 500
 
 @app.route("/missions/<mission_id>/runs", methods=["GET"])
 def list_runs(mission_id):
@@ -65,7 +70,8 @@ def list_runs(mission_id):
         resp = requests.get(f"{API}/missions/{mission_id}/runs", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list mission runs")
+        return jsonify({"error": "could not list mission runs"}), 500
 
 @app.route("/templates", methods=["GET"])
 def mission_templates():

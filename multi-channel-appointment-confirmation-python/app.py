@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Multi-Channel Appointment Confirmation — confirm appointments via SMS, voice call, and WhatsApp. Tries SMS first, escalates to voice if no response."""
-import os, json, time, requests, telnyx
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 CONFIRM_NUMBER = os.getenv("CONFIRM_NUMBER")
@@ -41,7 +41,7 @@ def make_confirmation_call(to, appointment):
     try:
         resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
             json={"to": to, "from": CONFIRM_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"appt_id": appointment["id"]}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": base64.b64encode(json.dumps({"appt_id": appointment["id"]}).encode()).decode()}, timeout=10)
         return resp.ok
     except Exception: return False
 
@@ -76,14 +76,20 @@ def escalate_to_voice(aid):
 
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_sms_reply():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
+    p = data.get("payload", {})
+    if data.get("event_type") != "message.received" or p.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
-    phone = data.get("from", {}).get("phone_number", "")
-    text = data.get("text", "").strip().upper()
+    phone = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "").strip().upper()
     for aid, appt in appointments.items():
         if appt["phone"] == phone and appt["status"] in ("sms_sent", "voice_calling"):
             if text in ("YES", "CONFIRM", "Y"):
@@ -98,16 +104,22 @@ def handle_sms_reply():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    cs_hex = data.get("client_state", "")
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
+    cs_raw = p.get("client_state", "")
     cs = {}
-    if cs_hex:
-        try: cs = json.loads(bytes.fromhex(cs_hex).decode())
+    if cs_raw:
+        try: cs = json.loads(base64.b64decode(cs_raw))
         except Exception: pass
     aid = cs.get("appt_id")
     appt = appointments.get(aid) if aid else None
@@ -118,7 +130,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="dtmf", timeout_secs=10, min_digits=1, max_digits=1)
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and appt:
-        digits = data.get("digits", "")
+        digits = p.get("digits", "")
         if digits == "1":
             appt["status"] = "confirmed"
             confirmations.append({"appointment_id": aid, "channel": "voice", "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})

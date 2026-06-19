@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Conference Live Poll via DTMF — host asks a question, all conference participants vote by pressing 1-4, results tallied instantly."""
-import os, json, time, requests, telnyx
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 CONF_NUMBER = os.getenv("CONF_NUMBER")
@@ -49,7 +49,7 @@ def invite(cid):
     for num in numbers:
         try:
             resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-                json={"to": num, "from": CONF_NUMBER, "connection_id": CONNECTION_ID, "client_state": json.dumps({"cid": cid}, timeout=10).encode().hex()}, timeout=10)
+                json={"to": num, "from": CONF_NUMBER, "connection_id": CONNECTION_ID, "client_state": base64.b64encode(json.dumps({"cid": cid}).encode()).decode()}, timeout=10)
             ccid = resp.json().get("data", {}).get("call_control_id")
             if ccid: conf["participants"][ccid] = {"number": num, "status": "ringing"}
         except Exception: pass
@@ -76,16 +76,22 @@ def start_poll(cid):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    cs_hex = data.get("client_state", "")
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
+    cs_raw = p.get("client_state", "")
     cs = {}
-    if cs_hex:
-        try: cs = json.loads(bytes.fromhex(cs_hex).decode())
+    if cs_raw:
+        try: cs = json.loads(base64.b64decode(cs_raw))
         except Exception: pass
     cid = cs.get("cid")
     conf = conferences.get(cid) if cid else None
@@ -99,7 +105,7 @@ def handle_voice():
             client.calls.actions.gather(ccid, input_type="dtmf", timeout_secs=15, min_digits=1, max_digits=1)
         return jsonify({"status": "ok"}), 200
     elif event_type == "call.gather.ended" and conf:
-        digits = data.get("digits", "")
+        digits = p.get("digits", "")
         poll = active_polls.get(cid)
         if poll and poll["status"] == "active" and digits:
             poll["votes"][ccid] = int(digits) if digits.isdigit() else 0

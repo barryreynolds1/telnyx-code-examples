@@ -52,7 +52,8 @@ def scan_fleet():
             return jsonify({"anomalies_found": len(found), "details": found}), 200
         return jsonify({"anomalies_found": 0, "message": "Fleet looks healthy"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Fleet scan failed")
+        return jsonify({"error": "fleet scan failed"}), 500
 
 @app.route("/anomalies", methods=["GET"])
 def list_anomalies():

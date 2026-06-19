@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """White-Label Appointment Platform - multi-tenant SaaS that gives any service business their own AI phone line with booking, reminders, and calendar sync. Each tenant has own number, greeting, and config."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -38,11 +40,16 @@ def create_tenant():
     if not data:
         return jsonify({"error": "invalid request body"}), 400
     tid = data.get("id", f"t-{int(time.time())}")
+    # Tenant-configured outbound webhook: require https so booking data is never
+    # POSTed to a plaintext or internal URL. (In production, also allowlist hosts.)
+    calendar_webhook = data.get("calendar_webhook", "")
+    if calendar_webhook and not calendar_webhook.startswith("https://"):
+        return jsonify({"error": "calendar_webhook must be an https URL"}), 400
     tenant = {"id": tid, "business_name": data.get("business_name"),
         "phone_number": data.get("phone_number"), "greeting": data.get("greeting", f"Thank you for calling {data.get('business_name')}"),
         "services": data.get("services", []),
         "hours": data.get("hours", "Monday-Friday 9AM-5PM"),
-        "calendar_webhook": data.get("calendar_webhook", ""),
+        "calendar_webhook": calendar_webhook,
         "notification_phone": data.get("notification_phone", ""),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
     tenants[tid] = tenant
@@ -57,15 +64,21 @@ def send_sms(to, from_num, text):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
-    caller = data.get("from", "")
-    called = data.get("to", "")
-    if event == "call.initiated" and data.get("direction") == "incoming":
+    ccid = p.get("call_control_id")
+    caller = p.get("from", "")
+    called = p.get("to", "")
+    if event == "call.initiated" and p.get("direction") == "incoming":
         requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
     elif event == "call.answered":
         tenant = get_tenant_by_number(called)
@@ -82,7 +95,7 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type":"speech","end_silence_timeout_secs":2,"timeout_secs":20,"language_code":"en-US"}, timeout=10)
     elif event == "call.gather.ended":
-        speech = data.get("speech",{}).get("result","")
+        speech = p.get("speech",{}).get("result","")
         call = calls.get(ccid,{})
         if speech and call:
             call["conversation"].append({"role":"user","content":speech})

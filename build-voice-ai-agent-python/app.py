@@ -14,7 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize Telnyx client
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # Configuration
@@ -94,20 +94,27 @@ def get_ai_response(call_control_id: str, user_input: str) -> str:
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice_webhook():
     """Handle all voice webhook events from Telnyx."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     try:
         payload = request.get_json()
         if not payload:
             return jsonify({"error": "No payload"}), 400
 
-        event_type = payload.get("data", {}).get("event_type")
-        call_control_id = payload.get("data", {}).get("call_control_id")
+        data = payload.get("data", {})
+        p = data.get("payload", {})
+        event_type = data.get("event_type")
+        call_control_id = p.get("call_control_id")
 
         if not event_type or not call_control_id:
             return jsonify({"error": "Missing event data"}), 400
 
         # --- Inbound call received ---
         if event_type == "call.initiated":
-            direction = payload["data"].get("direction")
+            direction = p.get("direction")
             if direction == "incoming":
                 client.calls.actions.answer(call_control_id)
             return jsonify({"status": "answering"}), 200
@@ -135,7 +142,7 @@ def handle_voice_webhook():
 
         # --- Speech gathered — process with AI ---
         elif event_type == "call.gather.ended":
-            speech_result = payload["data"].get("speech", {}).get("result", "")
+            speech_result = p.get("speech", {}).get("result", "")
 
             if not speech_result:
                 # No speech detected — prompt again
@@ -201,7 +208,7 @@ def health():
 
 if __name__ == "__main__":
     app.run(
-        debug=os.getenv("FLASK_DEBUG", "false").lower() == "true",
+        debug=False,
         host=os.getenv("HOST", "127.0.0.1"),
         port=int(os.getenv("PORT", 5000)),
     )

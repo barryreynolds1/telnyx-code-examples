@@ -3,7 +3,7 @@
 AI writes caller-friendly scripts from business descriptions, TTS renders
 in multiple voices, test via live Telnyx call playback."""
 
-import os, json, uuid, requests
+import os, json, base64, uuid, requests, telnyx
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -11,6 +11,7 @@ import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
@@ -137,8 +138,9 @@ Write these prompt types: {', '.join(prompt_types)}"""},
     except json.JSONDecodeError:
         prompts = [{"type": "greeting", "script": prompts_raw[:200], "estimated_seconds": 8}]
     except Exception as e:
+        app.logger.exception("Prompt generation failed for set %s", set_id)
         prompt_sets[set_id]["status"] = "failed"
-        prompt_sets[set_id]["error"] = str(e)
+        prompt_sets[set_id]["error"] = "prompt generation failed"
         return jsonify(prompt_sets[set_id]), 500
 
     # Step 2: TTS render each prompt
@@ -159,12 +161,14 @@ Write these prompt types: {', '.join(prompt_types)}"""},
                 url = upload_to_storage(key, audio)
                 result["storage_url"] = url
             except Exception as e:
-                result["storage_error"] = str(e)
+                app.logger.exception("Storage upload failed for set %s", set_id)
+                result["storage_error"] = "audio storage failed"
 
             prompt_sets[set_id]["prompts"].append(result)
         except Exception as e:
+            app.logger.exception("TTS rendering failed for set %s", set_id)
             prompt_sets[set_id]["prompts"].append({
-                "type": prompt_data.get("type"), "error": str(e)
+                "type": prompt_data.get("type"), "error": "prompt rendering failed"
             })
 
     prompt_sets[set_id]["status"] = "complete"
@@ -213,11 +217,11 @@ def preview_prompt(set_id):
             "connection_id": CONNECTION_ID,
             "to": phone,
             "from": MAIN_NUMBER,
-            "client_state": json.dumps({
+            "client_state": base64.b64encode(json.dumps({
                 "action": "preview",
                 "set_id": set_id,
                 "script": prompt["script"]
-            }).encode().hex()
+            }).encode()).decode()
         })
         return jsonify({
             "status": "calling",
@@ -227,11 +231,17 @@ def preview_prompt(set_id):
             "call_id": result.get("data", {}).get("call_control_id")
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Live preview call failed for set %s", set_id)
+        return jsonify({"error": "could not place preview call"}), 500
 
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -245,7 +255,7 @@ def handle_voice():
         try:
             raw = ep.get("client_state", "")
             if raw:
-                client_state = json.loads(bytes.fromhex(raw).decode())
+                client_state = json.loads(base64.b64decode(raw))
         except Exception:
             pass
 

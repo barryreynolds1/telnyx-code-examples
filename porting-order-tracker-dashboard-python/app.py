@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Porting Order Tracker Dashboard â submit, track, and manage porting orders with SLA monitoring, timeline visualization, and bulk operations."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 ALERT_WEBHOOK = os.getenv("ALERT_WEBHOOK", "")
@@ -44,7 +45,8 @@ def submit_order():
         local_orders.append(order)
         return jsonify({"order": order, "api": result}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to submit porting order")
+        return jsonify({"error": "could not submit porting order"}), 500
 
 @app.route("/porting/bulk", methods=["POST"])
 def bulk_submit():
@@ -65,7 +67,8 @@ def bulk_submit():
                 "timeline": [{"status": "submitted", "at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}]})
             results.append({"status": "ok", "order_id": oid})
         except Exception as e:
-            results.append({"status": "error", "error": str(e)})
+            app.logger.exception("Failed to submit porting order batch")
+            results.append({"status": "error", "error": "could not submit porting order batch"})
     return jsonify({"submitted": sum(1 for r in results if r["status"] == "ok"), "results": results}), 200
 
 @app.route("/porting/orders", methods=["GET"])
@@ -74,10 +77,16 @@ def list_orders():
         resp = requests.get(f"{API}/porting_orders", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e), "local": local_orders}), 500
+        app.logger.exception("Failed to list porting orders")
+        return jsonify({"error": "could not list porting orders", "local": local_orders}), 500
 
 @app.route("/webhooks/porting", methods=["POST"])
 def handle_webhook():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -90,7 +99,7 @@ def handle_webhook():
             order["status"] = data.get("status", order["status"])
             order.setdefault("timeline", []).append({"status": order["status"], "at": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
     if data.get("status") == "exception" and ALERT_WEBHOOK:
-        try: requests.post(ALERT_WEBHOOK, json={"text": f"Port exception: {data.get('porting_order_id', timeout=10)}"}, timeout=5)
+        try: requests.post(ALERT_WEBHOOK, json={"text": f"Port exception: {data.get('porting_order_id')}"}, timeout=5)
         except Exception: pass
     return jsonify({"status": "received"}), 200
 

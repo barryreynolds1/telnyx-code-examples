@@ -12,7 +12,7 @@ import threading, time as _ttl_time
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -106,22 +106,28 @@ def send_follow_up_sms(to_number, summary):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice_webhook():
     """Handle voice events for multi-participant AI sales calls."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
 
     if not event_type or not call_control_id:
         return jsonify({"error": "Missing event data"}), 400
 
     # --- Inbound call: AE calls in with prospect on the line ---
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
         active_calls[call_control_id] = {
             "transcript": [],
-            "prospect_number": data.get("from"),
+            "prospect_number": p.get("from"),
             "insights": {},
         }
         client.calls.actions.answer(call_control_id)
@@ -144,7 +150,7 @@ def handle_voice_webhook():
 
     # --- Transcription data: accumulate transcript ---
     elif event_type == "call.transcription":
-        text = data.get("transcription_data", {}).get("transcript", "")
+        text = p.get("transcription_data", {}).get("transcript", "")
         if text and call_control_id in active_calls:
             active_calls[call_control_id]["transcript"].append(text)
         return jsonify({"status": "transcribing"}), 200
@@ -183,4 +189,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

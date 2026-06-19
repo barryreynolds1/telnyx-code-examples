@@ -131,8 +131,9 @@ Return the directed script only."""},
         ])
         projects[project_id]["directed_script"] = directed
     except Exception as e:
+        app.logger.exception("AI direction step failed for project %s", project_id)
         projects[project_id]["status"] = "failed"
-        projects[project_id]["error"] = f"Direction failed: {str(e)}"
+        projects[project_id]["error"] = "Direction failed"
         return jsonify(projects[project_id]), 500
 
     # Step 2: TTS render — generate requested number of takes
@@ -159,12 +160,14 @@ Return the directed script only."""},
                 url = upload_to_storage(key, audio)
                 take["storage_url"] = url
             except Exception as e:
-                take["storage_error"] = str(e)
+                app.logger.exception("Storage upload failed for project %s take %s", project_id, take_num)
+                take["storage_error"] = "upload failed"
 
             projects[project_id]["takes"].append(take)
         except Exception as e:
+            app.logger.exception("TTS render failed for project %s take %s", project_id, take_num)
             projects[project_id]["takes"].append({
-                "take": take_num, "error": str(e)
+                "take": take_num, "error": "render failed"
             })
 
     projects[project_id]["status"] = "complete"
@@ -212,12 +215,14 @@ def retake(project_id):
             url = upload_to_storage(key, audio)
             take["storage_url"] = url
         except Exception as e:
-            take["storage_error"] = str(e)
+            app.logger.exception("Storage upload failed for project %s retake %s", project_id, take_num)
+            take["storage_error"] = "upload failed"
 
         project["takes"].append(take)
         return jsonify(take), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Retake render failed for project %s", project_id)
+        return jsonify({"error": "render failed"}), 500
 
 
 @app.route("/projects/<project_id>", methods=["GET"])

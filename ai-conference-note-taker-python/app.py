@@ -13,7 +13,7 @@ import threading, time as _ttl_time
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -114,19 +114,26 @@ def join_meeting():
             return jsonify({"status": "joining", "call_control_id": call_control_id}), 200
         return jsonify({"error": "No call_control_id returned"}), 500
     except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to dial conference call")
+        return jsonify({"error": "could not join meeting"}), 500
 
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     """Handle call events for meeting note-taking."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
 
     meeting = meetings.get(call_control_id)
 
@@ -137,7 +144,7 @@ def handle_voice():
         return jsonify({"status": "transcribing"}), 200
 
     elif event_type == "call.transcription" and meeting:
-        text = data.get("transcription_data", {}).get("transcript", "")
+        text = p.get("transcription_data", {}).get("transcript", "")
         if text:
             meeting["transcript"].append({
                 "text": text,
@@ -208,4 +215,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

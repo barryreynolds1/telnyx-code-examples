@@ -2,6 +2,7 @@
 """Production-ready WebRTC calling application with Telnyx Voice API and FastAPI."""
 
 import os
+import logging
 import telnyx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 import threading, time as _ttl_time
 
 load_dotenv()
+
+logger = logging.getLogger("webrtc_browser_calling")
 
 # Configuration
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -26,7 +29,8 @@ if not all([TELNYX_API_KEY, TELNYX_PHONE_NUMBER, TELNYX_CONNECTION_ID, WEBHOOK_U
     )
 
 # Initialize Telnyx client
-client = telnyx.Telnyx(api_key=TELNYX_API_KEY)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=TELNYX_API_KEY, public_key=TELNYX_PUBLIC_KEY)
 
 # In-memory call store (use Redis in production)
 active_calls = {}
@@ -152,7 +156,8 @@ async def initiate_call(request: CallInitiateRequest):
     except telnyx.RateLimitError:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
     except telnyx.APIStatusError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        logger.error("Telnyx API error initiating call: %s", e)
+        raise HTTPException(status_code=e.status_code, detail="Failed to initiate call")
     except telnyx.APIConnectionError:
         raise HTTPException(status_code=503, detail="Network error connecting to Telnyx")
     except ValueError as e:
@@ -165,9 +170,10 @@ async def hangup_endpoint(request: CallActionRequest):
     try:
         result = hangup_call(request.call_control_id)
         return result
-    
+
     except telnyx.APIStatusError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        logger.error("Telnyx API error hanging up call: %s", e)
+        raise HTTPException(status_code=e.status_code, detail="Failed to hang up call")
     except telnyx.APIConnectionError:
         raise HTTPException(status_code=503, detail="Network error connecting to Telnyx")
 
@@ -181,9 +187,10 @@ async def transfer_endpoint(request: CallActionRequest):
     try:
         result = transfer_call(request.call_control_id, request.transfer_to)
         return result
-    
+
     except telnyx.APIStatusError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        logger.error("Telnyx API error transferring call: %s", e)
+        raise HTTPException(status_code=e.status_code, detail="Failed to transfer call")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -194,9 +201,10 @@ async def status_endpoint(call_control_id: str):
     try:
         result = get_call_status(call_control_id)
         return result
-    
+
     except telnyx.APIStatusError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        logger.error("Telnyx API error retrieving call status: %s", e)
+        raise HTTPException(status_code=e.status_code, detail="Failed to retrieve call status")
     except telnyx.APIConnectionError:
         raise HTTPException(status_code=503, detail="Network error connecting to Telnyx")
 
@@ -204,6 +212,12 @@ async def status_endpoint(call_control_id: str):
 @app.post("/webhooks/call-events")
 async def handle_call_webhook(request: Request):
     """Webhook endpoint to receive call state change events from Telnyx."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        raw_body = await request.body()
+        client.webhooks.unwrap(raw_body.decode("utf-8"), headers=dict(request.headers))
+    except Exception:
+        return JSONResponse({"error": "invalid signature"}, status_code=401)
     body = await request.json()
     
     event_type = body.get("data", {}).get("event_type")

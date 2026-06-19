@@ -50,7 +50,8 @@ def create_room():
                 "duration": duration, "start_time": None, "participants": [], "notes": []}
         return jsonify({"room_id": room_id, "room": room_data}), 200
     except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create room")
+        return jsonify({"error": "could not create room"}), 500
 
 @app.route("/rooms/<room_id>/start", methods=["POST"])
 def start_meeting(room_id):

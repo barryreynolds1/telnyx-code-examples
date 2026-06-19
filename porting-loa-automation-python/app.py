@@ -75,7 +75,8 @@ def submit_and_port():
         porting_pipeline.append(pipeline_entry)
         return jsonify({"loa_id": loa_id, "porting_order": result, "pipeline": pipeline_entry}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to submit porting order")
+        return jsonify({"error": "could not submit porting order"}), 500
 
 @app.route("/loa/check-portability", methods=["POST"])
 def check_portability():

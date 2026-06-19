@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Post-Service Follow-Up Engine - after appointment, SMS satisfaction survey. Negative responses trigger AI voice callback to understand the issue, then creates ticket in Jira and alerts manager via Slack."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -37,6 +39,22 @@ def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
     threading.Thread(target=_cleanup, daemon=True).start()
 
 _start_ttl_cleanup(calls)
+
+
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
 
 
 def send_sms(to, text):
@@ -79,6 +97,11 @@ def send_followup():
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -97,7 +120,7 @@ def handle_sms():
                 try:
                     requests.post(f"{API}/calls", headers=headers,
                         json={"to": sender, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                            "client_state": json.dumps({"fu_idx": follow_ups.index(fu)}).encode().hex()}, timeout=10)
+                            "client_state": encode_state({"fu_idx": follow_ups.index(fu)})}, timeout=10)
                 except Exception:
                     pass
                 send_sms(sender, "We're sorry to hear that. A manager will call you shortly to make this right.")
@@ -117,14 +140,21 @@ def handle_sms():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
+    state = decode_state(p)  # per-call state echoed back by Telnyx (base64 JSON)
     if event == "call.answered":
-        calls[ccid] = {"conversation": [{"role": "system", "content": "You are a customer service manager following up on a negative experience. Be empathetic, listen carefully, offer concrete resolution (discount, redo, refund). Collect specifics about what went wrong."}]}
+        calls[ccid] = {"fu_idx": state.get("fu_idx"), "conversation": [{"role": "system", "content": "You are a customer service manager following up on a negative experience. Be empathetic, listen carefully, offer concrete resolution (discount, redo, refund). Collect specifics about what went wrong."}]}
         requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
             json={"payload": "Hi, this is the service manager at ProFix. I saw your feedback and I want to personally make sure we get this right. Can you tell me what happened?",
                 "voice": "female", "language_code": "en-US"}, timeout=10)
@@ -132,7 +162,7 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type": "speech", "end_silence_timeout_secs": 3, "timeout_secs": 30, "language_code": "en-US"}, timeout=10)
     elif event == "call.gather.ended":
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         call = calls.get(ccid, {})
         if speech and call:
             call["conversation"].append({"role": "user", "content": speech})
@@ -143,7 +173,7 @@ def handle_voice():
             except Exception:
                 response = "I understand. Let me create a ticket and have our team lead follow up with you directly."
             call["conversation"].append({"role": "assistant", "content": response})
-            ticket = create_jira_ticket(f"Negative customer feedback - {data.get('from','')}", speech)
+            ticket = create_jira_ticket(f"Negative customer feedback - {p.get('from','')}", speech)
             if ticket:
                 call["ticket"] = ticket
             requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,

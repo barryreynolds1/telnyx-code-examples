@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -39,11 +39,40 @@ SYSTEM_PROMPT = f"""You are an AI assistant for a real estate agent. Available l
 Help buyers schedule showings. Collect: which property, preferred time, buyer name, contact preference.
 Keep voice responses under 2 sentences. Be enthusiastic but not pushy."""
 
+DECISION_PROMPT = """You are a strict booking-state classifier for a real estate showing scheduler.
+Given the conversation so far, decide whether the MOST RECENT assistant turn actually FINALIZED a showing
+(i.e. a specific property and time were confirmed and the showing is now booked — not merely proposed,
+offered, or still being discussed).
+Respond with ONLY a single JSON object and nothing else, in exactly this shape:
+{"confirmed": true|false, "details": {"property": "", "time": "", "buyer_name": "", "contact": ""}}
+Set confirmed to true ONLY if this turn genuinely booked the showing. Otherwise set confirmed to false.
+Fill details with the relevant known fields (use empty strings for anything unknown)."""
+
 def call_inference(messages, max_tokens=150):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.7}, timeout=15)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
+
+def decide_booking(conversation):
+    """Return (confirmed: bool, details: dict) from a strict structured-decision step.
+
+    Drives the real action from a JSON decision rather than substring-matching prose.
+    Any inference or parse failure is treated as confirmed=false so we never act on ambiguity.
+    """
+    try:
+        decision_messages = [{"role": "system", "content": DECISION_PROMPT}] + \
+            [m for m in conversation if m.get("role") != "system"]
+        raw = call_inference(decision_messages, max_tokens=200)
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            return False, {}
+        confirmed = parsed.get("confirmed") is True
+        details = parsed.get("details") if isinstance(parsed.get("details"), dict) else {}
+        return confirmed, details
+    except Exception as e:
+        app.logger.error("Booking decision failed: %s", e)
+        return False, {}
 
 def send_sms(to, text):
     try:
@@ -54,15 +83,21 @@ def send_sms(to, text):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        active_calls[ccid] = {"caller": data.get("from"), "conversation": [{"role": "system", "content": SYSTEM_PROMPT}]}
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        active_calls[ccid] = {"caller": p.get("from"), "conversation": [{"role": "system", "content": SYSTEM_PROMPT}]}
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":
@@ -72,7 +107,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=2, timeout_secs=15, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if not speech:
             client.calls.actions.speak(ccid, payload="Sorry, I missed that. Which property interests you?", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200
@@ -80,9 +115,10 @@ def handle_voice():
         response = call_inference(call["conversation"])
         call["conversation"].append({"role": "assistant", "content": response})
         client.calls.actions.speak(ccid, payload=response, voice="female", language_code="en-US")
-        if any(word in response.lower() for word in ["booked", "scheduled", "confirmed"]):
-            showings.append({"caller": call["caller"], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
-            send_sms(call["caller"], f"Your showing is confirmed! Our agent will meet you at the property. Reply to this message if you need to reschedule.")
+        confirmed, details = decide_booking(call["conversation"])
+        if confirmed:
+            showings.append({"caller": call["caller"], "details": details, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
+            send_sms(call["caller"], "Your showing is confirmed! Our agent will meet you at the property. Reply to this message if you need to reschedule.")
         return jsonify({"status": "responding"}), 200
     elif event_type == "call.hangup":
         active_calls.pop(ccid, None)
@@ -91,14 +127,20 @@ def handle_voice():
 
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
+    p = data.get("payload", {})
+    if data.get("event_type") != "message.received" or p.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
-    from_number = data.get("from", {}).get("phone_number", "")
-    text = data.get("text", "")
+    from_number = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "")
     msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": text}]
     response = call_inference(msgs, max_tokens=200)
     send_sms(from_number, response)

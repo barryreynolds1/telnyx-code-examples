@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Policy Renewal Campaign - automated multi-channel renewal reminders. 60 days: SMS. 30 days: AI voice call reviewing coverage changes. 7 days: urgent SMS. Agent reviews lapsed policies for win-back."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -45,7 +46,7 @@ def run_campaign():
             try:
                 requests.post(f"{API}/calls", headers=headers,
                     json={"to": pol["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                        "client_state": json.dumps({"pol_id": pol["id"]}, timeout=10).encode().hex()}, timeout=10)
+                        "client_state": base64.b64encode(json.dumps({"pol_id": pol["id"]}).encode()).decode()}, timeout=10)
             except Exception: pass
             entry["action"] = "30_day_voice"
         elif days_to_expiry >= 7:
@@ -62,15 +63,21 @@ def run_campaign():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     if event == "call.answered":
         cs = {}
-        try: cs = json.loads(bytes.fromhex(data.get("client_state","")).decode())
+        try: cs = json.loads(base64.b64decode(p.get("client_state","")))
         except Exception: pass
         pol = next((p for p in policies if p["id"]==cs.get("pol_id")), None)
         if pol:
@@ -81,9 +88,9 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type":"dtmf","timeout_secs":15,"valid_digits":"12","max_digits":1}, timeout=10)
     elif event == "call.gather.ended":
-        digits = data.get("dtmf",{}).get("digits","")
+        digits = p.get("digits","")
         cs = {}
-        try: cs = json.loads(bytes.fromhex(data.get("client_state","")).decode())
+        try: cs = json.loads(base64.b64decode(p.get("client_state","")))
         except Exception: pass
         pol = next((p for p in policies if p["id"]==cs.get("pol_id")), None)
         if digits == "1" and pol:
@@ -101,6 +108,11 @@ def handle_voice():
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400

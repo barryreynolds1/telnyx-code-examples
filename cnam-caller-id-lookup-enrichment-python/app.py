@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """CNAM Caller ID Lookup Enrichment — look up CNAM for inbound callers, enrich CRM records with caller identity."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
@@ -8,6 +8,7 @@ load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 API = "https://api.telnyx.com/v2"
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 lookup_cache = {}
@@ -49,7 +50,8 @@ def lookup_number(number):
         lookup_cache[number] = result
         return jsonify({"result": result, "source": "api"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("CNAM lookup failed for number")
+        return jsonify({"error": "lookup failed"}), 500
 
 @app.route("/lookup/batch", methods=["POST"])
 def batch_lookup():
@@ -73,12 +75,18 @@ def batch_lookup():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def enrich_inbound():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") == "call.initiated" and data.get("direction") == "incoming":
-        caller = data.get("from", "")
+    p = data.get("payload", {})
+    if data.get("event_type") == "call.initiated" and p.get("direction") == "incoming":
+        caller = p.get("from", "")
         try:
             resp = requests.get(f"{API}/number_lookup/{caller}",
                 headers=headers, params={"type": "caller-name"}, timeout=10)

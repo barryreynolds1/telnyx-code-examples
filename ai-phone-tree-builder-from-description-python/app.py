@@ -55,7 +55,8 @@ Return JSON with: assistant_config (object), texml (string), departments (list o
             if resp.ok:
                 result["deployed_assistant_id"] = resp.json().get("data", {}).get("id")
         except requests.RequestException as e:
-            result["deploy_error"] = str(e)
+            app.logger.exception("Failed to deploy AI Assistant")
+            result["deploy_error"] = "could not deploy assistant"
 
     generated_trees.append(result)
     return jsonify(result), 200

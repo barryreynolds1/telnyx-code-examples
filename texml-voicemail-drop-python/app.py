@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """TeXML Voicemail Drop — leave pre-recorded voicemails at scale via TeXML."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, Response, jsonify
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 FROM_NUMBER = os.getenv("FROM_NUMBER")
@@ -28,11 +30,17 @@ def voicemail_drop():
             drops.append({"number": number, "ccid": ccid, "status": "calling", "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
             results.append({"number": number, "status": "initiated"})
         except Exception as e:
-            results.append({"number": number, "status": "failed", "error": str(e)})
+            app.logger.exception("Failed to initiate voicemail drop for %s", number)
+            results.append({"number": number, "status": "failed", "error": "could not initiate call"})
     return jsonify({"results": results, "total": len(results)}), 200
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400

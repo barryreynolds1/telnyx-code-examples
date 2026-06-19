@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -51,15 +51,21 @@ def call_inference(messages, max_tokens=150):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        active_calls[ccid] = {"caller": data.get("from"), "conversation": [{"role": "system", "content": SYSTEM_PROMPT + " Available accounts: " + json.dumps(ACCOUNTS)}], "account": None}
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        active_calls[ccid] = {"caller": p.get("from"), "conversation": [{"role": "system", "content": SYSTEM_PROMPT + " Available accounts: " + json.dumps(ACCOUNTS)}], "account": None}
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":
@@ -69,8 +75,8 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="dtmf speech", end_silence_timeout_secs=2, timeout_secs=15, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
-        digits = data.get("digits", "")
+        speech = p.get("speech", {}).get("result", "")
+        digits = p.get("digits", "")
         input_text = digits or speech
         if not input_text:
             client.calls.actions.speak(ccid, payload="Could you repeat that?", voice="female", language_code="en-US")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Shift Fill Engine - open shift triggers calls down the availability list. First to confirm gets it, rest are cancelled. Texts confirmation + notifies manager via Slack."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
@@ -8,6 +8,8 @@ load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 MANAGER_SLACK = os.getenv("MANAGER_SLACK_WEBHOOK", "")
@@ -59,7 +61,7 @@ def call_next(shift_id):
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": emp["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"shift_id": shift_id, "emp": emp["name"]}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": base64.b64encode(json.dumps({"shift_id": shift_id, "emp": emp["name"]}).encode()).decode()}, timeout=10)
         active_fills[resp.json().get("data",{}).get("call_control_id","")] = {"shift_id": shift_id, "emp": emp}
     except Exception:
         call_next(shift_id)
@@ -80,26 +82,39 @@ def open_shift():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     fill = active_fills.get(ccid, {})
+    # Fall back to the base64-encoded client_state Telnyx echoes back on the
+    # webhook payload if the in-memory store has no entry (e.g. after restart).
+    if not fill:
+        try:
+            fill = json.loads(base64.b64decode(p.get("client_state"))) if p.get("client_state") else {}
+        except Exception:
+            fill = {}
     shift_id = fill.get("shift_id")
     emp = fill.get("emp", {})
 
     if event == "call.answered" and shift_id is not None:
         shift = open_shifts[shift_id]
         requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
-            json={"payload": f"Hi {emp.get('name','', timeout=10)}, we have an open {shift['role']} shift on {shift['date']} at {shift['time']}. Press 1 to accept or 2 to decline.",
+            json={"payload": f"Hi {emp.get('name','')}, we have an open {shift['role']} shift on {shift['date']} at {shift['time']}. Press 1 to accept or 2 to decline.",
                 "voice": "female", "language_code": "en-US"}, timeout=10)
     elif event == "call.speak.ended" and shift_id is not None:
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type": "dtmf", "timeout_secs": 15, "valid_digits": "12", "max_digits": 1}, timeout=10)
     elif event == "call.gather.ended" and shift_id is not None:
-        digits = data.get("dtmf", {}).get("digits", "")
+        digits = p.get("digits", "")
         shift = open_shifts[shift_id]
         if digits == "1" and shift["status"] != "filled":
             shift["status"] = "filled"

@@ -96,7 +96,11 @@ def clip_highlights():
         return jsonify({"error": "Upload audio as 'audio'"}), 400
 
     title = request.form.get("title", "Recording")
-    max_clips = int(request.form.get("max_clips", "5"))
+    try:
+        max_clips = int(request.form.get("max_clips", "5"))
+    except (ValueError, TypeError):
+        max_clips = 5
+    max_clips = max(1, min(max_clips, 20))
     distribute = request.form.get("distribute", "false").lower() == "true"
 
     audio_bytes = request.files["audio"].read()
@@ -117,8 +121,9 @@ def clip_highlights():
         jobs[job_id]["transcript"] = transcript
         jobs[job_id]["segment_count"] = len(segments)
     except Exception as e:
+        app.logger.exception("Transcription failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = str(e)
+        jobs[job_id]["error"] = "transcription failed"
         return jsonify(jobs[job_id]), 500
 
     # Step 2: AI identifies viral/quotable moments
@@ -142,7 +147,8 @@ Rank by virality_score descending. Focus on: surprising insights, strong opinion
     except json.JSONDecodeError:
         jobs[job_id]["highlights"] = [{"quote": highlights_raw[:280], "virality_score": 5, "category": "insight", "teaser_hook": "Listen to this moment"}]
     except Exception as e:
-        jobs[job_id]["error"] = f"Analysis failed: {str(e)}"
+        app.logger.exception("Highlight analysis failed for job %s", job_id)
+        jobs[job_id]["error"] = "analysis failed"
 
     # Step 3: Generate TTS teaser intros for each highlight
     jobs[job_id]["status"] = "generating_teasers"

@@ -24,7 +24,8 @@ def validate_address():
             return jsonify({"valid": True, "address_id": result.get("id"), "address": result}), 200
         return jsonify({"valid": False, "error": resp.text}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("address validation failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/e911/assign", methods=["POST"])
 def assign_e911():
@@ -40,7 +41,8 @@ def assign_e911():
             return jsonify({"status": "assigned", "phone": phone, "address_id": address_id}), 200
         return jsonify({"error": resp.text}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("e911 assignment failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/e911/addresses", methods=["GET"])
 def list_addresses():

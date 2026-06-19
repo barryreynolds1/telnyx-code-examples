@@ -45,7 +45,8 @@ def create_assistant():
             assistants[aid] = result
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create assistant")
+        return jsonify({"error": "could not create assistant"}), 500
 
 @app.route("/assistants", methods=["GET"])
 def list_assistants():
@@ -53,7 +54,8 @@ def list_assistants():
         resp = requests.get(f"{API}/ai/assistants", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list assistants")
+        return jsonify({"error": "could not list assistants"}), 500
 
 @app.route("/assistants/<assistant_id>", methods=["GET"])
 def get_assistant(assistant_id):
@@ -61,7 +63,8 @@ def get_assistant(assistant_id):
         resp = requests.get(f"{API}/ai/assistants/{assistant_id}", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to get assistant")
+        return jsonify({"error": "could not retrieve assistant"}), 500
 
 @app.route("/assistants/<assistant_id>", methods=["PATCH"])
 def update_assistant(assistant_id):
@@ -71,7 +74,8 @@ def update_assistant(assistant_id):
             json=data, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to update assistant")
+        return jsonify({"error": "could not update assistant"}), 500
 
 @app.route("/assistants/<assistant_id>/wire", methods=["POST"])
 def wire_to_number(assistant_id):
@@ -97,7 +101,8 @@ def test_assistant(assistant_id):
         return jsonify({"response": resp.json().get("choices", [{}])[0].get("message", {}).get("content"),
             "note": "This tests the model directly. The full assistant adds voice, greeting, and tools."}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to test assistant")
+        return jsonify({"error": "could not test assistant"}), 500
 
 @app.route("/models", methods=["GET"])
 def list_models():
@@ -105,7 +110,8 @@ def list_models():
         resp = requests.get(f"{API}/ai/models", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list models")
+        return jsonify({"error": "could not list models"}), 500
 
 @app.route("/health", methods=["GET"])
 def health():

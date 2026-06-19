@@ -35,7 +35,8 @@ def audit_vapi():
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
         return jsonify({"vapi_agents": audit, "total": len(audit)}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to audit Vapi agents")
+        return jsonify({"error": "could not audit Vapi agents"}), 500
 
 @app.route("/migrate/agent", methods=["POST"])
 def migrate_agent():
@@ -62,7 +63,8 @@ def migrate_agent():
             "voice_mapping": {"vapi": vapi_config.get("voice"), "telnyx": voice_id},
             "model_mapping": {"vapi": vapi_config.get("model"), "telnyx": model}}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to migrate Vapi agent")
+        return jsonify({"error": "could not migrate agent"}), 500
 
 @app.route("/mapping/voices", methods=["GET"])
 def voice_mapping():

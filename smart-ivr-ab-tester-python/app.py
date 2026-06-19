@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 IVR_NUMBER = os.getenv("IVR_NUMBER")
@@ -49,13 +49,19 @@ def create_experiment():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
         exp = experiments.get("default", DEFAULT_EXPERIMENT)
         variant = "a" if random.random() < exp["traffic_split"] else "b"
         exp["results"][variant]["calls"] += 1
@@ -74,7 +80,7 @@ def handle_voice():
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended":
         call = active_calls.get(ccid)
-        digits = data.get("digits", "")
+        digits = p.get("digits", "")
         if call and digits in ("1", "2"):
             exp = experiments.get(call["experiment"], DEFAULT_EXPERIMENT)
             exp["results"][call["variant"]]["connected"] += 1

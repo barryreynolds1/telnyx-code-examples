@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Call Recording AI Summarizer — record calls, then summarize and extract action items with AI."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -19,14 +20,20 @@ def call_inference(messages, max_tokens=500):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
     data = payload.get("data", {})
+    p = data.get("payload", {})
     if event_type == "call.recording.saved":
-        recording = {"recording_url": data.get("recording_urls", {}).get("mp3"), "call_control_id": data.get("call_control_id"),
-            "duration": data.get("duration_secs"), "channels": data.get("channels"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
+        recording = {"recording_url": p.get("recording_urls", {}).get("mp3"), "call_control_id": p.get("call_control_id"),
+            "duration": p.get("duration_secs"), "channels": p.get("channels"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         recordings.append(recording)
         return jsonify({"status": "saved"}), 200
     return jsonify({"status": "ok"}), 200

@@ -12,7 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
@@ -51,6 +51,11 @@ def hangup_call(call_control_id: str) -> dict:
 @app.route("/webhooks/call", methods=["POST"])
 def handle_call_webhook():
     """Webhook endpoint to handle inbound call events."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     try:
         payload = request.get_json()
         if not payload:
@@ -137,4 +142,4 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

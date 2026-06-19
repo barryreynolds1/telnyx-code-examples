@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Interview Screen & Scheduler - candidate applies, AI calls for 5-min phone screen, scores answers, books qualified candidates on hiring manager's calendar. Integrates with Greenhouse ATS and Google Calendar."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -42,12 +43,28 @@ SCREEN_QUESTIONS = [
     "What's your availability to start, and are you open to the compensation range of 80 to 120 thousand?",
 ]
 
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
+
+
 def ai_score(conversation):
     try:
         resp = requests.post(INFERENCE_URL, headers=headers,
             json={"model": AI_MODEL, "messages": [
                 {"role": "system", "content": "Score this phone screen 0-100. Consider: relevance of experience, enthusiasm, compensation alignment, communication clarity. Reply JSON: {\"score\": number, \"strengths\": \"...\", \"concerns\": \"...\", \"recommend\": \"advance|reject\"}"},
-                {"role": "user", "content": json.dumps(conversation, timeout=10)}], "max_tokens": 150, "temperature": 0.2}, timeout=15)
+                {"role": "user", "content": json.dumps(conversation)}], "max_tokens": 150, "temperature": 0.2}, timeout=15)
         return json.loads(resp.json()["choices"][0]["message"]["content"].strip().strip("`").replace("json\n",""))
     except Exception:
         return {"score": 50, "strengths": "Unable to evaluate", "concerns": "", "recommend": "review"}
@@ -69,7 +86,7 @@ def initiate_screen():
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": candidate["phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"candidate_idx": idx, "q": 0}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": encode_state({"candidate_idx": idx, "q": 0})}, timeout=10)
         screens[resp.json().get("data",{}).get("call_control_id","")] = {"candidate_idx": idx, "q_idx": 0, "answers": []}
     except Exception:
         candidate["status"] = "call_failed"
@@ -77,13 +94,26 @@ def initiate_screen():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
-    screen = screens.get(ccid, {})
+    ccid = p.get("call_control_id")
+    state = decode_state(p)  # per-call state Telnyx echoes back as base64-encoded JSON
+    screen = screens.get(ccid)
+    if screen is None and state:
+        # Rebuild the in-memory screen from the round-tripped client_state.
+        screen = {"candidate_idx": state.get("candidate_idx", 0),
+                  "q_idx": state.get("q", 0), "answers": []}
+        screens[ccid] = screen
+    screen = screen or {}
 
     if event == "call.answered" and screen:
         candidate = candidates[screen["candidate_idx"]]
@@ -94,7 +124,7 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type": "speech", "end_silence_timeout_secs": 3, "timeout_secs": 60, "language_code": "en-US"}, timeout=10)
     elif event == "call.gather.ended" and screen:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if speech:
             screen["answers"].append({"question": SCREEN_QUESTIONS[screen["q_idx"]], "answer": speech})
         screen["q_idx"] += 1
@@ -118,7 +148,7 @@ def handle_voice():
                     json={"payload": "Thank you for your time today. We'll review your responses and follow up. Have a great day!",
                         "voice": "female", "language_code": "en-US"}, timeout=10)
             if RECRUITER_SLACK:
-                try: requests.post(RECRUITER_SLACK, json={"text": f"Screen complete: {candidate['name']} - Score: {scorecard.get('score',0, timeout=10)}/100 - {scorecard.get('recommend','review').upper()}\nStrengths: {scorecard.get('strengths','')}\nConcerns: {scorecard.get('concerns','')}"}, timeout=5)
+                try: requests.post(RECRUITER_SLACK, json={"text": f"Screen complete: {candidate['name']} - Score: {scorecard.get('score',0)}/100 - {scorecard.get('recommend','review').upper()}\nStrengths: {scorecard.get('strengths','')}\nConcerns: {scorecard.get('concerns','')}"}, timeout=5)
                 except Exception: pass
     elif event == "call.hangup":
         screens.pop(ccid, None)

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -21,13 +21,19 @@ def call_inference(messages, max_tokens=800):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":
@@ -35,7 +41,7 @@ def handle_voice():
         client.calls.actions.speak(ccid, payload="Podcast recording started. Speak naturally. The recording will be processed when the call ends.", voice="female", language_code="en-US")
         return jsonify({"status": "recording"}), 200
     elif event_type == "call.recording.saved":
-        recording = {"url": data.get("recording_urls", {}).get("mp3"), "duration": data.get("duration_secs"),
+        recording = {"url": p.get("recording_urls", {}).get("mp3"), "duration": p.get("duration_secs"),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         episodes.append({"recording": recording, "status": "recorded"})
         return jsonify({"status": "saved"}), 200
@@ -69,7 +75,8 @@ Return as JSON."""},
     except json.JSONDecodeError:
         return jsonify({"raw": result}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Episode production failed")
+        return jsonify({"error": "episode production failed"}), 500
 
 @app.route("/episodes", methods=["GET"])
 def list_episodes():

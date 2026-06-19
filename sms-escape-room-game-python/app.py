@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """SMS Escape Room Game — text-based adventure game over SMS. Solve puzzles, find clues, escape before time runs out."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -51,14 +53,20 @@ def call_inference(messages, max_tokens=160):
 
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
+    p = data.get("payload", {})
+    if data.get("event_type") != "message.received" or p.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
-    phone = data.get("from", {}).get("phone_number", "")
-    text = data.get("text", "").strip()
+    phone = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "").strip()
     if text.upper() == "PLAY" or phone not in games:
         games[phone] = {"conversation": [{"role": "system", "content": GAME_PROMPT}], "moves": 0, "start": time.time(), "status": "playing"}
         intro = call_inference(games[phone]["conversation"] + [{"role": "user", "content": "Start the game. Describe the room."}])

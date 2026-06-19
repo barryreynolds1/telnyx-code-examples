@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -59,16 +59,23 @@ def start_screen():
             active_calls[ccid] = {"candidate": data, "conversation": [{"role": "system", "content": SYSTEM_PROMPT}], "start": time.time()}
         return jsonify({"status": "calling"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to start phone screen call")
+        return jsonify({"error": "could not start screening call"}), 500
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
     if event_type == "call.answered" and call:
         name = call["candidate"].get("name", "")
@@ -79,7 +86,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=3, timeout_secs=30, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if not speech:
             client.calls.actions.speak(ccid, payload="Take your time. Could you repeat that?", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200

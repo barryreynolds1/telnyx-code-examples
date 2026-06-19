@@ -127,8 +127,9 @@ Keep each chapter under 2000 characters for optimal TTS quality."""},
                 "pacing": "moderate"
             })
     except Exception as e:
+        app.logger.exception("Failed to chunk text into chapters")
         books[book_id]["status"] = "failed"
-        books[book_id]["error"] = str(e)
+        books[book_id]["error"] = "chapter generation failed"
         return jsonify(books[book_id]), 500
 
     # Step 2: Generate TTS for each chapter
@@ -156,16 +157,18 @@ Keep each chapter under 2000 characters for optimal TTS quality."""},
                 chapter_data["storage_url"] = url
                 books[book_id]["storage_urls"].append(url)
             except Exception as e:
-                chapter_data["storage_error"] = str(e)
+                app.logger.exception("Failed to upload chapter audio to storage")
+                chapter_data["storage_error"] = "storage upload failed"
 
             books[book_id]["chapters"].append(chapter_data)
             books[book_id]["total_audio_bytes"] += len(audio)
 
         except Exception as e:
+            app.logger.exception("Failed to narrate chapter")
             books[book_id]["chapters"].append({
                 "number": chapter.get("chapter_number", 0),
                 "title": chapter.get("chapter_title", ""),
-                "error": str(e)
+                "error": "chapter narration failed"
             })
 
     books[book_id]["status"] = "complete"

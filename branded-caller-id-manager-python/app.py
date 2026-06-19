@@ -26,7 +26,8 @@ def create_brand():
                 "website": data.get("website")}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create brand")
+        return jsonify({"error": "could not create brand"}), 500
 
 @app.route("/brands", methods=["GET"])
 def list_brands():
@@ -34,14 +35,15 @@ def list_brands():
         resp = requests.get(f"{API}/brand", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list brands")
+        return jsonify({"error": "could not list brands"}), 500
 
 @app.route("/campaigns", methods=["POST"])
 def create_campaign():
     data = request.get_json()
     try:
         resp = requests.post(f"{API}/phoneNumberCampaign", headers=headers,
-            json={"telnyx_brand_id": data.get("brand_id", timeout=10),
+            json={"telnyx_brand_id": data.get("brand_id"),
                 "usecase": data.get("usecase", "MIXED"),
                 "description": data.get("description"),
                 "sample_message": data.get("sample_message", ["Your appointment is tomorrow at 2pm. Reply CONFIRM."]),
@@ -50,7 +52,8 @@ def create_campaign():
         campaigns.append(result)
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create campaign")
+        return jsonify({"error": "could not create campaign"}), 500
 
 @app.route("/numbers/<number>/caller-id", methods=["PUT"])
 def update_caller_id(number):
@@ -63,7 +66,8 @@ def update_caller_id(number):
                 "cnam_listing_details": data.get("business_name", "", timeout=10)}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to update caller ID")
+        return jsonify({"error": "could not update caller id"}), 500
 
 @app.route("/stir-shaken/status", methods=["GET"])
 def stir_shaken_status():
@@ -77,7 +81,8 @@ def stir_shaken_status():
             "caller_id_name": data.get("cnam_listing_details"),
             "purchased_at": data.get("purchased_at")}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to fetch STIR/SHAKEN status")
+        return jsonify({"error": "could not fetch stir/shaken status"}), 500
 
 @app.route("/campaigns", methods=["GET"])
 def list_campaigns():

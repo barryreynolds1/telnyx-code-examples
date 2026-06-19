@@ -13,7 +13,7 @@ from flask import Flask, request, jsonify, render_template_string
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -95,18 +95,24 @@ def analyze_segment(text):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     """Handle voice events with real-time intelligence."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
 
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
         call_intel[call_control_id] = {
-            "from_number": data.get("from", "unknown"),
-            "to_number": data.get("to", "unknown"),
+            "from_number": p.get("from", "unknown"),
+            "to_number": p.get("to", "unknown"),
             "transcript": [],
             "sentiment_scores": [],
             "avg_sentiment": 0.5,
@@ -124,7 +130,7 @@ def handle_voice():
         return jsonify({"status": "transcribing"}), 200
 
     elif event_type == "call.transcription":
-        text = data.get("transcription_data", {}).get("transcript", "")
+        text = p.get("transcription_data", {}).get("transcript", "")
         if text and call_control_id in call_intel:
             ci = call_intel[call_control_id]
             ci["transcript"].append(text)
@@ -180,4 +186,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

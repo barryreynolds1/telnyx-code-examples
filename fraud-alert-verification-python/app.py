@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Fraud Alert & Verification - suspicious transaction triggers voice call to customer, verifies via DTMF, blocks or approves in real-time. Fraud team reviews edge cases via Slack."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -32,6 +33,22 @@ def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
 _start_ttl_cleanup(active_calls)
 
 
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
+
+
 def send_sms(to, text):
     requests.post(f"{API}/messages", headers=headers, json={"from": MAIN_NUMBER, "to": to, "text": text}, timeout=10)
 
@@ -48,7 +65,7 @@ def trigger_alert():
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": alert["customer_phone"], "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"alert_id": alert["id"]}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": encode_state({"alert_id": alert["id"]})}, timeout=10)
         active_calls[resp.json().get("data",{}).get("call_control_id","")] = alert["id"]
     except Exception:
         alert["status"] = "call_failed"
@@ -57,13 +74,22 @@ def trigger_alert():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
-    alert_id = active_calls.get(ccid)
+    ccid = p.get("call_control_id")
+    # Telnyx echoes client_state back on each webhook; decode it as the source of
+    # truth, falling back to the in-memory map keyed by call_control_id.
+    state = decode_state(p)
+    alert_id = active_calls.get(ccid, state.get("alert_id"))
 
     if event == "call.answered" and alert_id is not None:
         alert = alerts[alert_id]
@@ -74,7 +100,7 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type": "dtmf", "timeout_secs": 15, "valid_digits": "123", "max_digits": 1}, timeout=10)
     elif event == "call.gather.ended" and alert_id is not None:
-        digits = data.get("dtmf", {}).get("digits", "")
+        digits = p.get("digits", "")
         alert = alerts[alert_id]
         if digits == "1":
             alert["status"] = "verified_legitimate"
@@ -103,6 +129,11 @@ def handle_voice():
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400

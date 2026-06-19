@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Production-ready FastAPI endpoint for updating AI assistants via Telnyx."""
 
+import logging
 import os
 import telnyx
 from dotenv import load_dotenv
@@ -12,6 +13,7 @@ import uvicorn
 load_dotenv()
 
 app = FastAPI()
+logger = logging.getLogger("uvicorn.error")
 
 # Initialize client with the new SDK pattern
 client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
@@ -80,11 +82,13 @@ async def update_assistant_endpoint(assistant_id: str, request: UpdateAssistantR
     except telnyx.RateLimitError:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please slow down.")
     except telnyx.APIStatusError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        logger.exception("Telnyx API error while updating assistant")
+        raise HTTPException(status_code=e.status_code, detail="Failed to update assistant")
     except telnyx.APIConnectionError:
         raise HTTPException(status_code=503, detail="Network error connecting to Telnyx")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error("Invalid update request: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid update request")
 
 
 if __name__ == "__main__":

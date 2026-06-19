@@ -60,7 +60,8 @@ def validate_single(number):
         resp = requests.get(f"{API}/number_lookup/{number}", headers=headers, timeout=10)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("single number lookup failed")
+        return jsonify({"error": "number lookup failed"}), 500
 
 @app.route("/jobs", methods=["GET"])
 def list_jobs():

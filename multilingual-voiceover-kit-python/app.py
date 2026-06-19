@@ -146,8 +146,9 @@ Return ONLY the translated script."""},
                 lang_result["script"] = translated_script.strip()
                 lang_result["status"] = "translated"
             except Exception as e:
+                app.logger.exception("Translation failed for language %s", lang)
                 lang_result["status"] = "translation_failed"
-                lang_result["error"] = str(e)
+                lang_result["error"] = "translation failed"
                 kits[kit_id]["languages"][lang] = lang_result
                 continue
 
@@ -162,12 +163,14 @@ Return ONLY the translated script."""},
                 url = upload_to_storage(key, audio)
                 lang_result["storage_url"] = url
             except Exception as e:
-                lang_result["storage_error"] = str(e)
+                app.logger.exception("Storage upload failed for language %s", lang)
+                lang_result["storage_error"] = "storage upload failed"
 
             lang_result["status"] = "complete"
         except Exception as e:
+            app.logger.exception("TTS render failed for language %s", lang)
             lang_result["status"] = "tts_failed"
-            lang_result["error"] = str(e)
+            lang_result["error"] = "tts render failed"
 
         kits[kit_id]["languages"][lang] = lang_result
 
@@ -247,7 +250,8 @@ def add_language(kit_id):
         kit["languages"][lang] = result
         return jsonify(result), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to add language %s to kit %s", lang, kit_id)
+        return jsonify({"error": "internal error"}), 500
 
 
 @app.route("/kits", methods=["GET"])

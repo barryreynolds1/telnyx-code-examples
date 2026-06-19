@@ -109,7 +109,7 @@ if __name__ == "__main__":
         print(f"Answer: {answer}")
     else:
         app.run(
-            debug=os.getenv("FLASK_DEBUG", "false").lower() == "true",
+            debug=False,
             host=os.getenv("HOST", "127.0.0.1"),
             port=int(os.getenv("PORT", 5000)),
         )

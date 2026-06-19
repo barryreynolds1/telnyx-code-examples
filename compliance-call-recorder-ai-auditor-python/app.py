@@ -5,15 +5,19 @@ import os
 import json
 import time
 import threading
+from urllib.parse import urlparse
 import requests
 import telnyx
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -21,6 +25,25 @@ AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
 STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
 TICKET_WEBHOOK_URL = os.getenv("TICKET_WEBHOOK_URL", "")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
+REGION = os.getenv("TELNYX_STORAGE_REGION", "us-central-1")
+
+# Telnyx Cloud Storage is S3-compatible: boto3 against the regional endpoint, API key
+# used as both access and secret key. Docs: https://developers.telnyx.com/docs/cloud-storage/quick-start
+s3 = boto3.client(
+    "s3", endpoint_url=f"https://{REGION}.telnyxcloudstorage.com",
+    aws_access_key_id=TELNYX_API_KEY, aws_secret_access_key=TELNYX_API_KEY,
+    region_name=REGION, config=Config(signature_version="s3v4"),
+)
+
+
+def is_telnyx_url(url: str) -> bool:
+    """Only fetch recordings from Telnyx hosts with the API key attached."""
+    try:
+        parts = urlparse(url or "")
+    except ValueError:
+        return False
+    host = (parts.hostname or "").lower()
+    return parts.scheme == "https" and (host == "telnyx.com" or host.endswith(".telnyx.com"))
 
 # Required disclosures that must appear in every outbound sales call
 REQUIRED_DISCLOSURES = [
@@ -103,10 +126,10 @@ def create_ticket(violation_data):
 
 def store_recording(call_control_id, recording_url):
     """Store call recording in Telnyx Cloud Storage."""
-    if not STORAGE_BUCKET or not recording_url:
+    if not STORAGE_BUCKET or not recording_url or not is_telnyx_url(recording_url):
         return None
     try:
-        # Download recording
+        # Download the recording from Telnyx (API key only sent to a Telnyx host).
         rec_resp = requests.get(
             recording_url,
             headers={"Authorization": f"Bearer {TELNYX_API_KEY}"},
@@ -115,17 +138,11 @@ def store_recording(call_control_id, recording_url):
         if not rec_resp.ok:
             return None
 
-        # Upload to Telnyx Storage
+        # Upload to Telnyx Cloud Storage (S3-compatible) via boto3.
         filename = f"recordings/{time.strftime('%Y/%m/%d')}/{call_control_id}.mp3"
-        upload_resp = requests.put(
-            f"https://api.telnyx.com/v2/storage/buckets/{STORAGE_BUCKET}/{filename}",
-            headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "audio/mpeg"},
-            data=rec_resp.content,
-            timeout=30,
-        )
-        if upload_resp.ok:
-            return filename
-    except requests.RequestException as e:
+        s3.put_object(Bucket=STORAGE_BUCKET, Key=filename, Body=rec_resp.content, ContentType="audio/mpeg")
+        return filename
+    except (ClientError, requests.RequestException) as e:
         app.logger.error("Recording storage failed: %s", e)
     return None
 
@@ -133,19 +150,25 @@ def store_recording(call_control_id, recording_url):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     """Handle voice events — auto-record all outbound calls."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
 
     # Track outbound calls
-    if event_type == "call.initiated" and data.get("direction") == "outgoing":
+    if event_type == "call.initiated" and p.get("direction") == "outgoing":
         call_records[call_control_id] = {
-            "from": data.get("from"),
-            "to": data.get("to"),
+            "from": p.get("from"),
+            "to": p.get("to"),
             "start_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "transcript": [],
         }
@@ -159,13 +182,13 @@ def handle_voice():
         return jsonify({"status": "recording"}), 200
 
     elif event_type == "call.transcription":
-        text = data.get("transcription_data", {}).get("transcript", "")
+        text = p.get("transcription_data", {}).get("transcript", "")
         if text and call_control_id in call_records:
             call_records[call_control_id]["transcript"].append(text)
         return jsonify({"status": "transcribing"}), 200
 
     elif event_type == "call.recording.saved":
-        recording_url = data.get("recording_urls", {}).get("mp3")
+        recording_url = p.get("recording_urls", {}).get("mp3")
         if call_control_id in call_records and recording_url:
             call_records[call_control_id]["recording_url"] = recording_url
             stored = store_recording(call_control_id, recording_url)
@@ -226,4 +249,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

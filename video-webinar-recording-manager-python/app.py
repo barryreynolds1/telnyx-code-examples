@@ -46,7 +46,8 @@ def create_webinar():
                 "created": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create webinar")
+        return jsonify({"error": "could not create webinar"}), 500
 
 @app.route("/webinars/<room_id>/recordings", methods=["GET"])
 def get_recordings(room_id):
@@ -54,7 +55,8 @@ def get_recordings(room_id):
         resp = requests.get(f"{API}/rooms/{room_id}/recordings", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to retrieve recordings")
+        return jsonify({"error": "could not retrieve recordings"}), 500
 
 @app.route("/recordings/<recording_id>/transcribe", methods=["POST"])
 def transcribe_recording(recording_id):
@@ -75,7 +77,8 @@ def transcribe_recording(recording_id):
         recordings.append(summary)
         return jsonify(summary), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Transcription failed")
+        return jsonify({"error": "transcription failed"}), 500
 
 @app.route("/webinars", methods=["GET"])
 def list_webinars():

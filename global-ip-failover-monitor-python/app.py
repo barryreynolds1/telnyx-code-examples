@@ -41,7 +41,8 @@ def list_endpoints():
                     "region": ep.get("region"), "status": "healthy", "checks": 0, "failures": 0}
         return jsonify({"endpoints": list(endpoints.values())}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list endpoints")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/endpoints", methods=["POST"])
 def add_endpoint():
@@ -99,7 +100,8 @@ def regions():
         resp = requests.get(f"{API}/global_ip_allowed_regions", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to fetch allowed regions")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/health", methods=["GET"])
 def health():

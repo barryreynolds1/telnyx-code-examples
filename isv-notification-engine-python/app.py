@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """ISV Notification Engine - SaaS platform sends alerts via SMS/voice/WhatsApp based on customer preference and urgency. Multi-channel with fallback cascade and delivery tracking."""
-import os, json, time, requests
+import os, json, base64, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -32,7 +33,7 @@ def make_voice_call(to, message):
     try:
         requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"msg": message}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": base64.b64encode(json.dumps({"msg": message}).encode()).decode()}, timeout=10)
         return True
     except Exception:
         return False
@@ -88,15 +89,21 @@ def bulk_notify():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     if event == "call.answered":
         cs = {}
-        try: cs = json.loads(bytes.fromhex(data.get("client_state","")).decode())
+        try: cs = json.loads(base64.b64decode(p.get("client_state","")))
         except Exception: pass
         if cs.get("msg"):
             requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,

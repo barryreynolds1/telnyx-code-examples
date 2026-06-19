@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -47,14 +47,20 @@ def send_email(to, subject, body):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        active_calls[ccid] = {"caller": data.get("from"), "raw_text": [], "start": time.time()}
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        active_calls[ccid] = {"caller": p.get("from"), "raw_text": [], "start": time.time()}
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":
@@ -65,7 +71,7 @@ def handle_voice():
         return jsonify({"status": "recording"}), 200
     elif event_type == "call.gather.ended":
         call = active_calls.get(ccid)
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if call and speech:
             call["raw_text"].append(speech)
             try:

@@ -48,8 +48,9 @@ def get_token():
             json={"connection_id": os.getenv("CONNECTION_ID", timeout=10)}, timeout=10)
         if resp.ok:
             return jsonify(resp.json().get("data", {})), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Failed to create WebRTC telephony credential")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Failed to create credential"}), 500
 
 @app.route("/coaching", methods=["POST"])

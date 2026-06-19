@@ -12,7 +12,7 @@ import threading, time as _ttl_time
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -114,17 +114,23 @@ def call_inference(messages, max_tokens=150):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     """Handle voice events for identity-verified transactions."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
     event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    call_control_id = p.get("call_control_id")
 
     # --- Inbound call: look up number, start verification ---
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        caller = data.get("from", "")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        caller = p.get("from", "")
         lookup = number_lookup(caller)
         carrier = lookup.get("carrier", {}).get("name", "Unknown")
         number_type = lookup.get("phone_number", {}).get("type", "unknown")
@@ -187,8 +193,8 @@ def handle_voice():
         if not session:
             return jsonify({"status": "no_session"}), 200
 
-        digits = data.get("digits", "")
-        speech = data.get("speech", {}).get("result", "")
+        digits = p.get("digits", "")
+        speech = p.get("speech", {}).get("result", "")
         code = digits or "".join(c for c in speech if c.isdigit())
 
         # Verification state
@@ -246,4 +252,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

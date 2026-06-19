@@ -8,12 +8,15 @@ import struct
 import hashlib
 import requests
 import threading
+import telnyx
 from collections import defaultdict
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
@@ -44,6 +47,21 @@ def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
 
 _start_ttl_cleanup(sessions)
 
+
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
 
 
 ANALYSIS_PROMPT = """You are a deepfake voice detection analyst. Analyze these audio characteristics from a live phone call and assess the probability of synthetic/AI-generated speech.
@@ -165,7 +183,7 @@ def analyze_with_inference(features, call_id):
             "model": AI_MODEL,
             "messages": [
                 {"role": "system", "content": "You are a voice forensics AI. Return only valid JSON."},
-                {"role": "user", "content": ANALYSIS_PROMPT.format(features=json.dumps(features, indent=2, timeout=10))}
+                {"role": "user", "content": ANALYSIS_PROMPT.format(features=json.dumps(features, indent=2))}
             ],
             "max_tokens": 500,
             "temperature": 0.1
@@ -178,8 +196,8 @@ def analyze_with_inference(features, call_id):
             content = content.split("\n", 1)[1].rsplit("```", 1)[0]
         return json.loads(content)
     except Exception as e:
-        app.logger.error("Inference failed for %s: %s", call_id, e)
-        return {"score": 0.5, "confidence": 0, "assessment": "error", "indicators": [], "reasoning": str(e)}
+        app.logger.exception("Inference failed for %s", call_id)
+        return {"score": 0.5, "confidence": 0, "assessment": "error", "indicators": [], "reasoning": "inference error"}
 
 
 def send_alert(call_id, result, caller):
@@ -190,7 +208,7 @@ def send_alert(call_id, result, caller):
         requests.post(ALERT_WEBHOOK, json={
             "text": f":warning: *Deepfake Alert* on call `{call_id}`\n"
                     f"Caller: `{caller}`\n"
-                    f"Score: {result.get('score', 'N/A', timeout=10)} ({result.get('assessment', 'unknown')})\n"
+                    f"Score: {result.get('score', 'N/A')} ({result.get('assessment', 'unknown')})\n"
                     f"Confidence: {result.get('confidence', 'N/A')}\n"
                     f"Indicators: {', '.join(result.get('indicators', []))}\n"
                     f"Reasoning: {result.get('reasoning', 'N/A')}"
@@ -213,19 +231,26 @@ def telnyx_action(call_control_id, action, payload=None):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    data = payload.get("data", {}).get("payload", payload.get("data", {}))
+    data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type", "")
-    call_id = data.get("call_control_id", "")
-    caller = data.get("from", "")
+    state = decode_state(p)                # per-call state carried by Telnyx
+    call_id = p.get("call_control_id", "")
+    caller = p.get("from", "")
     if isinstance(caller, dict):
         caller = caller.get("phone_number", "")
 
     if event == "call.initiated":
-        if data.get("direction") == "incoming":
-            telnyx_action(call_id, "answer", {"client_state": base64.b64encode(b"detecting").decode()})
+        if p.get("direction") == "incoming":
+            telnyx_action(call_id, "answer", {"client_state": encode_state({"phase": "detecting"})})
 
     elif event == "call.answered":
         sessions[call_id] = {
@@ -282,12 +307,18 @@ def handle_voice():
 @app.route("/webhooks/media", methods=["POST"])
 def handle_media():
     """Receive media stream audio chunks for analysis."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    call_id = data.get("call_control_id", "")
-    media = data.get("media", {})
+    p = data.get("payload", {})
+    call_id = p.get("call_control_id", "")
+    media = p.get("media", {})
 
     session = sessions.get(call_id)
     if session and media.get("payload"):

@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 # In-memory store for active calls (use a database in production)
@@ -211,6 +211,11 @@ def hangup_call_endpoint():
 @app.route("/webhooks/call-events", methods=["POST"])
 def handle_call_webhook():
     """Webhook endpoint to receive call state change events from Telnyx."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -219,8 +224,10 @@ def handle_call_webhook():
         return jsonify({"error": "No payload"}), 400
     
     # Extract event metadata
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
+    data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
     
     # Log the event (in production, persist to a database)
     print(f"Webhook event: {event_type} for call {call_control_id}")
@@ -257,4 +264,4 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

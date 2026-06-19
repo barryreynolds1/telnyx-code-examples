@@ -2,4 +2,4 @@ flask
 openai
 python-dotenv
 requests
-telnyx
+telnyx>=4.0.0

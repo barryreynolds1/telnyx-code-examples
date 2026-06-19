@@ -26,7 +26,8 @@ def call_analytics():
                 "avg_duration_secs": round(avg_duration, 1), "total_minutes": round(sum(durations) / 60, 1)}), 200
         return jsonify({"error": resp.text}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Call analytics request failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/analytics/numbers", methods=["GET"])
 def number_analytics():
@@ -41,7 +42,8 @@ def number_analytics():
                 by_status[status] = by_status.get(status, 0) + 1
             return jsonify({"total_numbers": len(numbers), "by_status": by_status}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Number analytics request failed")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Failed"}), 500
 
 @app.route("/analytics/messaging", methods=["GET"])
@@ -55,7 +57,8 @@ def messaging_analytics():
             received = sum(1 for m in msgs if m.get("direction") == "inbound")
             return jsonify({"recent_messages": len(msgs), "sent": sent, "received": received}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Messaging analytics request failed")
+        return jsonify({"error": "internal error"}), 500
     return jsonify({"error": "Failed"}), 500
 
 @app.route("/health", methods=["GET"])

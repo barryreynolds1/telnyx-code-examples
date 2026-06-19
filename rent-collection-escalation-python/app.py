@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Rent Collection Escalation - automated multi-channel rent reminders. Day 1: SMS + Stripe payment link. Day 3: voice call. Day 7: late fee notice. Day 14: manager escalation."""
-import os, json, time, requests, stripe
+import os, json, base64, time, requests, stripe, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -28,7 +29,7 @@ def make_call(to, message):
     try:
         resp = requests.post(f"{API}/calls", headers=headers,
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
-                "client_state": json.dumps({"msg": message}, timeout=10).encode().hex()}, timeout=10)
+                "client_state": base64.b64encode(json.dumps({"msg": message}).encode()).decode()}, timeout=10)
         return resp.json().get("data", {}).get("call_control_id")
     except Exception:
         return None
@@ -62,7 +63,7 @@ def run_cycle():
         else:
             entry["action"] = "manager_escalation"
             if MANAGER_SLACK:
-                try: requests.post(MANAGER_SLACK, json={"text": f"ESCALATION: {t['name']} Unit {t['unit']} - {day} days overdue, ${t['rent']}. {sum(1 for l in collection_log if l.get('unit', timeout=10)==t['unit'])} prior attempts."}, timeout=5)
+                try: requests.post(MANAGER_SLACK, json={"text": f"ESCALATION: {t['name']} Unit {t['unit']} - {day} days overdue, ${t['rent']}. {sum(1 for l in collection_log if l.get('unit')==t['unit'])} prior attempts."}, timeout=5)
                 except Exception: pass
         collection_log.append(entry)
         results.append(entry)
@@ -70,20 +71,27 @@ def run_cycle():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
+    ccid = p.get("call_control_id")
     if event == "call.answered":
-        cs_hex = data.get("client_state", "")
-        if cs_hex:
+        raw = p.get("client_state", "")
+        if raw:
             try:
-                cs = json.loads(bytes.fromhex(cs_hex).decode())
-                requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
-                    json={"payload": cs.get("msg","", timeout=10), "voice":"female","language_code":"en-US"}, timeout=10)
-            except Exception: pass
+                cs = json.loads(base64.b64decode(raw))
+            except Exception:
+                cs = {}
+            requests.post(f"{API}/calls/{ccid}/actions/speak", headers=headers,
+                json={"payload": cs.get("msg", ""), "voice":"female","language_code":"en-US"}, timeout=10)
     return jsonify({"status": "ok"}), 200
 
 @app.route("/tenants", methods=["GET"])

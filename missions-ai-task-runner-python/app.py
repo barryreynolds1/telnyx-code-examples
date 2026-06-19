@@ -55,7 +55,8 @@ def run_ai_task():
             conversation.append({"role": "assistant", "content": response})
             conversation.append({"role": "user", "content": f"Step {i+1} result: {json.dumps(step.get('result', 'executed'))}"})
         except Exception as e:
-            steps.append({"error": str(e), "step": i + 1})
+            app.logger.exception("task step execution failed")
+            steps.append({"error": "step execution failed", "step": i + 1})
             break
     run = {"objective": objective, "steps": steps, "completed": steps[-1].get("action") == "done" if steps else False,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}

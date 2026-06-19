@@ -69,12 +69,15 @@ def tts_generate(text, voice="nova"):
 
 def send_sms(to, text):
     try:
-        requests.post(f"{API}/messages", headers=HEADERS, json={
+        resp = requests.post(f"{API}/messages", headers=HEADERS, json={
             "from": MAIN_NUMBER, "to": to, "text": text,
             "messaging_profile_id": MESSAGING_PROFILE_ID
         }, timeout=10)
+        resp.raise_for_status()
+        return True
     except Exception as e:
         app.logger.error("SMS to %s failed: %s", to, e)
+        return False
 
 
 @app.route("/repurpose", methods=["POST"])
@@ -104,8 +107,9 @@ def repurpose_episode():
         jobs[job_id]["transcript"] = transcript
         jobs[job_id]["word_count"] = len(transcript.split())
     except Exception as e:
+        app.logger.exception("Transcription failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"Transcription failed: {str(e)}"
+        jobs[job_id]["error"] = "Transcription failed"
         return jsonify(jobs[job_id]), 500
 
     if not transcript.strip():
@@ -124,7 +128,8 @@ def repurpose_episode():
     except json.JSONDecodeError:
         jobs[job_id]["quotes"] = [{"quote": quotes_raw[:280], "context": "extracted", "topic": "general", "hook": "Listen to this:"}]
     except Exception as e:
-        jobs[job_id]["error"] = f"Quote extraction failed: {str(e)}"
+        app.logger.exception("Quote extraction failed for job %s", job_id)
+        jobs[job_id]["error"] = "Quote extraction failed"
 
     # Step 3: Generate social posts
     try:
@@ -158,10 +163,9 @@ def repurpose_episode():
         best_quote = jobs[job_id]["quotes"][0]
         sms_text = f"🎙️ New episode: {episode_title}\n\n\"{best_quote['quote'][:200]}\"\n\nListen now!"
         for phone in subscribers:
-            try:
-                send_sms(phone, sms_text)
+            if send_sms(phone, sms_text):
                 jobs[job_id]["distribution"]["sent"] += 1
-            except Exception:
+            else:
                 jobs[job_id]["distribution"]["failed"] += 1
 
     jobs[job_id]["status"] = "complete"

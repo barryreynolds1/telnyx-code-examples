@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Patient Appointment Engine - AI answers calls, checks availability, books appointments, collects copay via Stripe, sends SMS confirmation. Staff reviews next-day schedule."""
-import os, json, time, requests, stripe
+import os, json, time, requests, stripe, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -70,16 +71,22 @@ def notify_staff(message):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
-    caller = data.get("from", "")
+    ccid = p.get("call_control_id")
+    caller = p.get("from", "")
 
     if event == "call.initiated":
-        if data.get("direction") == "incoming":
+        if p.get("direction") == "incoming":
             requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
         return jsonify({"status": "ok"}), 200
 
@@ -98,7 +105,7 @@ def handle_voice():
         return jsonify({"status": "ok"}), 200
 
     if event == "call.gather.ended":
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         call = calls.get(ccid, {})
         if speech and call:
             call["conversation"].append({"role": "user", "content": speech})
@@ -161,8 +168,9 @@ def create_copay():
                 "unit_amount": data.get("amount_cents", 2500)}, "quantity": 1}])
         send_sms(data["phone"], f"Valley Health Clinic: Please pay your ${data.get('amount_cents', 2500)/100:.2f} copay before your visit: {link.url}")
         return jsonify({"payment_link": link.url}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Failed to create copay payment link")
+        return jsonify({"error": "could not create copay payment link"}), 500
 
 @app.route("/slots", methods=["GET"])
 def get_slots():

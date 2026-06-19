@@ -46,7 +46,8 @@ def create_room():
                 "participants": [], "warnings": 0}
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create room")
+        return jsonify({"error": "could not create room"}), 500
 
 @app.route("/rooms", methods=["GET"])
 def list_rooms():
@@ -54,7 +55,8 @@ def list_rooms():
         resp = requests.get(f"{API}/rooms", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to list rooms")
+        return jsonify({"error": "could not list rooms"}), 500
 
 @app.route("/rooms/<room_id>/tokens", methods=["POST"])
 def create_token(room_id):
@@ -65,7 +67,8 @@ def create_token(room_id):
                 "token_ttl_secs": 600}, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create join token")
+        return jsonify({"error": "could not create join token"}), 500
 
 @app.route("/moderate", methods=["POST"])
 def moderate_message():
@@ -102,7 +105,8 @@ def delete_room(room_id):
         rooms.pop(room_id, None)
         return jsonify({"status": "deleted"}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to delete room")
+        return jsonify({"error": "could not delete room"}), 500
 
 @app.route("/health", methods=["GET"])
 def health():

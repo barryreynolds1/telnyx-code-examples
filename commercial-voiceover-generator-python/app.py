@@ -127,8 +127,9 @@ Return JSON array with objects: {{"variation": "A"|"B"|"C", "approach": "one-wor
         scripts = [{"variation": "A", "approach": "direct", "script": scripts_raw[:200], "word_count": len(scripts_raw.split())}]
         campaigns[campaign_id]["scripts"] = scripts
     except Exception as e:
+        app.logger.exception("Script generation failed for campaign %s", campaign_id)
         campaigns[campaign_id]["status"] = "failed"
-        campaigns[campaign_id]["error"] = str(e)
+        campaigns[campaign_id]["error"] = "script generation failed"
         return jsonify(campaigns[campaign_id]), 500
 
     # Step 2: TTS render each script with best-fit voice
@@ -159,9 +160,12 @@ Return JSON array with objects: {{"variation": "A"|"B"|"C", "approach": "one-wor
                     "script_preview": clean[:100]
                 })
             except Exception as e:
+                app.logger.exception(
+                    "TTS render failed for campaign %s variation %s voice %s",
+                    campaign_id, script_data.get("variation", "?"), voice)
                 campaigns[campaign_id]["renders"].append({
                     "variation": script_data.get("variation", "?"),
-                    "voice": voice, "error": str(e)
+                    "voice": voice, "error": "render failed"
                 })
 
     # Step 3: SMS notify client

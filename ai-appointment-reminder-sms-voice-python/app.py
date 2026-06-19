@@ -8,7 +8,7 @@ import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -88,14 +88,20 @@ def trigger_reminders():
 
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
+    p = data.get("payload", {})
+    if data.get("event_type") != "message.received" or p.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
-    from_number = data.get("from", {}).get("phone_number", "")
-    text = data.get("text", "").strip().upper()
+    from_number = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "").strip().upper()
     appt = next((a for a in appointments if a["phone"] == from_number and a["status"] == "pending"), None)
     if not appt:
         return jsonify({"status": "no_appointment"}), 200
@@ -116,12 +122,18 @@ def handle_sms():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
     if event_type == "call.answered" and call:
         appt = call["appointment"]
@@ -133,7 +145,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=2, timeout_secs=15, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if not speech:
             client.calls.actions.speak(ccid, payload="I didn't catch that. Can you confirm your appointment?", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200

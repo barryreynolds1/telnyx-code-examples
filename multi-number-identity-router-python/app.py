@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
@@ -28,25 +28,31 @@ def add_identity():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        dialed = data.get("to")
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        dialed = p.get("to")
         identity = identities.get(dialed, {"name": "Default", "greeting": "Hello, how can I help?", "forward_to": None})
-        call_log.append({"dialed": dialed, "identity": identity["name"], "caller": data.get("from"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
+        call_log.append({"dialed": dialed, "identity": identity["name"], "caller": p.get("from"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering", "identity": identity["name"]}), 200
     elif event_type == "call.answered":
-        dialed = data.get("to", "")
+        dialed = p.get("to", "")
         identity = identities.get(dialed, {"greeting": "Hello!", "forward_to": None})
         client.calls.actions.speak(ccid, payload=identity["greeting"], voice="female", language_code="en-US")
         return jsonify({"status": "greeting"}), 200
     elif event_type == "call.speak.ended":
-        dialed = data.get("to", "")
+        dialed = p.get("to", "")
         identity = identities.get(dialed, {})
         if identity.get("forward_to"):
             client.calls.actions.transfer(ccid, to=identity["forward_to"])

@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 STREAM_NUMBER = os.getenv("STREAM_NUMBER")
@@ -31,14 +31,20 @@ _start_ttl_cleanup(active_streams, transcripts)
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        active_streams[ccid] = {"caller": data.get("from"), "started": time.time()}
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        active_streams[ccid] = {"caller": p.get("from"), "started": time.time()}
         transcripts[ccid] = []
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
@@ -47,7 +53,7 @@ def handle_voice():
         client.calls.actions.speak(ccid, payload="This call is being transcribed in real time. Go ahead and speak.", voice="female", language_code="en-US")
         return jsonify({"status": "streaming"}), 200
     elif event_type == "call.transcription":
-        text = data.get("transcription_data", {}).get("transcript", "")
+        text = p.get("transcription_data", {}).get("transcript", "")
         if text and ccid in transcripts:
             transcripts[ccid].append({"text": text, "time": time.time()})
         return jsonify({"status": "ok"}), 200

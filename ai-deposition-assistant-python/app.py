@@ -5,12 +5,15 @@ import json
 import time
 import base64
 import requests
+import telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
@@ -95,16 +98,22 @@ def start_deposition():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type", "")
-    call_id = data.get("call_control_id", "")
+    call_id = p.get("call_control_id", "")
     client_state = {}
-    if data.get("client_state"):
+    if p.get("client_state"):
         try:
-            client_state = json.loads(base64.b64decode(data["client_state"]))
+            client_state = json.loads(base64.b64decode(p["client_state"]))
         except Exception:
             pass
 
@@ -146,7 +155,7 @@ def handle_voice():
         return jsonify({"status": "listening"}), 200
 
     if event == "call.gather.ended":
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if speech and dep:
             participant = dep["participants"].get(call_id, {})
             role = participant.get("role", "unknown")

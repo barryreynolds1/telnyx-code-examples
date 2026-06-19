@@ -81,8 +81,9 @@ def ask_question():
         answer = resp.json()["choices"][0]["message"]["content"]
         sources = [{"doc_id": c["doc_id"], "chunk": c["chunk_index"], "score": round(s, 3)} for s, c in context_chunks]
         return jsonify({"answer": answer, "sources": sources}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("failed to generate answer")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/documents", methods=["GET"])
 def list_documents():

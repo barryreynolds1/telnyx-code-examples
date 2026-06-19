@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
 """Billing Anomaly Detector — monitor usage and billing for anomalies, alert on cost spikes and unusual patterns."""
-import os, json, time, requests
+import os, json, base64, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+
+
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips in client_state."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload's client_state."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
+
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 ALERT_WEBHOOK = os.getenv("ALERT_WEBHOOK", "")
 API = "https://api.telnyx.com/v2"
@@ -50,13 +67,14 @@ def run_anomaly_check():
             anomalies.append({"type": "expensive_calls", "severity": "low",
                 "count": len(high_cost), "total_cost": round(sum(float(c.get("cost", 0)) for c in high_cost), 2)})
     except Exception as e:
-        anomalies.append({"type": "check_failed", "error": str(e)})
+        app.logger.exception("Anomaly check failed")
+        anomalies.append({"type": "check_failed", "error": "anomaly check failed"})
     if anomalies:
         alert = {"anomalies": anomalies, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         alerts.append(alert)
         if ALERT_WEBHOOK:
             try:
-                requests.post(ALERT_WEBHOOK, json={"text": f"Billing anomaly detected: {json.dumps(anomalies, timeout=10)}"}, timeout=10)
+                requests.post(ALERT_WEBHOOK, json={"text": f"Billing anomaly detected: {json.dumps(anomalies)}"}, timeout=10)
             except Exception:
                 pass
     return jsonify({"anomalies": anomalies, "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}), 200
@@ -67,7 +85,8 @@ def check_balance():
         resp = requests.get(f"{API}/balance", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to retrieve balance")
+        return jsonify({"error": "could not retrieve balance"}), 500
 
 @app.route("/alerts", methods=["GET"])
 def list_alerts():

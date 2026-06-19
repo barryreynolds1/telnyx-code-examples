@@ -3,7 +3,7 @@
 transcribe each speaker, generate show notes + chapters + social clips,
 and produce TTS intro/outro bumpers. All on Telnyx."""
 
-import os, json, time, uuid, hashlib, requests
+import os, json, base64, time, uuid, hashlib, requests, telnyx
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -11,6 +11,9 @@ import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
+
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
@@ -82,6 +85,22 @@ def notify_slack(message):
             pass
 
 
+def encode_state(state: dict) -> str:
+    """Stringify the state object and base64-encode it — the value Telnyx round-trips."""
+    return base64.b64encode(json.dumps(state).encode()).decode()
+
+
+def decode_state(payload: dict) -> dict:
+    """Recover the state object echoed back on the webhook payload."""
+    raw = payload.get("client_state")
+    if not raw:
+        return {}
+    try:
+        return json.loads(base64.b64decode(raw))
+    except Exception:
+        return {}
+
+
 @app.route("/episodes/start", methods=["POST"])
 def start_episode():
     """Start a new podcast episode recording session via conference call."""
@@ -126,7 +145,7 @@ def start_episode():
                     "record_conference": True,
                     "beep_enabled": "on_enter"
                 },
-                "client_state": json.dumps({"episode_id": episode_id, "role": "host"}).encode().hex() if hasattr(str, 'encode') else ""
+                "client_state": encode_state({"episode_id": episode_id, "role": "host"})
             })
             speaker_id = phone[-4:]
             episodes[episode_id]["speakers"][speaker_id] = {
@@ -237,63 +256,52 @@ def stop_episode(episode_id):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice_webhook():
     """Handle call control events during recording."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event = payload.get("data", {})
     event_type = event.get("event_type", "")
-    call_id = event.get("payload", {}).get("call_control_id", "")
+    p = event.get("payload", {})            # Telnyx nests event fields under data.payload
+    call_id = p.get("call_control_id", "")
+    state = decode_state(p)                 # per-call state carried by Telnyx (base64 JSON)
 
     if event_type == "call.answered":
-        # Start gathering speech from this participant
+        # Start continuous real-time transcription of this participant's speech.
+        # Telnyx streams each utterance back as a `call.transcription` webhook,
+        # which we accumulate into this speaker's segments over the whole call.
         try:
-            telnyx_post(f"calls/{call_id}/actions/gather_using_speak", {
-                "payload": "You're connected to the podcast. Recording is live.",
-                "voice": TTS_VOICE,
-                "language": "en-US",
-                "minimum_digits": 1,
-                "maximum_digits": 1,
-                "valid_digits": "*",
-                "timeout_millis": 600000,  # 10 min segments
+            telnyx_post(f"calls/{call_id}/actions/transcription_start", {
+                "language": "en",
             })
         except Exception as e:
-            app.logger.error("Gather failed: %s", e)
+            app.logger.error("Transcription start failed: %s", e)
 
-    elif event_type == "call.gather.ended":
-        ep_payload = event.get("payload", {})
-        speech = ep_payload.get("speech", {})
-        transcript_text = speech.get("result", "")
-        from_number = ep_payload.get("from", "")
-        speaker_id = from_number[-4:] if from_number else "unknown"
+    elif event_type == "call.transcription":
+        transcription_data = p.get("transcription_data", {})
+        transcript_text = transcription_data.get("transcript", "")
 
         if transcript_text:
-            # Find the episode for this call
-            for ep in episodes.values():
+            # Prefer the episode_id echoed back in client_state; fall back to all
+            # episodes. Then find the matching speaker for this call and append.
+            ep_id = state.get("episode_id")
+            candidates = [episodes[ep_id]] if ep_id in episodes else list(episodes.values())
+            for ep in candidates:
                 for spk_id, spk in ep["speakers"].items():
                     if spk.get("call_id") == call_id:
                         segment = {
                             "speaker": spk_id,
                             "text": transcript_text,
                             "timestamp": time.time(),
-                            "confidence": speech.get("confidence", 0)
+                            "confidence": transcription_data.get("confidence", 0)
                         }
                         ep["transcript_segments"].append(segment)
                         spk["segments"].append(segment)
                         break
-
-        # Continue gathering
-        try:
-            telnyx_post(f"calls/{call_id}/actions/gather_using_speak", {
-                "payload": "",
-                "voice": TTS_VOICE,
-                "language": "en-US",
-                "minimum_digits": 1,
-                "maximum_digits": 1,
-                "valid_digits": "*",
-                "timeout_millis": 600000,
-            })
-        except Exception:
-            pass
 
     elif event_type == "conference.recording.saved":
         recording_url = event.get("payload", {}).get("recording_urls", {}).get("mp3")

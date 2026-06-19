@@ -111,8 +111,9 @@ def translate_content():
         original_text = result.get("text", "")
         translations[job_id]["original_transcript"] = original_text
     except Exception as e:
+        app.logger.exception("Transcription failed for job %s", job_id)
         translations[job_id]["status"] = "failed"
-        translations[job_id]["error"] = str(e)
+        translations[job_id]["error"] = "Transcription failed"
         return jsonify(translations[job_id]), 500
 
     if not original_text.strip():
@@ -130,8 +131,9 @@ def translate_content():
         ])
         translations[job_id]["translated_transcript"] = translated.strip()
     except Exception as e:
+        app.logger.exception("Translation failed for job %s", job_id)
         translations[job_id]["status"] = "failed"
-        translations[job_id]["error"] = f"Translation failed: {str(e)}"
+        translations[job_id]["error"] = "Translation failed"
         return jsonify(translations[job_id]), 500
 
     # Step 3: Generate TTS in target language
@@ -154,8 +156,9 @@ def translate_content():
         translations[job_id]["audio_generated"] = True
         translations[job_id]["total_audio_bytes"] = total_audio_bytes
     except Exception as e:
+        app.logger.exception("TTS generation failed for job %s", job_id)
         translations[job_id]["status"] = "partial"
-        translations[job_id]["error"] = f"TTS failed (transcript still available): {str(e)}"
+        translations[job_id]["error"] = "TTS failed (transcript still available)"
         return jsonify(translations[job_id]), 200
 
     translations[job_id]["status"] = "complete"

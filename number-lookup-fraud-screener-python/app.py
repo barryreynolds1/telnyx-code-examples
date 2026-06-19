@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Number Lookup Fraud Screener — screen inbound calls/messages for fraud indicators using number lookup before connecting."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 API = "https://api.telnyx.com/v2"
@@ -55,16 +57,23 @@ def screen_number(number):
         screening_log.append(entry)
         return jsonify(entry), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("number screening failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/webhooks/voice", methods=["POST"])
 def screen_inbound_call():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
-    if data.get("event_type") == "call.initiated" and data.get("direction") == "incoming":
-        caller = data.get("from", "")
+    p = data.get("payload", {})
+    if data.get("event_type") == "call.initiated" and p.get("direction") == "incoming":
+        caller = p.get("from", "")
         if caller in blocked_numbers:
             screening_log.append({"number": caller, "action": "blocked", "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
             return jsonify({"action": "reject"}), 200

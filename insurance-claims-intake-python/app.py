@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Insurance Claims Intake - policyholder calls, AI collects incident details, accepts photos via MMS, creates claim, assigns adjuster, texts status updates. Adjuster reviews AI-prepared claim."""
-import os, json, time, requests
+import os, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 MAIN_NUMBER = os.getenv("MAIN_NUMBER")
@@ -55,14 +56,20 @@ def send_sms(to, text):
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event = data.get("event_type")
-    ccid = data.get("call_control_id")
-    caller = data.get("from", "")
-    if event == "call.initiated" and data.get("direction") == "incoming":
+    ccid = p.get("call_control_id")
+    caller = p.get("from", "")
+    if event == "call.initiated" and p.get("direction") == "incoming":
         requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
     elif event == "call.answered":
         calls[ccid] = {"caller": caller, "conversation": [{"role":"system","content":SYSTEM_PROMPT}], "details": ""}
@@ -73,7 +80,7 @@ def handle_voice():
         requests.post(f"{API}/calls/{ccid}/actions/gather", headers=headers,
             json={"input_type":"speech","end_silence_timeout_secs":3,"timeout_secs":30,"language_code":"en-US"}, timeout=10)
     elif event == "call.gather.ended":
-        speech = data.get("speech",{}).get("result","")
+        speech = p.get("speech",{}).get("result","")
         call = calls.get(ccid,{})
         if speech and call:
             call["details"] += " " + speech
@@ -97,6 +104,11 @@ def handle_voice():
 
 @app.route("/webhooks/sms", methods=["POST"])
 def handle_sms():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400

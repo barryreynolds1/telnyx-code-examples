@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
@@ -46,22 +46,29 @@ def start_winback():
     prompt = f"You are calling {customer.get('name', 'a former customer')} who cancelled {customer.get('months_ago', 'recently')}. Their reason was: {customer.get('cancel_reason', 'unknown')}. Offer: {customer.get('offer', '20% off for 3 months')}. Be warm, not pushy. If they say no, thank them and end gracefully. Under 2 sentences per response."
     try:
         resp = requests.post("https://api.telnyx.com/v2/calls", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-            json={"to": customer.get("phone", timeout=10), "from": WINBACK_NUMBER, "connection_id": CONNECTION_ID}, timeout=10)
+            json={"to": customer.get("phone"), "from": WINBACK_NUMBER, "connection_id": CONNECTION_ID}, timeout=10)
         ccid = resp.json().get("data", {}).get("call_control_id")
         if ccid:
             active_calls[ccid] = {"customer": customer, "conversation": [{"role": "system", "content": prompt}], "start": time.time()}
         return jsonify({"status": "calling"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to start winback call")
+        return jsonify({"error": "could not start winback call"}), 500
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    ccid = p.get("call_control_id")
     call = active_calls.get(ccid)
     if event_type == "call.answered" and call:
         name = call["customer"].get("name", "there")
@@ -73,7 +80,7 @@ def handle_voice():
         client.calls.actions.gather(ccid, input_type="speech", end_silence_timeout_secs=2, timeout_secs=15, language_code="en-US")
         return jsonify({"status": "listening"}), 200
     elif event_type == "call.gather.ended" and call:
-        speech = data.get("speech", {}).get("result", "")
+        speech = p.get("speech", {}).get("result", "")
         if not speech:
             client.calls.actions.speak(ccid, payload="Sorry, I didn't catch that. Are you interested in coming back?", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200

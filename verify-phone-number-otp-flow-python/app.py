@@ -41,7 +41,8 @@ def start_verification():
             return jsonify({"status": "sent", "phone": phone}), 200
         return jsonify({"error": resp.text}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to start verification")
+        return jsonify({"error": "could not start verification"}), 500
 
 @app.route("/verify/voice-fallback", methods=["POST"])
 def voice_fallback():
@@ -54,7 +55,8 @@ def voice_fallback():
             json={"phone_number": phone, "verify_profile_id": VERIFY_PROFILE_ID, "type": "call"}, timeout=10)
         return jsonify({"status": "voice_sent" if resp.ok else "failed"}), 200 if resp.ok else 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to send voice fallback")
+        return jsonify({"error": "could not send voice fallback"}), 500
 
 @app.route("/verify/check", methods=["POST"])
 def check_verification():
@@ -72,7 +74,8 @@ def check_verification():
             return jsonify({"status": "verified"}), 200
         return jsonify({"status": "invalid_code"}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to check verification")
+        return jsonify({"error": "could not verify code"}), 500
 
 @app.route("/health", methods=["GET"])
 def health():

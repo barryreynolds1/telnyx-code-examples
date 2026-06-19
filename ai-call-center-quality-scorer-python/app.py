@@ -49,7 +49,8 @@ def score_call():
     except json.JSONDecodeError:
         return jsonify({"raw_analysis": result}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to score call")
+        return jsonify({"error": "scoring failed"}), 500
 
 @app.route("/score/batch", methods=["POST"])
 def batch_score():

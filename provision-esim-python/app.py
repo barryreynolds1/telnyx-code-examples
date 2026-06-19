@@ -19,7 +19,7 @@ def create_app():
     app.config["JSON_SORT_KEYS"] = False
     
     # Initialize Telnyx client with the new SDK pattern
-    app.telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+    app.telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
     
     return app
 
@@ -199,6 +199,11 @@ def list_esims():
 @app.route("/esim/webhooks/sim-status", methods=["POST"])
 def handle_sim_status_webhook():
     """Handle SIM card status change webhooks from Telnyx."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        current_app.telnyx_client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     data = request.get_json()
     if not data:
         return jsonify({"error": "invalid request body"}), 400
@@ -223,4 +228,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

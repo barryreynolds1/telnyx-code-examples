@@ -1,102 +1,150 @@
 #!/usr/bin/env python3
-"""Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets."""
-import os, json, time, requests
+"""Cloud Storage Media CDN — store and serve voice media (IVR prompts, hold music,
+announcements, voicemail greetings) on Telnyx Cloud Storage.
+
+Telnyx Cloud Storage is S3-compatible, so this talks to it with the AWS SDK (boto3)
+pointed at the Telnyx S3 endpoint — not the REST API. Two Telnyx-specific details:
+
+  1. Endpoint is region-scoped:  https://{region}.telnyxcloudstorage.com
+  2. Auth uses your Telnyx API key as BOTH the access key and the secret key.
+
+Media is served with presigned GET URLs you can drop straight into a TeXML <Play>
+verb or a Call Control `playback_audio` command. The bucket itself is the source of
+truth, so there is no server-side catalog to keep in sync.
+
+Docs: https://developers.telnyx.com/docs/cloud-storage/quick-start
+"""
+import os
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-import threading, time as _ttl_time
+
 load_dotenv()
 app = Flask(__name__)
+
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 BUCKET_NAME = os.getenv("BUCKET_NAME", "media-cdn")
-STORAGE_API = "https://api.telnyx.com/v2/storage"
-headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
-media_catalog = {}
+# Region selects the endpoint host, e.g. us-central-1 -> us-central-1.telnyxcloudstorage.com
+REGION = os.getenv("TELNYX_STORAGE_REGION", "us-central-1")
+ENDPOINT_URL = f"https://{REGION}.telnyxcloudstorage.com"
+# How long presigned playback URLs stay valid (seconds).
+PRESIGN_TTL = int(os.getenv("PRESIGN_TTL_SECONDS", "3600"))
 
-def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
-    def _cleanup():
-        while True:
-            _ttl_time.sleep(interval)
-            cutoff = _ttl_time.time() - ttl_seconds
-            for store in stores:
-                expired = [k for k, v in store.items()
-                           if isinstance(v, dict) and v.get("_ts", _ttl_time.time()) < cutoff]
-                for k in expired:
-                    store.pop(k, None)
-    threading.Thread(target=_cleanup, daemon=True).start()
+# S3-compatible client. The Telnyx API key is supplied as access key AND secret key.
+s3 = boto3.client(
+    "s3",
+    endpoint_url=ENDPOINT_URL,
+    aws_access_key_id=TELNYX_API_KEY,
+    aws_secret_access_key=TELNYX_API_KEY,
+    region_name=REGION,
+    config=Config(signature_version="s3v4"),
+)
 
-_start_ttl_cleanup(media_catalog)
+# Logical folders within the bucket (object key prefixes).
+CATEGORIES = {
+    "ivr_prompts": "IVR greeting and menu prompts",
+    "hold_music": "Hold music tracks",
+    "announcements": "System announcements",
+    "voicemail_greetings": "Voicemail greeting templates",
+}
 
 
-CATEGORIES = {"ivr_prompts": "IVR greeting and menu prompts",
-    "hold_music": "Hold music tracks", "announcements": "System announcements",
-    "voicemail_greetings": "Voicemail greeting templates"}
+def presign(key: str) -> str:
+    """Return a time-limited GET URL for an object — safe to hand to a call flow."""
+    return s3.generate_presigned_url(
+        "get_object", Params={"Bucket": BUCKET_NAME, "Key": key}, ExpiresIn=PRESIGN_TTL
+    )
+
 
 @app.route("/setup", methods=["POST"])
 def setup_bucket():
+    """Create the media bucket (idempotent)."""
     try:
-        resp = requests.post(f"{STORAGE_API}/buckets", headers=headers,
-            json={"name": BUCKET_NAME, "region": "us-central-1"}, timeout=15)
-        for cat in CATEGORIES:
-            media_catalog[cat] = []
-        return jsonify({"status": "bucket_created", "bucket": BUCKET_NAME,
-            "categories": list(CATEGORIES.keys())}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        s3.create_bucket(Bucket=BUCKET_NAME)
+    except ClientError as e:
+        # Re-running setup is fine; only a real failure is an error.
+        code = e.response.get("Error", {}).get("Code", "")
+        if code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+            app.logger.error("create_bucket failed: %s", e)
+            return jsonify({"error": "could not create bucket"}), 502
+    return jsonify({"status": "ready", "bucket": BUCKET_NAME, "categories": list(CATEGORIES)}), 200
+
 
 @app.route("/upload", methods=["POST"])
 def upload_media():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "invalid request body"}), 400
-    category = data.get("category", "ivr_prompts")
-    name = data.get("name")
-    content_url = data.get("url")
-    if not name:
-        return jsonify({"error": "name required"}), 400
-    object_key = f"{category}/{name}"
-    if content_url:
-        try:
-            audio = requests.get(content_url, timeout=30)
-            requests.put(f"{STORAGE_API}/buckets/{BUCKET_NAME}/{object_key}",
-                headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "audio/mpeg"},
-                data=audio.content, timeout=30)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-    entry = {"name": name, "key": object_key, "category": category,
-        "cdn_url": f"https://storage.telnyx.com/{BUCKET_NAME}/{object_key}",
-        "uploaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
-    if category not in media_catalog:
-        media_catalog[category] = []
-    media_catalog[category].append(entry)
-    return jsonify({"status": "uploaded", "entry": entry}), 200
+    """Upload a media file. The client sends the bytes directly (multipart/form-data),
+    so the server never fetches an arbitrary URL — no SSRF surface."""
+    category = request.form.get("category", "ivr_prompts")
+    name = request.form.get("name")
+    file = request.files.get("file")
+    if not name or file is None:
+        return jsonify({"error": "multipart fields 'file' and 'name' are required"}), 400
+    if category not in CATEGORIES:
+        return jsonify({"error": f"category must be one of {list(CATEGORIES)}"}), 400
+    key = f"{category}/{name}"
+    try:
+        s3.upload_fileobj(
+            file, BUCKET_NAME, key,
+            ExtraArgs={"ContentType": file.mimetype or "application/octet-stream"},
+        )
+    except ClientError as e:
+        app.logger.error("upload failed: %s", e)
+        return jsonify({"error": "upload failed"}), 502
+    return jsonify({"status": "uploaded", "key": key, "category": category, "url": presign(key)}), 200
+
 
 @app.route("/media", methods=["GET"])
 def list_media():
+    """List stored media, optionally filtered to one category."""
     category = request.args.get("category")
-    if category:
-        return jsonify({"media": media_catalog.get(category, []), "category": category}), 200
-    return jsonify({"catalog": {k: len(v) for k, v in media_catalog.items()}}), 200
+    prefix = f"{category}/" if category else ""
+    try:
+        resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix)
+    except ClientError as e:
+        app.logger.error("list_objects failed: %s", e)
+        return jsonify({"error": "could not list media"}), 502
+    items = [
+        {"key": o["Key"], "size_bytes": o["Size"], "last_modified": o["LastModified"].isoformat()}
+        for o in resp.get("Contents", [])
+    ]
+    return jsonify({"media": items, "count": len(items)}), 200
+
 
 @app.route("/media/<category>/<name>", methods=["GET"])
 def get_media_url(category, name):
-    items = media_catalog.get(category, [])
-    for item in items:
-        if item["name"] == name:
-            return jsonify({"url": item["cdn_url"], "item": item}), 200
-    return jsonify({"error": "Not found"}), 404
+    """Return a presigned playback URL for a single object."""
+    key = f"{category}/{name}"
+    try:
+        s3.head_object(Bucket=BUCKET_NAME, Key=key)
+    except ClientError:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"key": key, "url": presign(key), "expires_in": PRESIGN_TTL}), 200
+
 
 @app.route("/ivr-config", methods=["GET"])
 def ivr_config():
-    prompts = media_catalog.get("ivr_prompts", [])
-    hold = media_catalog.get("hold_music", [])
-    return jsonify({"ivr_prompts": [p["cdn_url"] for p in prompts],
-        "hold_music": [h["cdn_url"] for h in hold],
-        "usage": "Use these URLs in your TeXML Play or Call Control playback_audio commands"}), 200
+    """Presigned URLs for the prompt and hold-music sets, ready to drop into a call flow."""
+    try:
+        def urls_for(cat):
+            resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=f"{cat}/")
+            return [presign(o["Key"]) for o in resp.get("Contents", [])]
+
+        return jsonify({
+            "ivr_prompts": urls_for("ivr_prompts"),
+            "hold_music": urls_for("hold_music"),
+            "usage": "Use these presigned URLs in a TeXML <Play> verb or Call Control playback_audio command.",
+        }), 200
+    except ClientError as e:
+        app.logger.error("ivr_config failed: %s", e)
+        return jsonify({"error": "internal error"}), 502
+
 
 @app.route("/health", methods=["GET"])
 def health():
-    total = sum(len(v) for v in media_catalog.values())
-    return jsonify({"status": "ok", "total_media": total, "bucket": BUCKET_NAME}), 200
+    return jsonify({"status": "ok", "bucket": BUCKET_NAME, "endpoint": ENDPOINT_URL}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")))

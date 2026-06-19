@@ -29,7 +29,8 @@ def audit_twilio():
                     "sms_url": num.get("sms_url"),
                     "capabilities": num.get("capabilities")})
     except Exception as e:
-        audit["numbers_error"] = str(e)
+        app.logger.exception("Failed to fetch Twilio incoming phone numbers")
+        audit["numbers_error"] = "could not retrieve Twilio numbers"
     try:
         resp = requests.get(f"{TWILIO_API}/Messaging/Services.json",
             auth=(TWILIO_SID, TWILIO_TOKEN), timeout=15)
@@ -58,7 +59,8 @@ def migrate_messaging():
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to create Telnyx messaging profile")
+        return jsonify({"error": "could not create messaging profile"}), 500
 
 @app.route("/migrate/numbers", methods=["POST"])
 def migrate_numbers():
@@ -75,7 +77,8 @@ def migrate_numbers():
                     "customer_reference": f"twilio-migration-{int(time.time())}"}, timeout=15)
             results.append({"number": num, "status": "port_submitted", "order": resp.json()})
         except Exception as e:
-            results.append({"number": num, "status": "failed", "error": str(e)})
+            app.logger.exception("Failed to submit porting order for %s", num)
+            results.append({"number": num, "status": "failed", "error": "could not submit porting order"})
     migration_log.append({"action": "port_numbers", "count": len(numbers),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
     return jsonify({"results": results}), 200

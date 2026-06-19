@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Media Stream Voice Cloak — real-time voice modification via media streaming API. Apply pitch shift, echo, or anonymization."""
-import os, json, time, base64, struct
+import os, json, time, base64, struct, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
+# public_key (from the Portal) lets the SDK verify inbound webhook signatures.
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 API = "https://api.telnyx.com/v2"
-import requests
 import threading, time as _ttl_time
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 active_cloaks = {}
@@ -39,13 +40,19 @@ EFFECTS = {
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event_type = data.get("event_type")
-    ccid = data.get("call_control_id")
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
         requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":

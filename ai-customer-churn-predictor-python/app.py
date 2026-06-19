@@ -42,7 +42,8 @@ Return JSON: churn_risk (high/medium/low), probability (0.0-1.0), risk_factors (
     except json.JSONDecodeError:
         return jsonify({"raw": result}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("churn prediction failed")
+        return jsonify({"error": "internal error"}), 500
 
 @app.route("/predict/batch", methods=["POST"])
 def batch_predict():

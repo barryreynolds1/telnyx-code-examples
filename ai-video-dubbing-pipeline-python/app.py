@@ -139,8 +139,9 @@ def start_dubbing():
         }
         jobs[job_id]["status"] = "translating"
     except Exception as e:
+        app.logger.exception("Transcription failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"Transcription failed: {str(e)}"
+        jobs[job_id]["error"] = "Transcription failed"
         return jsonify(jobs[job_id]), 500
 
     # Step 2: Translate each segment preserving speaker identity
@@ -159,8 +160,9 @@ def start_dubbing():
             })
         jobs[job_id]["status"] = "synthesizing"
     except Exception as e:
+        app.logger.exception("Translation failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"Translation failed: {str(e)}"
+        jobs[job_id]["error"] = "Translation failed"
         return jsonify(jobs[job_id]), 500
 
     # Step 3: Generate TTS for each translated segment with speaker-matched voices
@@ -186,8 +188,9 @@ def start_dubbing():
         jobs[job_id]["status"] = "complete"
         jobs[job_id]["speaker_voice_map"] = speaker_voices
     except Exception as e:
+        app.logger.exception("TTS synthesis failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"TTS synthesis failed: {str(e)}"
+        jobs[job_id]["error"] = "TTS synthesis failed"
         return jsonify(jobs[job_id]), 500
 
     jobs[job_id]["completed_at"] = datetime.utcnow().isoformat()

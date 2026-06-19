@@ -14,7 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize clients with the new SDK pattern
-telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+telnyx_client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -157,6 +157,11 @@ def initiate_call_endpoint():
 @app.route("/webhooks/call", methods=["POST"])
 def handle_call_webhook():
     """Webhook endpoint to handle Telnyx call events."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        telnyx_client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -236,4 +241,4 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize client with the new SDK pattern
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 DATA_LIMIT_THRESHOLD_MB = int(os.getenv("DATA_LIMIT_THRESHOLD_MB", "500"))
@@ -204,6 +204,11 @@ def handle_sim_webhook():
     Handle incoming SIM card events from Telnyx webhooks.
     Events include: sim_card.status.changed, sim_card.data_limit.reached
     """
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     data = request.get_json()
     if not data:
         return jsonify({"error": "invalid request body"}), 400
@@ -234,4 +239,4 @@ def handle_sim_webhook():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)
+    app.run(debug=False, port=5000)

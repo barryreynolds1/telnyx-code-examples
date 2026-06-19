@@ -12,7 +12,7 @@ import threading, time as _ttl_time
 load_dotenv()
 
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
@@ -94,16 +94,22 @@ def send_message(to, text, media_url=None):
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     """Handle inbound voice calls."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
-    event_type = payload.get("data", {}).get("event_type")
-    call_control_id = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    call_control_id = p.get("call_control_id")
 
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        customer = data.get("from", "unknown")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        customer = p.get("from", "unknown")
         ctx = get_customer_history(customer, "voice")
         # Add channel context for the AI
         if "sms" in ctx["channels_used"] or "whatsapp" in ctx["channels_used"]:
@@ -115,7 +121,7 @@ def handle_voice():
         return jsonify({"status": "answering"}), 200
 
     elif event_type == "call.answered":
-        customer = data.get("from", "unknown")
+        customer = p.get("from", "unknown")
         ctx = get_customer_history(customer, "voice")
         greeting = "Welcome back! How can I help you today?" if ctx["interaction_count"] > 1 else "Hi, thanks for calling! How can I help you today?"
         client.calls.actions.speak(call_control_id, payload=greeting, voice="female", language_code="en-US")
@@ -126,8 +132,8 @@ def handle_voice():
         return jsonify({"status": "listening"}), 200
 
     elif event_type == "call.gather.ended":
-        speech = data.get("speech", {}).get("result", "")
-        customer = data.get("from", "unknown")
+        speech = p.get("speech", {}).get("result", "")
+        customer = p.get("from", "unknown")
         if not speech:
             client.calls.actions.speak(call_control_id, payload="Sorry, I didn't catch that.", voice="female", language_code="en-US")
             return jsonify({"status": "reprompting"}), 200
@@ -149,23 +155,29 @@ def handle_voice():
 @app.route("/webhooks/messaging", methods=["POST"])
 def handle_messaging():
     """Handle inbound SMS and WhatsApp messages with shared context."""
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "No payload"}), 400
 
     data = payload.get("data", {})
+    p = data.get("payload", {})
     event_type = data.get("event_type")
 
     if event_type != "message.received":
         return jsonify({"status": "ignored"}), 200
 
-    direction = data.get("direction")
+    direction = p.get("direction")
     if direction != "inbound":
         return jsonify({"status": "ignored"}), 200
 
-    from_number = data.get("from", {}).get("phone_number", "")
-    text = data.get("text", "")
-    channel = "whatsapp" if data.get("messaging_profile_id") and "whatsapp" in str(data.get("from", {}).get("carrier", "")).lower() else "sms"
+    from_number = p.get("from", {}).get("phone_number", "")
+    text = p.get("text", "")
+    channel = "whatsapp" if p.get("messaging_profile_id") and "whatsapp" in str(p.get("from", {}).get("carrier", "")).lower() else "sms"
 
     if not from_number or not text:
         return jsonify({"status": "ignored"}), 200
@@ -200,4 +212,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 5000)))

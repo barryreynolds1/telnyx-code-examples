@@ -48,7 +48,8 @@ def start_verification():
             "started": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         return jsonify({"verification_id": vid, "channel": channel, "result": result}), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to start verification")
+        return jsonify({"error": "could not start verification"}), 500
 
 @app.route("/verify/check", methods=["POST"])
 def check_verification():
@@ -72,7 +73,8 @@ def check_verification():
             v["status"] = "failed"
             return jsonify({"verified": False, "message": "Invalid code"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to check verification")
+        return jsonify({"error": "could not check verification"}), 500
 
 @app.route("/verify/escalate/<vid>", methods=["POST"])
 def escalate_channel(vid):
@@ -95,7 +97,8 @@ def escalate_channel(vid):
         return jsonify({"verification_id": new_vid, "channel": next_channel,
             "attempt": len(v["attempts"])}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Failed to escalate verification channel")
+        return jsonify({"error": "could not escalate verification"}), 500
 
 @app.route("/verify/cascade", methods=["POST"])
 def cascade_verify():

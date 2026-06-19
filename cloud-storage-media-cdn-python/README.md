@@ -1,7 +1,7 @@
 ---
 name: cloud-storage-media-cdn
 title: "Cloud Storage Media CDN"
-description: "Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets."
+description: "Cloud Storage Media CDN — use Telnyx Cloud Storage (S3-compatible) as a CDN for IVR prompts, hold music, and voice assets."
 language: python
 framework: flask
 telnyx_products: [Cloud Storage, Voice]
@@ -9,37 +9,39 @@ telnyx_products: [Cloud Storage, Voice]
 
 # Cloud Storage Media CDN
 
-Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, and voice assets.
+Cloud Storage Media CDN — use Telnyx Cloud Storage as a CDN for IVR prompts, hold music, announcements, and voicemail greetings. Telnyx Cloud Storage is **S3-compatible**, so this example talks to it with the AWS SDK (boto3) rather than a REST API. Media is served with presigned GET URLs you can drop straight into a TeXML `<Play>` verb or a Call Control `playback_audio` command.
 
-## Telnyx API Endpoints Used
+## How It Works
 
-- **Upload Object**: `PUT https://storage.telnyx.com/{bucket}/{key}` — [Cloud Storage docs](https://developers.telnyx.com/docs/cloud-storage)
-- **Download Object**: `GET https://storage.telnyx.com/{bucket}/{key}` — [Cloud Storage docs](https://developers.telnyx.com/docs/cloud-storage)
-- **List Objects**: `GET /v2/storage/buckets/{bucket}/objects` — [API reference](https://developers.telnyx.com/api/cloud-storage/list-objects)
+Telnyx Cloud Storage speaks the S3 protocol, so the app uses `boto3` with two Telnyx-specific details:
 
-## External Service Integrations
+1. **Region-scoped endpoint** — `https://{region}.telnyxcloudstorage.com`
+2. **Auth** — your Telnyx API key is used as **both** the access key and the secret key.
 
-- **Email / SMTP** — Email notifications and alerts
-
-## Architecture
+Objects are organized by category prefix (`ivr_prompts/`, `hold_music/`, `announcements/`, `voicemail_greetings/`). The bucket itself is the source of truth — there is no server-side catalog to keep in sync.
 
 ```
-  API Request
+  Client (multipart upload)
         │
         ▼
-  ┌──────────────────┐
-  │ Call Control      │
-  └────────┬─────────┘
-           │
-           ├──► Cloud Storage
-           ├──► TeXML
-           ├──► Messaging (MMS)
-           │
-           ├──► Classification / triage
-           │
-           ▼
-     Email
+  ┌──────────────────────┐        boto3 (S3 protocol)        ┌─────────────────────────┐
+  │ Flask app (app.py)    │ ────────────────────────────────► │ Telnyx Cloud Storage     │
+  │  /setup /upload        │                                   │ {region}.telnyx          │
+  │  /media /ivr-config    │ ◄──── presigned GET URL ───────── │  cloudstorage.com        │
+  └──────────┬───────────┘                                    └─────────────────────────┘
+             │ presigned URL
+             ▼
+  TeXML <Play> / Call Control playback_audio
 ```
+
+## Telnyx Cloud Storage (S3-compatible)
+
+This example uses the S3 protocol via boto3, not the Telnyx REST API:
+
+- **Create bucket**: `CreateBucket` — [Cloud Storage quick start](https://developers.telnyx.com/docs/cloud-storage/quick-start)
+- **Upload object**: `PutObject` (`upload_fileobj`) — [Cloud Storage docs](https://developers.telnyx.com/docs/cloud-storage/quick-start)
+- **List objects**: `ListObjectsV2` — [Cloud Storage docs](https://developers.telnyx.com/docs/cloud-storage/quick-start)
+- **Presigned playback URL**: `generate_presigned_url("get_object", ...)` — time-limited GET URL
 
 ## Environment Variables
 
@@ -47,9 +49,12 @@ Copy `.env.example` to `.env` and fill in:
 
 | Variable | Type | Example | Required | Description | Where to get it |
 |----------|------|---------|----------|-------------|-----------------|
-| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key | [Portal](https://portal.telnyx.com/api-keys) |
-| `BUCKET_NAME` | `string` | `my-bucket` | no | Telnyx Cloud Storage bucket name | [Portal](https://portal.telnyx.com/storage) |
-| `PORT` | `integer` | `5000` | no | HTTP server port | — |
+| `TELNYX_API_KEY` | `string` | `KEY0123456789ABCDEF` | **yes** | Telnyx API v2 key — used as both the S3 access key and secret key | [Portal](https://portal.telnyx.com/api-keys) |
+| `BUCKET_NAME` | `string` | `media-cdn` | no | Cloud Storage bucket name (default `media-cdn`) | [Portal](https://portal.telnyx.com/storage) |
+| `TELNYX_STORAGE_REGION` | `string` | `us-central-1` | no | Storage region: `us-central-1`, `us-east-1`, `us-west-1`, or `eu-central-1` (default `us-central-1`) | [Portal](https://portal.telnyx.com/storage) |
+| `PRESIGN_TTL_SECONDS` | `integer` | `3600` | no | Lifetime of presigned playback URLs in seconds (default `3600`) | — |
+| `HOST` | `string` | `127.0.0.1` | no | HTTP bind host (default `127.0.0.1`) | — |
+| `PORT` | `integer` | `5000` | no | HTTP server port (default `5000`) | — |
 
 ## Setup
 
@@ -61,16 +66,11 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Webhook Configuration
+Then create the bucket:
 
-1. Expose your local server:
-
-   ```bash
-   ngrok http 5000
-   ```
-
-2. Copy the HTTPS URL and configure in [Telnyx Portal](https://portal.telnyx.com):
-
+```bash
+curl -X POST http://localhost:5000/setup
+```
 
 ### Docker
 
@@ -83,91 +83,96 @@ docker run --env-file .env -p 5000:5000 cloud-storage-media-cdn-python
 
 ### `POST /setup`
 
-Triggers setup
+Creates the media bucket (idempotent — safe to re-run).
 
 ```bash
-curl -X POST http://localhost:5000/setup \
-  -H "Content-Type: application/json" \
-  -d '{}'
+curl -X POST http://localhost:5000/setup
 ```
 
 **Response:**
 
 ```json
 {
-  "id": "item-1750280400",
-  "status": "created",
-  "created_at": "2026-07-15T14:30:00Z"
+  "status": "ready",
+  "bucket": "media-cdn",
+  "categories": ["ivr_prompts", "hold_music", "announcements", "voicemail_greetings"]
 }
 ```
 
 ### `POST /upload`
 
-Triggers upload
+Uploads a media file. The client sends the bytes directly as `multipart/form-data` — the server never fetches an arbitrary URL.
+
+Form fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `file` | **yes** | The media file bytes |
+| `name` | **yes** | Object name (stored as `<category>/<name>`) |
+| `category` | no | One of `ivr_prompts`, `hold_music`, `announcements`, `voicemail_greetings` (default `ivr_prompts`) |
 
 ```bash
 curl -X POST http://localhost:5000/upload \
-  -H "Content-Type: application/json" \
-  -d '{}'
+  -F file=@welcome-prompt.mp3 \
+  -F name=welcome-prompt.mp3 \
+  -F category=ivr_prompts
 ```
 
 **Response:**
 
 ```json
 {
-  "id": "item-1750280400",
-  "status": "created",
-  "created_at": "2026-07-15T14:30:00Z"
+  "status": "uploaded",
+  "key": "ivr_prompts/welcome-prompt.mp3",
+  "category": "ivr_prompts",
+  "url": "https://us-central-1.telnyxcloudstorage.com/media-cdn/ivr_prompts/welcome-prompt.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&..."
 }
 ```
 
 ### `GET /media`
 
-Returns media
+Lists stored media, optionally filtered to one category via `?category=<cat>`.
 
 ```bash
-curl http://localhost:5000/media
+curl "http://localhost:5000/media?category=ivr_prompts"
 ```
 
 **Response:**
 
 ```json
 {
-  "items": [
+  "media": [
     {
-      "id": "item-001",
-      "status": "active",
-      "created_at": "2026-07-15T14:30:00Z"
+      "key": "ivr_prompts/welcome-prompt.mp3",
+      "size_bytes": 48213,
+      "last_modified": "2026-06-18T14:30:00+00:00"
     }
-  ]
+  ],
+  "count": 1
 }
 ```
 
 ### `GET /media/<category>/<name>`
 
-Returns name
+Returns a presigned playback URL for a single object.
 
 ```bash
-curl http://localhost:5000/media/example-id/example-id
+curl http://localhost:5000/media/ivr_prompts/welcome-prompt.mp3
 ```
 
 **Response:**
 
 ```json
 {
-  "items": [
-    {
-      "id": "item-001",
-      "status": "active",
-      "created_at": "2026-07-15T14:30:00Z"
-    }
-  ]
+  "key": "ivr_prompts/welcome-prompt.mp3",
+  "url": "https://us-central-1.telnyxcloudstorage.com/media-cdn/ivr_prompts/welcome-prompt.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&...",
+  "expires_in": 3600
 }
 ```
 
 ### `GET /ivr-config`
 
-Returns ivr-config
+Returns presigned URLs for the `ivr_prompts` and `hold_music` sets, ready to drop into a call flow.
 
 ```bash
 curl http://localhost:5000/ivr-config
@@ -177,19 +182,17 @@ curl http://localhost:5000/ivr-config
 
 ```json
 {
-  "items": [
-    {
-      "id": "item-001",
-      "status": "active",
-      "created_at": "2026-07-15T14:30:00Z"
-    }
-  ]
+  "ivr_prompts": [
+    "https://us-central-1.telnyxcloudstorage.com/media-cdn/ivr_prompts/welcome-prompt.mp3?X-Amz-..."
+  ],
+  "hold_music": [
+    "https://us-central-1.telnyxcloudstorage.com/media-cdn/hold_music/jazz-loop.mp3?X-Amz-..."
+  ],
+  "usage": "Use these presigned URLs in a TeXML <Play> verb or Call Control playback_audio command."
 }
 ```
 
 ### `GET /health`
-
-Returns health
 
 ```bash
 curl http://localhost:5000/health
@@ -200,13 +203,13 @@ curl http://localhost:5000/health
 ```json
 {
   "status": "ok",
-  "uptime_seconds": 3842,
-  "active_sessions": 2,
-  "version": "1.0.0"
+  "bucket": "media-cdn",
+  "endpoint": "https://us-central-1.telnyxcloudstorage.com"
 }
 ```
 
 ## Resources
 
+- [Cloud Storage quick start](https://developers.telnyx.com/docs/cloud-storage/quick-start)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)

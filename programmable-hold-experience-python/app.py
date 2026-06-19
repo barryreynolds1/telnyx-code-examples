@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 import threading, time as _ttl_time
 load_dotenv()
 app = Flask(__name__)
-client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 HOLD_NUMBER = os.getenv("HOLD_NUMBER")
@@ -44,14 +44,20 @@ TRIVIA = [
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
-    event_type = payload.get("data", {}).get("event_type")
-    ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
-    if event_type == "call.initiated" and data.get("direction") == "incoming":
-        active_holds[ccid] = {"start": time.time(), "tip_idx": 0, "caller": data.get("from"), "offered_callback": False}
+    p = data.get("payload", {})
+    event_type = data.get("event_type")
+    ccid = p.get("call_control_id")
+    if event_type == "call.initiated" and p.get("direction") == "incoming":
+        active_holds[ccid] = {"start": time.time(), "tip_idx": 0, "caller": p.get("from"), "offered_callback": False}
         client.calls.actions.answer(ccid)
         return jsonify({"status": "answering"}), 200
     elif event_type == "call.answered":
@@ -80,7 +86,7 @@ def handle_voice():
             client.calls.actions.speak(ccid, payload=tip, voice="female", language_code="en-US")
         return jsonify({"status": "tip"}), 200
     elif event_type == "call.dtmf.received":
-        digit = data.get("digit", "")
+        digit = p.get("digits", "")
         if digit == "9":
             hold = active_holds.get(ccid)
             if hold:

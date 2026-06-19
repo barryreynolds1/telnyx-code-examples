@@ -27,7 +27,8 @@ def get_quote():
         quotes.append(result)
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("failed to get quote")
+        return jsonify({"error": "could not get quote"}), 500
 
 @app.route("/pay", methods=["POST"])
 def submit_payment():
@@ -46,7 +47,8 @@ def submit_payment():
         payments.append(result)
         return jsonify(result), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("failed to submit payment")
+        return jsonify({"error": "could not submit payment"}), 500
 
 @app.route("/balance", methods=["GET"])
 def get_balance():
@@ -54,7 +56,8 @@ def get_balance():
         resp = requests.get(f"{API}/balance", headers=headers, timeout=15)
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("failed to get balance")
+        return jsonify({"error": "could not get balance"}), 500
 
 @app.route("/info", methods=["GET"])
 def payment_info():

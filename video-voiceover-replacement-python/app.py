@@ -116,8 +116,9 @@ def replace_voiceover():
         jobs[job_id]["original_script"] = original_text
         jobs[job_id]["original_word_count"] = len(original_text.split())
     except Exception as e:
+        app.logger.exception("Transcription failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"Transcription failed: {str(e)}"
+        jobs[job_id]["error"] = "Transcription failed"
         return jsonify(jobs[job_id]), 500
 
     if not original_text.strip():
@@ -147,8 +148,9 @@ Rules:
         jobs[job_id]["improved_script"] = rewritten.strip()
         jobs[job_id]["improved_word_count"] = len(rewritten.split())
     except Exception as e:
+        app.logger.exception("Rewrite failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"Rewrite failed: {str(e)}"
+        jobs[job_id]["error"] = "Rewrite failed"
         return jsonify(jobs[job_id]), 500
 
     # Step 3: TTS render
@@ -161,10 +163,12 @@ Rules:
             url = upload_to_storage(f"{job_id}/improved.mp3", new_audio)
             jobs[job_id]["storage_url"] = url
         except Exception as e:
-            jobs[job_id]["storage_error"] = str(e)
+            app.logger.exception("Storage upload failed for job %s", job_id)
+            jobs[job_id]["storage_error"] = "Storage upload failed"
     except Exception as e:
+        app.logger.exception("TTS rendering failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = f"TTS failed: {str(e)}"
+        jobs[job_id]["error"] = "TTS failed"
         return jsonify(jobs[job_id]), 500
 
     jobs[job_id]["status"] = "complete"

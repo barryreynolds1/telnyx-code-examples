@@ -3,7 +3,7 @@
 AI screens callers via STT, queues them, generates real-time fact-checks
 for the host, and TTS announces caller topics."""
 
-import os, json, uuid, time, requests
+import os, json, base64, uuid, time, requests, telnyx
 from datetime import datetime
 from collections import deque
 from dotenv import load_dotenv
@@ -12,6 +12,8 @@ import threading, time as _ttl_time
 
 load_dotenv()
 app = Flask(__name__)
+
+client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"), public_key=os.getenv("TELNYX_PUBLIC_KEY"))
 
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
@@ -106,7 +108,7 @@ def start_show():
                     "record_conference": True,
                     "beep_enabled": "on_enter"
                 },
-                "client_state": json.dumps({"show_id": show_id, "role": "host"}).encode().hex()
+                "client_state": base64.b64encode(json.dumps({"show_id": show_id, "role": "host"}).encode()).decode()
             })
         except Exception as e:
             app.logger.error("Failed to dial host %s: %s", phone, e)
@@ -117,6 +119,11 @@ def start_show():
 
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
+    # Verify the Telnyx Ed25519 signature before trusting the event.
+    try:
+        client.webhooks.unwrap(request.get_data(as_text=True), headers=dict(request.headers))
+    except Exception:
+        return jsonify({"error": "invalid signature"}), 401
     payload = request.get_json()
     if not payload:
         return jsonify({"error": "invalid request body"}), 400
@@ -131,7 +138,7 @@ def handle_voice():
         if ep.get("direction") == "incoming":
             try:
                 telnyx_post(f"calls/{call_id}/actions/answer", {
-                    "client_state": json.dumps({"step": "screening"}).encode().hex()
+                    "client_state": base64.b64encode(json.dumps({"step": "screening"}).encode()).decode()
                 })
             except Exception:
                 pass
@@ -141,96 +148,109 @@ def handle_voice():
         try:
             raw = ep.get("client_state", "")
             if raw:
-                client_state = json.loads(bytes.fromhex(raw).decode())
+                client_state = json.loads(base64.b64decode(raw))
         except Exception:
             pass
 
         if client_state.get("role") == "host":
             pass  # Host joined conference, no screening needed
         else:
-            # Screen the caller — ask their topic
+            # Screen the caller — ask their topic, then capture their SPEECH
+            # via real-time transcription (proven pattern, see
+            # compliance-call-recorder-ai-auditor-python).
             active_callers[call_id] = {
                 "phone": from_number,
                 "call_id": call_id,
                 "status": "screening",
                 "topic": "",
+                "transcript": [],
                 "screened_at": None
             }
             try:
-                telnyx_post(f"calls/{call_id}/actions/gather_using_speak", {
-                    "payload": f"Welcome to the live show about {SHOW_TOPIC}. In a few words, tell us what you'd like to discuss, then press pound.",
+                # Ask the screening question via TTS.
+                telnyx_post(f"calls/{call_id}/actions/speak", {
+                    "payload": f"Welcome to the live show about {SHOW_TOPIC}. In a few words, tell us what you'd like to discuss.",
                     "voice": TTS_VOICE,
                     "language": "en-US",
-                    "minimum_digits": 1,
-                    "maximum_digits": 1,
-                    "valid_digits": "#",
-                    "timeout_millis": 30000,
+                })
+                # Start transcription so the caller's spoken response is
+                # delivered via call.transcription webhooks.
+                telnyx_post(f"calls/{call_id}/actions/transcription_start", {
+                    "language": "en",
                 })
             except Exception as e:
-                app.logger.error("Screening gather failed: %s", e)
+                app.logger.error("Screening setup failed: %s", e)
 
-    elif event_type == "call.gather.ended":
-        speech = ep.get("speech", {})
-        transcript = speech.get("result", "")
+    elif event_type == "call.transcription":
+        # Accumulate the caller's spoken response from real-time transcription.
         caller = active_callers.get(call_id)
+        text = ep.get("transcription_data", {}).get("transcript", "")
+        if caller and caller["status"] == "screening" and text:
+            caller["transcript"].append(text)
+            transcript = " ".join(caller["transcript"]).strip()
+            # Screen once we have a meaningful spoken response. Mark as screened
+            # immediately so concurrent transcription events don't double-screen.
+            if len(transcript) >= 10:
+                caller["status"] = "screened"
+                caller["topic"] = transcript
+                caller["screened_at"] = datetime.utcnow().isoformat()
+                try:
+                    telnyx_post(f"calls/{call_id}/actions/transcription_stop", {})
+                except Exception:
+                    pass
 
-        if caller and caller["status"] == "screening" and transcript:
-            caller["topic"] = transcript
-            caller["screened_at"] = datetime.utcnow().isoformat()
+                # AI decides if caller is relevant and safe
+                screening_result = inference([
+                    {"role": "system", "content": f"You screen callers for a live podcast about '{SHOW_TOPIC}'. The caller said: \"{transcript}\". Decide: ADMIT (on-topic, constructive) or REJECT (off-topic, trolling, spam). Also generate a one-sentence introduction for the host. Return JSON: {{\"decision\": \"ADMIT\"|\"REJECT\", \"reason\": \"...\", \"intro\": \"...\"}}"},
+                    {"role": "user", "content": transcript}
+                ])
 
-            # AI decides if caller is relevant and safe
-            screening_result = inference([
-                {"role": "system", "content": f"You screen callers for a live podcast about '{SHOW_TOPIC}'. The caller said: \"{transcript}\". Decide: ADMIT (on-topic, constructive) or REJECT (off-topic, trolling, spam). Also generate a one-sentence introduction for the host. Return JSON: {{\"decision\": \"ADMIT\"|\"REJECT\", \"reason\": \"...\", \"intro\": \"...\"}}"},
-                {"role": "user", "content": transcript}
-            ])
+                try:
+                    result = json.loads(screening_result)
+                except json.JSONDecodeError:
+                    result = {"decision": "ADMIT", "reason": "Could not parse", "intro": f"A caller wants to discuss: {transcript[:100]}"}
 
-            try:
-                result = json.loads(screening_result)
-            except json.JSONDecodeError:
-                result = {"decision": "ADMIT", "reason": "Could not parse", "intro": f"A caller wants to discuss: {transcript[:100]}"}
+                # Find active show
+                show = None
+                for s in shows.values():
+                    if s["status"] == "live":
+                        show = s
+                        break
 
-            # Find active show
-            show = None
-            for s in shows.values():
-                if s["status"] == "live":
-                    show = s
-                    break
-
-            if show:
-                show["callers_screened"] += 1
-
-            if result.get("decision") == "ADMIT":
-                caller["status"] = "queued"
-                caller["intro"] = result.get("intro", "")
-                caller_queue.append(caller)
                 if show:
-                    show["callers_admitted"] += 1
-                # Put caller on hold with music
-                try:
-                    telnyx_post(f"calls/{call_id}/actions/speak", {
-                        "payload": "Great topic! You're in the queue. We'll bring you on shortly. Please hold.",
-                        "voice": TTS_VOICE, "language": "en-US"
-                    })
-                except Exception:
-                    pass
-                notify_slack(f"📞 Caller queued: {from_number[-4:]} — {transcript[:100]}")
-            else:
-                caller["status"] = "rejected"
-                if show:
-                    show["callers_rejected"] += 1
-                try:
-                    telnyx_post(f"calls/{call_id}/actions/speak", {
-                        "payload": f"Thanks for calling. {result.get('reason', 'The host is focused on other topics right now.')} Feel free to call back another time.",
-                        "voice": TTS_VOICE, "language": "en-US"
-                    })
-                except Exception:
-                    pass
-                # Hang up after message
-                time.sleep(3)
-                try:
-                    telnyx_post(f"calls/{call_id}/actions/hangup", {})
-                except Exception:
-                    pass
+                    show["callers_screened"] += 1
+
+                if result.get("decision") == "ADMIT":
+                    caller["status"] = "queued"
+                    caller["intro"] = result.get("intro", "")
+                    caller_queue.append(caller)
+                    if show:
+                        show["callers_admitted"] += 1
+                    # Put caller on hold with music
+                    try:
+                        telnyx_post(f"calls/{call_id}/actions/speak", {
+                            "payload": "Great topic! You're in the queue. We'll bring you on shortly. Please hold.",
+                            "voice": TTS_VOICE, "language": "en-US"
+                        })
+                    except Exception:
+                        pass
+                    notify_slack(f"📞 Caller queued: {from_number[-4:]} — {transcript[:100]}")
+                else:
+                    caller["status"] = "rejected"
+                    if show:
+                        show["callers_rejected"] += 1
+                    try:
+                        telnyx_post(f"calls/{call_id}/actions/speak", {
+                            "payload": f"Thanks for calling. {result.get('reason', 'The host is focused on other topics right now.')} Feel free to call back another time.",
+                            "voice": TTS_VOICE, "language": "en-US"
+                        })
+                    except Exception:
+                        pass
+                    # Hang up after the rejection message (non-blocking ACK)
+                    try:
+                        telnyx_post(f"calls/{call_id}/actions/hangup", {})
+                    except Exception:
+                        pass
 
     elif event_type == "call.hangup":
         active_callers.pop(call_id, None)
@@ -261,8 +281,9 @@ def admit_next_caller(show_id):
             "beep_enabled": "on_enter"
         })
         caller["status"] = "live"
-    except Exception as e:
-        return jsonify({"error": f"Failed to bridge caller: {str(e)}"}), 500
+    except Exception:
+        app.logger.exception("Failed to bridge caller into conference")
+        return jsonify({"error": "Failed to bridge caller"}), 500
 
     return jsonify({
         "caller": caller["phone"][-4:],
