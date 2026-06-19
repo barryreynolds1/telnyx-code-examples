@@ -13,6 +13,23 @@ PODCAST_NUMBER = os.getenv("PODCAST_NUMBER")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 episodes = []
 
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
 def call_inference(messages, max_tokens=800):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
         json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.4}, timeout=25)

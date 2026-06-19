@@ -13,6 +13,23 @@ import threading, time as _ttl_time
 headers = {"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"}
 active_streams = {}
 
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
 def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
     def _cleanup():
         while True:
@@ -36,6 +53,7 @@ def handle_voice():
         return jsonify({"error": "invalid request body"}), 400
     data = payload.get("data", {})
     event_type = data.get("event_type")
+    state = decode_client_state(data)
     ccid = data.get("call_control_id")
     if event_type == "call.initiated" and data.get("direction") == "incoming":
         try:

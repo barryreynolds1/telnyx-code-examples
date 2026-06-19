@@ -16,6 +16,23 @@ client = telnyx.Telnyx(api_key=os.getenv("TELNYX_API_KEY"))
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY", "")
 
 
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
 def answer_call(call_control_id: str) -> dict:
     """Answer an inbound call."""
     response = client.calls.actions.answer(call_control_id)

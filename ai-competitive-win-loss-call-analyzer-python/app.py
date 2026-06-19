@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """AI Competitive Win/Loss Call Analyzer — analyze recorded sales calls for competitive intelligence."""
-import os, json, time, requests
+import os
+import boto3, json, time, requests
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()

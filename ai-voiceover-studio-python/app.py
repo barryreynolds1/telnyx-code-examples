@@ -3,7 +3,8 @@
 AI adds professional direction cues (pauses, emphasis, pacing), TTS renders
 the voice-over, stores output in Cloud Storage. Supports multiple takes."""
 
-import os, json, uuid, requests
+import os
+import boto3, json, uuid, requests
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -38,6 +39,23 @@ STYLES = {
 
 projects = {}
 
+
+def get_s3_client():
+    """Get boto3 S3 client configured for Telnyx Cloud Storage."""
+    import boto3
+    return boto3.client(
+        "s3",
+        endpoint_url="https://storage.telnyx.com",
+        aws_access_key_id=TELNYX_API_KEY,
+        aws_secret_access_key=TELNYX_API_KEY,
+        region_name="us-central-1",
+    )
+
+def upload_to_storage(key, data, content_type="audio/mpeg"):
+    """Upload a file to Telnyx Cloud Storage (S3-compatible)."""
+    s3 = get_s3_client()
+    s3.put_object(Bucket=BUCKET_NAME, Key=key, Body=data, ContentType=content_type)
+    return f"https://{BUCKET_NAME}.storage.telnyx.com/{key}"
 def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
     def _cleanup():
         while True:
@@ -71,11 +89,7 @@ def tts_generate(text, voice="nova"):
 
 
 def upload_to_storage(key, data):
-    resp = requests.put(
-        f"https://storage.telnyx.com/{BUCKET_NAME}/{key}",
-        headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "audio/mpeg"},
-        data=data, timeout=60
-    )
+    resp = upload_to_storage(key, data)
     resp.raise_for_status()
     return f"https://storage.telnyx.com/{BUCKET_NAME}/{key}"
 

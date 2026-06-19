@@ -2,6 +2,7 @@
 """Compliance Call Recorder + AI Auditor — auto-record, batch-process with AI, flag violations, create tickets."""
 
 import os
+import boto3
 import json
 import time
 import threading
@@ -34,6 +35,46 @@ REQUIRED_DISCLOSURES = [
 # Call records and audit results
 call_records = {}  # call_control_id -> record
 
+
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
+def get_s3_client():
+    """Get boto3 S3 client configured for Telnyx Cloud Storage."""
+    import boto3
+    return boto3.client(
+        "s3",
+        endpoint_url="https://storage.telnyx.com",
+        aws_access_key_id=TELNYX_API_KEY,
+        aws_secret_access_key=TELNYX_API_KEY,
+        region_name="us-central-1",
+    )
+
+def upload_to_storage(key, data, content_type="audio/mpeg"):
+    """Upload a file to Telnyx Cloud Storage (S3-compatible)."""
+    s3 = get_s3_client()
+    s3.put_object(Bucket=BUCKET_NAME, Key=key, Body=data, ContentType=content_type)
+    return f"https://{BUCKET_NAME}.storage.telnyx.com/{key}"
+
+def download_from_storage(key):
+    """Download a file from Telnyx Cloud Storage (S3-compatible)."""
+    s3 = get_s3_client()
+    resp = s3.get_object(Bucket=BUCKET_NAME, Key=key)
+    return resp["Body"].read()
 def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
     def _cleanup():
         while True:
@@ -117,12 +158,7 @@ def store_recording(call_control_id, recording_url):
 
         # Upload to Telnyx Storage
         filename = f"recordings/{time.strftime('%Y/%m/%d')}/{call_control_id}.mp3"
-        upload_resp = requests.put(
-            f"https://api.telnyx.com/v2/storage/buckets/{STORAGE_BUCKET}/{filename}",
-            headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "audio/mpeg"},
-            data=rec_resp.content,
-            timeout=30,
-        )
+        upload_resp = upload_to_storage(key, data)
         if upload_resp.ok:
             return filename
     except requests.RequestException as e:

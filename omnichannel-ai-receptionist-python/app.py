@@ -24,6 +24,23 @@ INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 # Shared context store: customer_number -> conversation history across all channels
 customer_context = {}
 
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
 def _start_ttl_cleanup(*stores, ttl_seconds=3600, interval=300):
     def _cleanup():
         while True:
@@ -155,6 +172,7 @@ def handle_messaging():
 
     data = payload.get("data", {})
     event_type = data.get("event_type")
+    state = decode_client_state(data)
 
     if event_type != "message.received":
         return jsonify({"status": "ignored"}), 200

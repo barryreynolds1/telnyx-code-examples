@@ -17,6 +17,23 @@ identities = {
     "+15551001003": {"name": "Acme Billing", "greeting": "Acme Billing department. I can help with your account.", "forward_to": "+15559999003", "hours": "9-17"},
 }
 
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
 @app.route("/identities", methods=["POST"])
 def add_identity():
     data = request.get_json()

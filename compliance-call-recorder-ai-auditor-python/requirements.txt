@@ -3,3 +3,4 @@ requests
 python-dotenv
 telnyx
 schedule
+boto3>=1.34

@@ -2,3 +2,4 @@ flask
 python-dotenv
 telnyx
 requests
+boto3>=1.34

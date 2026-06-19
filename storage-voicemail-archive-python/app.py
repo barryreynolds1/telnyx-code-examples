@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Storage Voicemail Archive — record voicemails to Telnyx Cloud Storage with search."""
-import os, json, time, requests, telnyx
+import os
+import boto3, json, time, requests, telnyx
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
@@ -12,6 +13,46 @@ STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
 VOICEMAIL_NUMBER = os.getenv("VOICEMAIL_NUMBER")
 voicemails = []
 
+
+
+def encode_client_state(data):
+    """Encode call context for Telnyx client_state round-trip."""
+    import base64, json
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+def decode_client_state(event_data):
+    """Decode client_state echoed back by Telnyx webhook."""
+    import base64, json
+    cs = event_data.get("client_state", "")
+    if not cs:
+        return {}
+    try:
+        return json.loads(base64.b64decode(cs))
+    except Exception:
+        return {}
+
+def get_s3_client():
+    """Get boto3 S3 client configured for Telnyx Cloud Storage."""
+    import boto3
+    return boto3.client(
+        "s3",
+        endpoint_url="https://storage.telnyx.com",
+        aws_access_key_id=TELNYX_API_KEY,
+        aws_secret_access_key=TELNYX_API_KEY,
+        region_name="us-central-1",
+    )
+
+def upload_to_storage(key, data, content_type="audio/mpeg"):
+    """Upload a file to Telnyx Cloud Storage (S3-compatible)."""
+    s3 = get_s3_client()
+    s3.put_object(Bucket=BUCKET_NAME, Key=key, Body=data, ContentType=content_type)
+    return f"https://{BUCKET_NAME}.storage.telnyx.com/{key}"
+
+def download_from_storage(key):
+    """Download a file from Telnyx Cloud Storage (S3-compatible)."""
+    s3 = get_s3_client()
+    resp = s3.get_object(Bucket=BUCKET_NAME, Key=key)
+    return resp["Body"].read()
 @app.route("/webhooks/voice", methods=["POST"])
 def handle_voice():
     payload = request.get_json()
@@ -36,8 +77,7 @@ def handle_voice():
         if recording_url and STORAGE_BUCKET:
             try:
                 audio = requests.get(recording_url, timeout=30).content
-                requests.put(f"https://api.telnyx.com/v2/storage/buckets/{STORAGE_BUCKET}/{filename}",
-                    headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "audio/mpeg"}, data=audio, timeout=30)
+                upload_to_storage(key, data)
             except Exception as e:
                 app.logger.error("Storage upload failed: %s", e)
         voicemails.append({"caller": caller, "filename": filename, "duration": data.get("duration_secs"), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
