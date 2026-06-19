@@ -1,0 +1,16 @@
+name: Example Request
+description: Suggest a new code example
+labels: [enhancement]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What should the example do?
+      description: Describe the use case and which Telnyx products it would use
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Preferred language
+      description: Python, Node.js, Go, Ruby, or other

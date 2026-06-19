@@ -1,0 +1,22 @@
+name: Bug Report
+description: Report a bug in an example
+labels: [bug]
+body:
+  - type: input
+    id: example
+    attributes:
+      label: Which example?
+      description: e.g. build-voice-ai-agent-python
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, expected vs actual behavior
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python/Node version

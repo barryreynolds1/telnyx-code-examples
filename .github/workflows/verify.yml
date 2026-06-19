@@ -1,0 +1,76 @@
+name: Verify Examples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax-check:
+    name: Python Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check all Python files compile
+        run: |
+          FAILED=0
+          for f in $(find . -name "app.py" -path "*-python/*"); do
+            if ! python3 -m py_compile "$f" 2>/dev/null; then
+              echo "FAIL: $f"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          echo ""
+          TOTAL=$(find . -name "app.py" -path "*-python/*" | wc -l)
+          echo "Result: $((TOTAL - FAILED))/$TOTAL passed"
+          if [ $FAILED -gt 0 ]; then exit 1; fi
+
+      - name: Verify scaffolding complete
+        run: |
+          MISSING=0
+          for d in $(find . -maxdepth 1 -name "*-python" -type d | sort); do
+            for f in app.py README.md .env.example requirements.txt; do
+              if [ ! -f "$d/$f" ]; then
+                echo "MISSING: $d/$f"
+                MISSING=$((MISSING + 1))
+              fi
+            done
+          done
+          echo "Missing files: $MISSING"
+          if [ $MISSING -gt 0 ]; then exit 1; fi
+
+      - name: Count examples
+        run: |
+          TOTAL=$(find . -maxdepth 1 -name "*-python" -o -name "*-nodejs" -o -name "*-go" -o -name "*-ruby" | wc -l)
+          echo "Total examples: $TOTAL"
+
+  node-check:
+    name: Node.js Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check all Node.js files parse
+        run: |
+          FAILED=0
+          for f in $(find . -name "index.js" -path "*-nodejs/*" -o -name "app.js" -path "*-nodejs/*"); do
+            if ! node --check "$f" 2>/dev/null; then
+              echo "FAIL: $f"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          TOTAL=$(find . \( -name "index.js" -o -name "app.js" \) -path "*-nodejs/*" | wc -l)
+          echo "Result: $((TOTAL - FAILED))/$TOTAL passed"
+          if [ $FAILED -gt 0 ]; then exit 1; fi

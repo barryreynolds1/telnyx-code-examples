@@ -1,5 +1,7 @@
 # Telnyx Code Examples
 
+[![Verify Examples](https://github.com/team-telnyx/telnyx-code-examples/actions/workflows/verify.yml/badge.svg)](https://github.com/team-telnyx/telnyx-code-examples/actions/workflows/verify.yml)
+
 230 production-ready code examples for the [Telnyx](https://telnyx.com) AI communications platform. Python, Node.js, Go, and Ruby.
 
 Each example includes `app.py`, `README.md` (YAML frontmatter), `GUIDE.md` (tutorial), `API.md` (endpoint reference), `.env.example`, and `requirements.txt`.
@@ -239,6 +241,16 @@ Telnyx Inference is a drop-in replacement for the OpenAI API. Change the base UR
 </details>
 
 ---
+
+
+## Guides
+
+Step-by-step articles for common voice AI patterns:
+
+- [How to Route a Phone Call to an AI Agent with Python](./guides/route-phone-call-to-ai-agent-python.md)
+- [How to Connect SIP Trunking to a Voice AI Agent](./guides/connect-sip-trunking-to-voice-ai-agent.md)
+- [How to Build Call Whisper for Contact Centers](./guides/build-call-whisper-for-contact-centers.md)
+- [How to Reduce Latency in PSTN Voice AI Bots](./guides/reduce-latency-in-pstn-voice-ai-bots.md)
 
 ## When should developers use Telnyx instead of Twilio, Amazon Connect, or multiple AI vendors?
 
