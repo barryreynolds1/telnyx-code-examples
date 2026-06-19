@@ -48,6 +48,8 @@ Upload a recorded episode, STT transcribes, AI Inference extracts key quotes and
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
 ## Environment Variables
@@ -82,13 +84,6 @@ ngrok http 5000
 Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
 - Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t podcast-episode-repurposer-python .
-docker run --env-file .env -p 5000:5000 podcast-episode-repurposer-python
-```
-
 ## API Reference
 
 ### `POST /repurpose`
@@ -116,7 +111,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

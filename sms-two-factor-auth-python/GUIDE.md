@@ -66,7 +66,6 @@ Everything lives in `app.py` (201 lines). Here's what each piece does.
 | `POST` | `/auth/verify-otp` | Verify Otp Endpoint |
 | `GET` | `/auth/otp-status` | Otp Status |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -98,7 +97,6 @@ def request_otp():
     
     phone_number = data.get("phone_number")
 ```
-
 
 ## Step 3: Run It
 
@@ -155,15 +153,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t sms-two-factor-auth-python .
-docker run --env-file .env -p 5000:5000 sms-two-factor-auth-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -112,7 +112,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `POST` | `/intakes/<int:idx>/decline` | Decline Intake |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -148,7 +147,6 @@ def handle_voice():
     event = data.get("event_type")
     ccid = data.get("call_control_id")
 ```
-
 
 ## Step 3: Run It
 
@@ -206,15 +204,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t law-firm-client-intake-python .
-docker run --env-file .env -p 5000:5000 law-firm-client-intake-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

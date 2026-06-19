@@ -92,7 +92,6 @@ Webhook handlers process events from Telnyx:
 | `POST` | `/returns/<int:idx>/approve` | Manual Approve |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -128,7 +127,6 @@ def ai_evaluate_return(description, order_value):
 
 @app.route("/webhooks/sms", methods=["POST"])
 ```
-
 
 ## Step 3: Run It
 
@@ -185,15 +183,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t returns-processor-python .
-docker run --env-file .env -p 5000:5000 returns-processor-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

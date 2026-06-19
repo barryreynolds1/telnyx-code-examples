@@ -89,13 +89,6 @@ python app.py           # starts on http://localhost:5000
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
    - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
-### Docker
-
-```bash
-docker build -t ai-real-estate-showing-scheduler-python .
-docker run --env-file .env -p 5000:5000 ai-real-estate-showing-scheduler-python
-```
-
 ## API Reference
 
 ### `GET /showings`
@@ -212,3 +205,7 @@ Receives [Telnyx Messaging](https://developers.telnyx.com/docs/messaging) webhoo
 - [AI Inference Guide](https://developers.telnyx.com/docs/inference)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

@@ -66,7 +66,6 @@ Everything lives in `app.py` (131 lines). Here's what each piece does.
 | `GET` | `/assistants/<assistant_id>` | Get Assistant |
 | `POST` | `/assistants/<assistant_id>/clone` | Clone Assistant Endpoint |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -98,7 +97,6 @@ def get_assistant(assistant_id: str):
         
     except telnyx.AuthenticationError:
 ```
-
 
 ## Step 3: Run It
 
@@ -143,15 +141,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t clone-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 clone-ai-assistant-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

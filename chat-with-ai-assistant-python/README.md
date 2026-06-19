@@ -38,6 +38,8 @@ Send messages to a Telnyx AI Assistant and receive responses. Supports conversat
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Managed AI agents** — Telnyx handles conversation state, tool calling, and telephony integration.
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
@@ -59,13 +61,6 @@ cd telnyx-code-examples/chat-with-ai-assistant-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t chat-with-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 chat-with-ai-assistant-python
 ```
 
 ## API Reference
@@ -103,7 +98,6 @@ curl -X POST http://localhost:5000/chat \
 ```json
 {"response": "I can help you with...", "status": "ok"}
 ```
-
 
 ## Troubleshooting
 

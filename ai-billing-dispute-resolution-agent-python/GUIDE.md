@@ -90,7 +90,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/disputes` | List Disputes |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -128,7 +127,6 @@ def handle_voice():
     ccid = payload.get("data", {}).get("call_control_id")
     data = payload.get("data", {})
 ```
-
 
 ## Step 3: Run It
 
@@ -176,15 +174,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ai-billing-dispute-resolution-agent-python .
-docker run --env-file .env -p 5000:5000 ai-billing-dispute-resolution-agent-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

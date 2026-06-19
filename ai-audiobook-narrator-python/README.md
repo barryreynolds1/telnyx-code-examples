@@ -48,6 +48,8 @@ Submit text, AI Inference chunks into chapters with pacing/emotion markup, TTS n
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 - **Integrated storage** — S3-compatible storage co-located with voice and AI infrastructure.
 
@@ -82,13 +84,6 @@ ngrok http 5000
 Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
 - Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t ai-audiobook-narrator-python .
-docker run --env-file .env -p 5000:5000 ai-audiobook-narrator-python
-```
-
 ## API Reference
 
 ### `POST /books/narrate`
@@ -114,7 +109,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

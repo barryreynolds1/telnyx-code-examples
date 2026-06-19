@@ -75,7 +75,6 @@ Webhook handlers process events from Telnyx:
 |--------|------|---------|
 | `POST` | `/webhooks/sms` | Telnyx webhook handler |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -113,7 +112,6 @@ def process_inbound_sms(event_data: dict) -> dict:
     from_number = event_data.get("from", {}).get("phone_number")
     to_number = event_data.get("to", [{}])[0].get("phone_number")
 ```
-
 
 ## Step 3: Run It
 
@@ -153,15 +151,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t receive-sms-webhook-python .
-docker run --env-file .env -p 5000:5000 receive-sms-webhook-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

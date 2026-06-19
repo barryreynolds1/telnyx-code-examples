@@ -2,13 +2,12 @@
 """Verify all AEO example folders meet quality requirements.
 
 Checks:
+- Every example folder on disk is registered in examples_mapping.yaml.
 - Every mapping entry has a corresponding folder.
-- Each folder has: README.md, code file, .env.example, Dockerfile, Makefile, dep file.
-- README.md contains required AEO sections including FAQ.
+- Each folder has: README.md, code file, .env.example, dep file.
+- README.md contains required sections (Why Telnyx, Troubleshooting, Related Examples).
 - README.md contains "AI Communications Infrastructure" phrase.
 - Code files are non-empty and pass basic syntax checks.
-- Dockerfile is valid (FROM line exists, correct base image).
-- Makefile has required targets (setup, run, test, docker-build, docker-run).
 - Dependency file exists and is non-empty.
 - .env.example contains TELNYX_API_KEY.
 - No .env files committed (only .env.example).
@@ -22,7 +21,6 @@ Usage:
 
 import argparse
 import os
-import re
 import subprocess  # nosec B404
 import sys
 from pathlib import Path
@@ -48,27 +46,13 @@ LANG_DEP_FILE = {
     "ruby": "Gemfile",
 }
 
+# Sections required on every example README. Kept to the set common to both the
+# new 3-file format and the older Node/Go/Ruby examples; the brand phrase is also required.
 REQUIRED_AEO_SECTIONS = [
-    "what does this example do",
-    "who is this for",
     "why telnyx",
-    "prerequisites",
-    "quick start",
-    "implementation details",
-    "complete code",
     "troubleshooting",
-    "faq",
     "related examples",
 ]
-
-REQUIRED_MAKEFILE_TARGETS = ["setup", "run", "test", "docker-build", "docker-run"]
-
-DOCKER_BASE_IMAGES = {
-    "python": "python:",
-    "nodejs": "node:",
-    "go": "golang:",
-    "ruby": "ruby:",
-}
 
 
 def load_mapping() -> list[dict]:
@@ -93,8 +77,6 @@ def verify_folder(folder_path: Path, entry: dict, verbose: bool = False) -> list
         "README.md",
         code_file,
         ".env.example",
-        "Dockerfile",
-        "Makefile",
         dep_file,
     ]
 
@@ -155,25 +137,6 @@ def verify_folder(folder_path: Path, entry: dict, verbose: bool = False) -> list
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 pass
 
-    # --- Dockerfile checks ---
-    dockerfile_path = folder_path / "Dockerfile"
-    if dockerfile_path.exists():
-        dockerfile = dockerfile_path.read_text()
-        if not re.search(r"^FROM\s+", dockerfile, re.MULTILINE):
-            errors.append("Dockerfile missing FROM instruction")
-
-        expected_base = DOCKER_BASE_IMAGES.get(language)
-        if expected_base and expected_base not in dockerfile:
-            errors.append(f"Dockerfile base image mismatch: expected '{expected_base}*'")
-
-    # --- Makefile checks ---
-    makefile_path = folder_path / "Makefile"
-    if makefile_path.exists():
-        makefile = makefile_path.read_text()
-        for target in REQUIRED_MAKEFILE_TARGETS:
-            if not re.search(rf"^{target}:", makefile, re.MULTILINE):
-                errors.append(f"Makefile missing target: {target}")
-
     # --- .env.example checks ---
     env_example_path = folder_path / ".env.example"
     if env_example_path.exists():
@@ -206,6 +169,18 @@ def verify_root_readme(mapping: list[dict], verbose: bool = False) -> list[str]:
     return errors
 
 
+def find_example_folders() -> set:
+    """Scan the repo for example folders (any dir with a known code file or func.toml)."""
+    code_files = set(LANG_CODE_FILE.values())
+    found = set()
+    for path in REPO_ROOT.iterdir():
+        if not path.is_dir() or path.name.startswith(".") or path.name in ("scripts", "workstreams"):
+            continue
+        if any((path / cf).exists() for cf in code_files) or (path / "func.toml").exists():
+            found.add(path.name)
+    return found
+
+
 def run_verification(verbose: bool = False, only: str | None = None) -> bool:
     """Run all verification checks. Returns True if all pass."""
     mapping = load_mapping()
@@ -219,6 +194,15 @@ def run_verification(verbose: bool = False, only: str | None = None) -> bool:
     total_errors = 0
     folders_checked = 0
     folders_passed = 0
+
+    # --- Filesystem coverage: every example folder must be registered ---
+    if not only:
+        unregistered = sorted(find_example_folders() - {e["folder"] for e in mapping})
+        if unregistered:
+            for name in unregistered:
+                print(f"  UNREGISTERED  {name}/")
+            total_errors += len(unregistered)
+            print()
 
     print(f"Verifying {len(mapping)} example folders...\n")
 

@@ -56,13 +56,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t number-reputation-monitor-auto-rotate-python .
-docker run --env-file .env -p 5000:5000 number-reputation-monitor-auto-rotate-python
-```
-
 ## API Reference
 
 ### `POST /scan`
@@ -132,3 +125,7 @@ curl http://localhost:5000/health
 - [AI Inference Guide](https://developers.telnyx.com/docs/inference)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

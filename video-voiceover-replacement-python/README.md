@@ -47,6 +47,8 @@ Upload audio with existing voice-over. STT extracts the script, AI rewrites/impr
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 - **Integrated storage** — S3-compatible storage co-located with voice and AI infrastructure.
 
@@ -70,13 +72,6 @@ cd telnyx-code-examples/video-voiceover-replacement-python
 cp .env.example .env
 pip install -r requirements.txt
 python app.py
-```
-
-### Docker
-
-```bash
-docker build -t video-voiceover-replacement-python .
-docker run --env-file .env -p 5000:5000 video-voiceover-replacement-python
 ```
 
 ## API Reference
@@ -106,7 +101,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

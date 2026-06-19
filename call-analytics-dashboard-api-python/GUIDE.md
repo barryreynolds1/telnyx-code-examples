@@ -70,7 +70,6 @@ Everything lives in `app.py` (66 lines). Here's what each piece does.
 | `GET` | `/analytics/messaging` | Messaging Analytics |
 | `GET` | `/health` | Health check |
 
-
 The main endpoint processes the request:
 
 ```python
@@ -85,7 +84,6 @@ def call_analytics():
             total = len(data)
             inbound = sum(1 for d in data if d.get("direction") == "inbound")
 ```
-
 
 ## Step 3: Run It
 
@@ -131,15 +129,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t call-analytics-dashboard-api-python .
-docker run --env-file .env -p 5000:5000 call-analytics-dashboard-api-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -101,7 +101,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/voicemails` | List Voicemails |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -139,7 +138,6 @@ def send_sms(to, text):
     try:
         requests.post("https://api.telnyx.com/v2/messages", headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
 ```
-
 
 ## Step 3: Run It
 
@@ -190,15 +188,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ai-voicemail-transcription-forwarding-python .
-docker run --env-file .env -p 5000:5000 ai-voicemail-transcription-forwarding-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

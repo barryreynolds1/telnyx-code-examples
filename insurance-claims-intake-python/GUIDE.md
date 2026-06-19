@@ -118,7 +118,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `POST` | `/claims/<claim_id>/assign` | Assign Adjuster |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -154,7 +153,6 @@ def handle_voice():
     if event == "call.initiated" and data.get("direction") == "incoming":
         requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
 ```
-
 
 ## Step 3: Run It
 
@@ -215,15 +213,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t insurance-claims-intake-python .
-docker run --env-file .env -p 5000:5000 insurance-claims-intake-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -68,13 +68,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
-### Docker
-
-```bash
-docker build -t sms-keyword-auto-responder-python .
-docker run --env-file .env -p 5000:5000 sms-keyword-auto-responder-python
-```
-
 ## API Reference
 
 ### `GET /keywords`
@@ -199,3 +192,7 @@ Receives [Telnyx Messaging](https://developers.telnyx.com/docs/messaging) webhoo
 - [Messaging Guide](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

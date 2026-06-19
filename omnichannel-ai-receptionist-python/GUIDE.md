@@ -103,7 +103,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/customers` | List Customers |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -137,11 +136,9 @@ def call_inference(messages, max_tokens=200):
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 
-
 def send_message(to, text, media_url=None):
     """Send SMS or MMS via Telnyx."""
 ```
-
 
 ## Step 3: Run It
 
@@ -192,15 +189,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t omnichannel-ai-receptionist-python .
-docker run --env-file .env -p 5000:5000 omnichannel-ai-receptionist-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

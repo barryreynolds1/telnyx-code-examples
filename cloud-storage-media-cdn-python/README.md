@@ -72,13 +72,6 @@ Then create the bucket:
 curl -X POST http://localhost:5000/setup
 ```
 
-### Docker
-
-```bash
-docker build -t cloud-storage-media-cdn-python .
-docker run --env-file .env -p 5000:5000 cloud-storage-media-cdn-python
-```
-
 ## API Reference
 
 ### `POST /setup`
@@ -213,3 +206,7 @@ curl http://localhost:5000/health
 - [Cloud Storage quick start](https://developers.telnyx.com/docs/cloud-storage/quick-start)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

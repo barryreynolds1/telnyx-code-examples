@@ -81,7 +81,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/drops` | List Drops |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -117,7 +116,6 @@ def voicemail_drop():
                     "webhook_url": request.host_url.rstrip("/", timeout=10) + "/webhooks/voice"}, timeout=10)
             ccid = resp.json().get("data", {}).get("call_control_id")
 ```
-
 
 ## Step 3: Run It
 
@@ -174,15 +172,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t texml-voicemail-drop-python .
-docker run --env-file .env -p 5000:5000 texml-voicemail-drop-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

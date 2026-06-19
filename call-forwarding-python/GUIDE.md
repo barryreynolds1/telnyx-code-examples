@@ -83,7 +83,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `POST` | `/calls/hangup/<call_control_id>` | Hangup Call Endpoint |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -119,7 +118,6 @@ def hangup_call_endpoint(call_control_id: str):
     try:
         result = hangup_call(call_control_id)
 ```
-
 
 ## Step 3: Run It
 
@@ -176,15 +174,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t call-forwarding-python .
-docker run --env-file .env -p 5000:5000 call-forwarding-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

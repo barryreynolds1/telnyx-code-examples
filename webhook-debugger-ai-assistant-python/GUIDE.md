@@ -74,7 +74,6 @@ Webhook handlers process events from Telnyx:
 | `GET` | `/log` | View Log |
 | `GET` | `/health` | Health check |
 
-
 The inference helper sends conversation context to Telnyx AI and returns the response:
 
 ```python
@@ -111,7 +110,6 @@ def analyze_webhook(index):
     if index >= len(webhook_log):
 ```
 
-
 ## Step 3: Run It
 
 ```bash
@@ -145,15 +143,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t webhook-debugger-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 webhook-debugger-ai-assistant-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

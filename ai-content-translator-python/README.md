@@ -52,6 +52,8 @@ Upload any audio (podcast, meeting, lecture), STT transcribes in source language
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
 ## Environment Variables
@@ -84,13 +86,6 @@ ngrok http 5000
 Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
 - Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t ai-content-translator-python .
-docker run --env-file .env -p 5000:5000 ai-content-translator-python
-```
-
 ## API Reference
 
 ### `POST /translate`
@@ -119,7 +114,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

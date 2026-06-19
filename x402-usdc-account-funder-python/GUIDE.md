@@ -71,7 +71,6 @@ Everything lives in `app.py` (76 lines). Here's what each piece does.
 | `GET` | `/payments` | List Payments |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -103,7 +102,6 @@ def get_quote():
         result = resp.json()
         result["requested_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
 ```
-
 
 ## Step 3: Run It
 
@@ -147,15 +145,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t x402-usdc-account-funder-python .
-docker run --env-file .env -p 5000:5000 x402-usdc-account-funder-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

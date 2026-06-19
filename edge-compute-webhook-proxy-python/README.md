@@ -75,6 +75,8 @@ edge-compute-webhook-proxy-python/
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Single-vendor voice stack** — call control, STT, TTS, and recording from one API. No multi-vendor coordination.
 - **Deliverability built in** — number reputation, 10DLC registration, and deliverability monitoring included.
 

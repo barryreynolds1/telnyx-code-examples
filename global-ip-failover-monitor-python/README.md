@@ -53,13 +53,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t global-ip-failover-monitor-python .
-docker run --env-file .env -p 5000:5000 global-ip-failover-monitor-python
-```
-
 ## API Reference
 
 ### `GET /endpoints`
@@ -195,3 +188,7 @@ curl http://localhost:5000/health
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

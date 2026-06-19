@@ -94,7 +94,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/shifts` | List Shifts |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -130,7 +129,6 @@ def call_next(shift_id):
         if MANAGER_SLACK:
             try: requests.post(MANAGER_SLACK, json={"text": f"UNFILLED: {shift['role']} shift {shift['date']} {shift['time']} - all candidates exhausted"}, timeout=5)
 ```
-
 
 ## Step 3: Run It
 
@@ -187,15 +185,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t shift-fill-engine-python .
-docker run --env-file .env -p 5000:5000 shift-fill-engine-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

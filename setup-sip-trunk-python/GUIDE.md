@@ -57,7 +57,6 @@ Everything lives in `app.py` (70 lines). Here's what each piece does.
 |--------|------|---------|
 | `POST` | `/sip/setup` | Setup Sip Endpoint |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -93,7 +92,6 @@ def create_sip_connection(name: str, username: str, password: str) -> dict:
     
     # Extract serializable data — SDK objects are NOT JSON-serializable
 ```
-
 
 ## Step 3: Run It
 
@@ -132,15 +130,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t setup-sip-trunk-python .
-docker run --env-file .env -p 5000:5000 setup-sip-trunk-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

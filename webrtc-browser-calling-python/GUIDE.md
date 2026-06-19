@@ -63,7 +63,6 @@ Edit `.env` with your Telnyx credentials. Each variable links to where you find 
 
 Everything lives in `app.py` (239 lines). Here's what each piece does.
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -82,7 +81,6 @@ The webhook handler is the core state machine. Each Telnyx event triggers the ne
     elif event_type == "call.hangup":
         if call_control_id in active_calls:
 ```
-
 
 ## Step 3: Run It
 
@@ -123,15 +121,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t webrtc-browser-calling-python .
-docker run --env-file .env -p 5000:5000 webrtc-browser-calling-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

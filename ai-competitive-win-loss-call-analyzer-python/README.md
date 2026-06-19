@@ -62,13 +62,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t ai-competitive-win-loss-call-analyzer-python .
-docker run --env-file .env -p 5000:5000 ai-competitive-win-loss-call-analyzer-python
-```
-
 ## API Reference
 
 ### `POST /analyze`
@@ -137,3 +130,7 @@ curl http://localhost:5000/health
 - [AI Inference Guide](https://developers.telnyx.com/docs/inference)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

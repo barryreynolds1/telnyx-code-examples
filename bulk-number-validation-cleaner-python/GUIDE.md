@@ -65,7 +65,6 @@ Everything lives in `app.py` (73 lines). Here's what each piece does.
 | `GET` | `/jobs` | List Jobs |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -97,7 +96,6 @@ def validate_numbers():
     results = {"valid": [], "invalid": [], "mobile": [], "landline": [], "voip": [], "errors": []}
     for num in numbers[:100]:
 ```
-
 
 ## Step 3: Run It
 
@@ -143,15 +141,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t bulk-number-validation-cleaner-python .
-docker run --env-file .env -p 5000:5000 bulk-number-validation-cleaner-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

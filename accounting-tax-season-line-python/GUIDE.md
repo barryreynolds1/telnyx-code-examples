@@ -122,7 +122,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/readiness` | Readiness Dashboard |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -158,7 +157,6 @@ def send_reminders():
         missing_str = ", ".join(missing)
         send_sms(client["phone"], f"Hi {client['name']}, your tax appointment is {client['appointment']}. We still need: {missing_str}. Please send or upload ASAP. Reply HELP for our secure upload link.")
 ```
-
 
 ## Step 3: Run It
 
@@ -219,15 +217,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t accounting-tax-season-line-python .
-docker run --env-file .env -p 5000:5000 accounting-tax-season-line-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

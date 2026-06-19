@@ -93,13 +93,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
-### Docker
-
-```bash
-docker build -t migrate-from-twilio-python .
-docker run --env-file .env -p 5000:5000 migrate-from-twilio-python
-```
-
 ## API Reference
 
 ### `GET /audit/twilio`
@@ -256,3 +249,7 @@ Receives Telnyx webhook events for `/migrate/webhook-map`.
 - [Messaging Guide](https://developers.telnyx.com/docs/messaging)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

@@ -88,13 +88,6 @@ ngrok http 5000
 Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
 - Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t live-podcast-call-in-python .
-docker run --env-file .env -p 5000:5000 live-podcast-call-in-python
-```
-
 ## API Reference
 
 ### `POST /shows/start`
@@ -133,3 +126,7 @@ Handles Telnyx Call Control webhook events. Called automatically by Telnyx — d
 - [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

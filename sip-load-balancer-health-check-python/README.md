@@ -58,13 +58,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t sip-load-balancer-health-check-python .
-docker run --env-file .env -p 5000:5000 sip-load-balancer-health-check-python
-```
-
 ## API Reference
 
 ### `POST /check`
@@ -200,3 +193,7 @@ curl http://localhost:5000/health
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

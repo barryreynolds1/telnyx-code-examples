@@ -62,7 +62,6 @@ Everything lives in `app.py` (79 lines). Here's what each piece does.
 |--------|------|---------|
 | `POST` | `/calls/dial` | Dial Call Endpoint |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -94,7 +93,6 @@ def dial_call_endpoint():
     
     to_number = data.get("to")
 ```
-
 
 ## Step 3: Run It
 
@@ -145,15 +143,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t make-outbound-phone-call-python .
-docker run --env-file .env -p 5000:5000 make-outbound-phone-call-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

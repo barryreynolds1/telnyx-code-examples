@@ -47,6 +47,8 @@ This app handles these webhook events ([Call Control docs](https://developers.te
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Single-vendor voice stack** — call control, STT, TTS, and recording from one API. No multi-vendor coordination.
 
 ## Environment Variables
@@ -81,13 +83,6 @@ python app.py           # starts on http://localhost:5000
 2. Copy the HTTPS URL and configure in [Telnyx Portal](https://portal.telnyx.com):
 
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
-
-### Docker
-
-```bash
-docker build -t webrtc-browser-calling-python .
-docker run --env-file .env -p 5000:5000 webrtc-browser-calling-python
-```
 
 ## Testing
 

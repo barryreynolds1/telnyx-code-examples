@@ -78,7 +78,6 @@ Everything lives in `app.py` (186 lines). Here's what each piece does.
 | `GET` | `/languages` | List Languages |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -114,7 +113,6 @@ def translate_content():
     if target not in LANGUAGES:
         return jsonify({"error": f"Unsupported language: {target}", "supported": list(LANGUAGES.keys())}), 400
 ```
-
 
 ## Step 3: Run It
 
@@ -172,15 +170,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ai-content-translator-python .
-docker run --env-file .env -p 5000:5000 ai-content-translator-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -81,13 +81,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Fax Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/fax`
 
-### Docker
-
-```bash
-docker build -t fax-to-ai-document-processor-python .
-docker run --env-file .env -p 5000:5000 fax-to-ai-document-processor-python
-```
-
 ## API Reference
 
 ### `GET /faxes`
@@ -166,3 +159,7 @@ Receives [Telnyx Fax](https://developers.telnyx.com/docs/fax) webhook events.
 - [AI Inference Guide](https://developers.telnyx.com/docs/inference)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

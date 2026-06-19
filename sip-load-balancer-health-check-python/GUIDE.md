@@ -73,7 +73,6 @@ Everything lives in `app.py` (73 lines). Here's what each piece does.
 | `GET` | `/log` | Get Log |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -105,7 +104,6 @@ def health_check():
             result = sock.connect_ex((ep["host"], ep["port"]))
             sock.close()
 ```
-
 
 ## Step 3: Run It
 
@@ -150,15 +148,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t sip-load-balancer-health-check-python .
-docker run --env-file .env -p 5000:5000 sip-load-balancer-health-check-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

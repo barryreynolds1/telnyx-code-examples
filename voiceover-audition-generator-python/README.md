@@ -48,6 +48,8 @@ Submit a script, hear it read by every available TTS voice. AI scores and ranks 
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 - **Integrated storage** — S3-compatible storage co-located with voice and AI infrastructure.
 
@@ -72,13 +74,6 @@ cd telnyx-code-examples/voiceover-audition-generator-python
 cp .env.example .env
 pip install -r requirements.txt
 python app.py
-```
-
-### Docker
-
-```bash
-docker build -t voiceover-audition-generator-python .
-docker run --env-file .env -p 5000:5000 voiceover-audition-generator-python
 ```
 
 ## API Reference
@@ -106,7 +101,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

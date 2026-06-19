@@ -48,6 +48,8 @@ AI Phone Tree Builder — describe your business in English, AI creates a workin
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
 ## Environment Variables
@@ -68,13 +70,6 @@ cd telnyx-code-examples/ai-phone-tree-builder-from-description-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t ai-phone-tree-builder-from-description-python .
-docker run --env-file .env -p 5000:5000 ai-phone-tree-builder-from-description-python
 ```
 
 ## API Reference
@@ -117,7 +112,6 @@ curl http://localhost:5000/health
   "version": "1.0.0"
 }
 ```
-
 
 ## Troubleshooting
 

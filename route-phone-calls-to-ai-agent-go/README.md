@@ -37,22 +37,11 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/route-phone-calls-to-ai-agent-go
 cp .env.example .env
 # Edit .env with your Telnyx API key and phone number
-make setup
-make run
+go mod download
+go run .
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/route-phone-calls-to-ai-agent-go
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
-### Option 3: Manual
+### Option 2: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
 

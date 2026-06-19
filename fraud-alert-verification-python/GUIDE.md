@@ -75,7 +75,6 @@ The entire app is in `app.py` (114 lines). Here's how it's structured:
 - **`list_alerts()`** — list alerts
 - **`health()`** — health
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -111,7 +110,6 @@ def trigger_alert():
     alerts.append(alert)
     try:
 ```
-
 
 ## Step 3: Run
 
@@ -152,19 +150,9 @@ Or send an SMS to your Telnyx number to trigger the messaging workflow.
 
 ## Production Deployment
 
-### Docker
-
-```bash
-docker build -t fraud-alert-verification-python .
-docker run --env-file .env -p 5000:5000 fraud-alert-verification-python
-```
-
 ### Makefile
 
 ```bash
-make setup    # Install dependencies
-make run      # Start the server
-make docker   # Build and run in Docker
 ```
 
 ## Customize & Extend

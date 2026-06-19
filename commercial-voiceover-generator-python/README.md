@@ -45,6 +45,8 @@ Provide product name, target audience, and tone. AI writes 3 script variations w
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
 ## Environment Variables
@@ -67,13 +69,6 @@ cd telnyx-code-examples/commercial-voiceover-generator-python
 cp .env.example .env
 pip install -r requirements.txt
 python app.py
-```
-
-### Docker
-
-```bash
-docker build -t commercial-voiceover-generator-python .
-docker run --env-file .env -p 5000:5000 commercial-voiceover-generator-python
 ```
 
 ## API Reference
@@ -101,7 +96,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

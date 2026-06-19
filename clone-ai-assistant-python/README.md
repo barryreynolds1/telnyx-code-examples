@@ -38,6 +38,8 @@ Application. Built with Telnyx AI Assistants, Migration, Number Porting.
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Managed AI agents** — Telnyx handles conversation state, tool calling, and telephony integration.
 
 ## Environment Variables
@@ -57,13 +59,6 @@ cd telnyx-code-examples/clone-ai-assistant-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t clone-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 clone-ai-assistant-python
 ```
 
 ## API Reference
@@ -109,7 +104,6 @@ curl -X POST http://localhost:5000/assistants/example-id/clone \
   "created_at": "2026-07-15T14:30:00Z"
 }
 ```
-
 
 ## Troubleshooting
 

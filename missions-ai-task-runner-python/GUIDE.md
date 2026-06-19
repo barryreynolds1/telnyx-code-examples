@@ -75,7 +75,6 @@ Everything lives in `app.py` (76 lines). Here's what each piece does.
 | `GET` | `/actions` | List Actions |
 | `GET` | `/health` | Health check |
 
-
 The inference helper sends conversation context to Telnyx AI and returns the response:
 
 ```python
@@ -111,7 +110,6 @@ def run_ai_task():
     for i in range(max_steps):
         try:
 ```
-
 
 ## Step 3: Run It
 
@@ -156,15 +154,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t missions-ai-task-runner-python .
-docker run --env-file .env -p 5000:5000 missions-ai-task-runner-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -80,7 +80,6 @@ Everything lives in `app.py` (58 lines). Here's what each piece does.
 | `GET` | `/faxes` | List Faxes |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -118,7 +117,6 @@ def handle_fax():
     event_type = data.get("event_type")
     if event_type == "fax.received":
 ```
-
 
 ## Step 3: Run It
 
@@ -165,15 +163,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t fax-to-ai-document-processor-python .
-docker run --env-file .env -p 5000:5000 fax-to-ai-document-processor-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

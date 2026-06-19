@@ -92,7 +92,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/messages` | List Messages |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -126,7 +125,6 @@ def handle_voice():
         active_calls[ccid] = {"caller": data.get("from"), "messages": []}
         client.calls.actions.answer(ccid)
 ```
-
 
 ## Step 3: Run It
 
@@ -174,15 +172,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t voice-to-slack-bridge-python .
-docker run --env-file .env -p 5000:5000 voice-to-slack-bridge-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

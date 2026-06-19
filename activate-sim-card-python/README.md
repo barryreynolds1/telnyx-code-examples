@@ -54,13 +54,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t activate-sim-card-python .
-docker run --env-file .env -p 5000:5000 activate-sim-card-python
-```
-
 ## API Reference
 
 ### `GET /sim-cards`
@@ -131,3 +124,7 @@ curl -X POST http://localhost:5000/sim-cards/example-id/activate \
 
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

@@ -130,12 +130,7 @@ This example uses in-memory storage for simplicity. For production:
 ## Deploy
 
 ```bash
-# Docker
-docker build -t edge-compute-webhook-proxy-python .
-docker run --env-file .env -p 5000:5000 edge-compute-webhook-proxy-python
 
-# Or Makefile
-make setup && make run
 ```
 
 ## Resources

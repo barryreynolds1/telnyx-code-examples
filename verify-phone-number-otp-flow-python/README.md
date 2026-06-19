@@ -69,13 +69,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t verify-phone-number-otp-flow-python .
-docker run --env-file .env -p 5000:5000 verify-phone-number-otp-flow-python
-```
-
 ## API Reference
 
 ### `POST /verify/start`
@@ -174,3 +167,7 @@ curl http://localhost:5000/health
 - [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

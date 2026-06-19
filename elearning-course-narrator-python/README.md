@@ -46,6 +46,8 @@ Upload course content, AI structures into audio modules with pacing cues and qui
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 - **Integrated storage** — S3-compatible storage co-located with voice and AI infrastructure.
 
@@ -69,13 +71,6 @@ cd telnyx-code-examples/elearning-course-narrator-python
 cp .env.example .env
 pip install -r requirements.txt
 python app.py
-```
-
-### Docker
-
-```bash
-docker build -t elearning-course-narrator-python .
-docker run --env-file .env -p 5000:5000 elearning-course-narrator-python
 ```
 
 ## API Reference
@@ -103,7 +98,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

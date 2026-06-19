@@ -81,7 +81,6 @@ Everything lives in `app.py` (85 lines). Here's what each piece does.
 | `GET` | `/inventory` | List Inventory |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -119,7 +118,6 @@ def handle_mms():
     if data.get("event_type") != "message.received" or data.get("direction") != "inbound":
         return jsonify({"status": "ignored"}), 200
 ```
-
 
 ## Step 3: Run It
 
@@ -166,15 +164,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t mms-photo-inventory-tracker-python .
-docker run --env-file .env -p 5000:5000 mms-photo-inventory-tracker-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

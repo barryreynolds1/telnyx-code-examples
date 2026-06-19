@@ -89,7 +89,6 @@ Webhook handlers process events from Telnyx:
 | `GET` | `/flagged` | List Flagged |
 | `GET` | `/health` | Health check |
 
-
 Helper function that handles the core action:
 
 ```python
@@ -123,7 +122,6 @@ def handle_sms():
     # Check for listing inquiry
     if text.upper().startswith("LISTING ") or text.upper().startswith("L0"):
 ```
-
 
 ## Step 3: Run It
 
@@ -170,15 +168,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t marketplace-comms-bridge-python .
-docker run --env-file .env -p 5000:5000 marketplace-comms-bridge-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

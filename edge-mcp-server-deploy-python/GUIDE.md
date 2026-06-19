@@ -127,12 +127,7 @@ This example uses in-memory storage for simplicity. For production:
 ## Deploy
 
 ```bash
-# Docker
-docker build -t edge-mcp-server-deploy-python .
-docker run --env-file .env -p 5000:5000 edge-mcp-server-deploy-python
 
-# Or Makefile
-make setup && make run
 ```
 
 ## Resources

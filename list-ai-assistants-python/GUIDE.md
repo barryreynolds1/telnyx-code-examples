@@ -61,7 +61,6 @@ Everything lives in `app.py` (53 lines). Here's what each piece does.
 |--------|------|---------|
 | `GET` | `/assistants` | List Assistants |
 
-
 The main endpoint processes the request:
 
 ```python
@@ -76,7 +75,6 @@ def list_assistants():
     except telnyx.RateLimitError:
         return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
 ```
-
 
 ## Step 3: Run It
 
@@ -111,15 +109,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t list-ai-assistants-python .
-docker run --env-file .env -p 5000:5000 list-ai-assistants-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

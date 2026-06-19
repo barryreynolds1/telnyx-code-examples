@@ -68,7 +68,6 @@ Everything lives in `app.py` (78 lines). Here's what each piece does.
 | `GET` | `/assignments` | List Assignments |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -100,7 +99,6 @@ def assign_number():
     number = search_local_number(target_area_code)
     if not number:
 ```
-
 
 ## Step 3: Run It
 
@@ -145,15 +143,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t smart-number-geo-assignment-python .
-docker run --env-file .env -p 5000:5000 smart-number-geo-assignment-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

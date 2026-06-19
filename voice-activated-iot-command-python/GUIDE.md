@@ -98,7 +98,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/commands` | List Commands |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -136,7 +135,6 @@ def execute_command(device_name, action):
     command_log.append({"device": device_name, "action": action, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")})
     return f"Done: {device_name} set to {action}"
 ```
-
 
 ## Step 3: Run It
 
@@ -184,15 +182,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t voice-activated-iot-command-python .
-docker run --env-file .env -p 5000:5000 voice-activated-iot-command-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

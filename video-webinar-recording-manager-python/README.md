@@ -61,13 +61,6 @@ pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
 ```
 
-### Docker
-
-```bash
-docker build -t video-webinar-recording-manager-python .
-docker run --env-file .env -p 5000:5000 video-webinar-recording-manager-python
-```
-
 ## API Reference
 
 ### `POST /webinars`
@@ -210,3 +203,7 @@ curl http://localhost:5000/health
 - [AI Inference Guide](https://developers.telnyx.com/docs/inference)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

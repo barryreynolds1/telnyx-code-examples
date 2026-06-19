@@ -72,7 +72,6 @@ Everything lives in `app.py` (66 lines). Here's what each piece does.
 | `POST` | `/generate` | Generate Phone Tree |
 | `GET` | `/health` | Health check |
 
-
 The inference helper sends conversation context to Telnyx AI and returns the response:
 
 ```python
@@ -108,7 +107,6 @@ def generate_phone_tree():
 1. A Telnyx AI Assistant configuration (JSON) with name, instructions, greeting, voice, and insight_settings
 2. A TeXML document (XML) for fallback IVR routing
 ```
-
 
 ## Step 3: Run It
 
@@ -147,15 +145,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ai-phone-tree-builder-from-description-python .
-docker run --env-file .env -p 5000:5000 ai-phone-tree-builder-from-description-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

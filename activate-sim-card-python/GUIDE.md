@@ -67,7 +67,6 @@ Everything lives in `app.py` (117 lines). Here's what each piece does.
 | `GET` | `/sim-cards/<sim_card_id>` | Get Sim |
 | `POST` | `/sim-cards/<sim_card_id>/activate` | Activate Sim |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -99,7 +98,6 @@ def list_sims():
     except telnyx.RateLimitError:
         return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
 ```
-
 
 ## Step 3: Run It
 
@@ -145,15 +143,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t activate-sim-card-python .
-docker run --env-file .env -p 5000:5000 activate-sim-card-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

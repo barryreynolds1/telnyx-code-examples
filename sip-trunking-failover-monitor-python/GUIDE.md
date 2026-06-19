@@ -71,7 +71,6 @@ Everything lives in `app.py` (61 lines). Here's what each piece does.
 | `GET` | `/status` | Get Status |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -103,7 +102,6 @@ def health_check():
         send_alert(f"SIP FAILOVER: Primary trunk down, switching to backup. Check connection {PRIMARY_SIP}")
         entry["action"] = "failover_to_backup"
 ```
-
 
 ## Step 3: Run It
 
@@ -161,15 +159,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t sip-trunking-failover-monitor-python .
-docker run --env-file .env -p 5000:5000 sip-trunking-failover-monitor-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

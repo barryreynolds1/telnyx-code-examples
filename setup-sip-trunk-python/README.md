@@ -33,6 +33,8 @@ Provision and configure a SIP trunk connection on Telnyx with codec preferences,
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Elastic SIP** — instant provisioning, global coverage, codec negotiation, and failover built in.
 
 ## Environment Variables
@@ -52,13 +54,6 @@ cd telnyx-code-examples/setup-sip-trunk-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t setup-sip-trunk-python .
-docker run --env-file .env -p 5000:5000 setup-sip-trunk-python
 ```
 
 ## API Reference
@@ -87,7 +82,6 @@ curl -X POST http://localhost:5000/sip/setup \
   ]
 }
 ```
-
 
 ## Troubleshooting
 

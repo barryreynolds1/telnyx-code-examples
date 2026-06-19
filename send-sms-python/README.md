@@ -31,6 +31,8 @@ Send an SMS message using the Telnyx Messaging API. Supports delivery status web
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Deliverability built in** — number reputation, 10DLC registration, and deliverability monitoring included.
 
 ## Environment Variables
@@ -65,13 +67,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
-### Docker
-
-```bash
-docker build -t send-sms-python .
-docker run --env-file .env -p 5000:5000 send-sms-python
-```
-
 ## API Reference
 
 ### `POST /sms/send`
@@ -97,7 +92,6 @@ curl -X POST http://localhost:5000/sms/send \
   "segments": 1
 }
 ```
-
 
 ## Troubleshooting
 

@@ -111,7 +111,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/campaign-log` | Get Log |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -147,7 +146,6 @@ def run_campaign():
         entry = {"policy": pol["id"], "name": pol["name"], "days": days_to_expiry,
             "at": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
 ```
-
 
 ## Step 3: Run It
 
@@ -210,15 +208,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t policy-renewal-campaign-python .
-docker run --env-file .env -p 5000:5000 policy-renewal-campaign-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

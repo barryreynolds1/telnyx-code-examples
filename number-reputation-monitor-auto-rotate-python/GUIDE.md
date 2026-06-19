@@ -65,7 +65,6 @@ Everything lives in `app.py` (58 lines). Here's what each piece does.
 | `GET` | `/health-report` | Health check |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -101,7 +100,6 @@ def scan_numbers():
     for num in numbers[:20]:
         phone = num.get("phone_number", "")
 ```
-
 
 ## Step 3: Run It
 
@@ -141,15 +139,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t number-reputation-monitor-auto-rotate-python .
-docker run --env-file .env -p 5000:5000 number-reputation-monitor-auto-rotate-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

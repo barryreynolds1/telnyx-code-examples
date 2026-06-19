@@ -81,6 +81,8 @@ edge-mcp-server-deploy-python/
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Deliverability built in** — number reputation, 10DLC registration, and deliverability monitoring included.
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 

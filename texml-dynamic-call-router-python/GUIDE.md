@@ -73,7 +73,6 @@ Everything lives in `app.py` (57 lines). Here's what each piece does.
 | `GET` | `/calls` | List Calls |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -105,7 +104,6 @@ def route_call():
     if is_vip:
         texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 ```
-
 
 ## Step 3: Run It
 
@@ -162,15 +160,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t texml-dynamic-call-router-python .
-docker run --env-file .env -p 5000:5000 texml-dynamic-call-router-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -93,7 +93,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/notifications` | List Notifications |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -129,7 +128,6 @@ def make_voice_call(to, message):
             json={"to": to, "from": MAIN_NUMBER, "connection_id": CONNECTION_ID,
                 "client_state": json.dumps({"msg": message}, timeout=10).encode().hex()}, timeout=10)
 ```
-
 
 ## Step 3: Run It
 
@@ -188,15 +186,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t isv-notification-engine-python .
-docker run --env-file .env -p 5000:5000 isv-notification-engine-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

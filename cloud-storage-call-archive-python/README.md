@@ -75,13 +75,6 @@ curl -X POST http://localhost:5000/buckets
 
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/recording`
 
-### Docker
-
-```bash
-docker build -t cloud-storage-call-archive-python .
-docker run --env-file .env -p 5000:5000 cloud-storage-call-archive-python
-```
-
 ## API Reference
 
 ### `POST /buckets`
@@ -226,3 +219,7 @@ Receives Telnyx Call Control webhooks. On `call.recording.saved`, it reads `data
 - [Cloud Storage quick start](https://developers.telnyx.com/docs/cloud-storage/quick-start)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

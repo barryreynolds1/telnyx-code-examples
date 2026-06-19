@@ -74,7 +74,6 @@ Everything lives in `app.py` (52 lines). Here's what each piece does.
 | `GET` | `/insights` | Get Insights |
 | `GET` | `/health` | Health check |
 
-
 The inference helper sends conversation context to Telnyx AI and returns the response:
 
 ```python
@@ -110,7 +109,6 @@ def analyze_call():
     analysis = call_inference(msgs)
     try:
 ```
-
 
 ## Step 3: Run It
 
@@ -155,15 +153,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ai-competitive-win-loss-call-analyzer-python .
-docker run --env-file .env -p 5000:5000 ai-competitive-win-loss-call-analyzer-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

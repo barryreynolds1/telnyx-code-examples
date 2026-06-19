@@ -63,7 +63,6 @@ Everything lives in `app.py` (86 lines). Here's what each piece does.
 |--------|------|---------|
 | `POST` | `/chat` | Chat Endpoint |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -95,7 +94,6 @@ def chat_endpoint():
     
     user_message = data.get("message")
 ```
-
 
 ## Step 3: Run It
 
@@ -134,15 +132,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t chat-with-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 chat-with-ai-assistant-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

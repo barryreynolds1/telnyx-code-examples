@@ -61,7 +61,6 @@ Everything lives in `app.py` (177 lines). Here's what each piece does.
 | `POST` | `/sms/bulk/send` | Send Bulk Sms Endpoint |
 | `GET` | `/sms/bulk/status` | Bulk Sms Status |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -93,7 +92,6 @@ def send_bulk_sms_endpoint():
     
     recipients = data.get("recipients", [])
 ```
-
 
 ## Step 3: Run It
 
@@ -151,15 +149,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t send-bulk-sms-python .
-docker run --env-file .env -p 5000:5000 send-bulk-sms-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

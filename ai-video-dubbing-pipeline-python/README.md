@@ -47,6 +47,8 @@ Upload audio, STT transcribes with speaker diarization, AI Inference translates 
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Co-located inference** — LLM runs on the same network as voice traffic. Sub-200ms round trips.
 
 ## Environment Variables
@@ -79,13 +81,6 @@ ngrok http 5000
 Set webhook URL in [Telnyx Portal](https://portal.telnyx.com):
 - Call Control Application -> `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t ai-video-dubbing-pipeline-python .
-docker run --env-file .env -p 5000:5000 ai-video-dubbing-pipeline-python
-```
-
 ## API Reference
 
 ### `POST /dub`
@@ -114,7 +109,6 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
-
 
 ## Troubleshooting
 

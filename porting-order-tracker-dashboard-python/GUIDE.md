@@ -78,7 +78,6 @@ Webhook handlers process events from Telnyx:
 | `GET` | `/porting/dashboard` | Dashboard |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -110,7 +109,6 @@ def submit_order():
                 "customer_reference": data.get("reference", "")}, timeout=15)
         result = resp.json()
 ```
-
 
 ## Step 3: Run It
 
@@ -157,15 +155,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t porting-order-tracker-dashboard-python .
-docker run --env-file .env -p 5000:5000 porting-order-tracker-dashboard-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

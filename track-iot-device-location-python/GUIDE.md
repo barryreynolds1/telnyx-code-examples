@@ -73,7 +73,6 @@ Everything lives in `app.py` (202 lines). Here's what each piece does.
 | `GET` | `/devices/<sim_card_id>/location` | Get Location Only |
 | `GET` | `/health` | Health check |
 
-
 The main endpoint processes the request:
 
 ```python
@@ -88,7 +87,6 @@ def list_devices():
     except telnyx.RateLimitError:
         return jsonify({"error": "Rate limit exceeded"}), 429
 ```
-
 
 ## Step 3: Run It
 
@@ -122,15 +120,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t track-iot-device-location-python .
-docker run --env-file .env -p 5000:5000 track-iot-device-location-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

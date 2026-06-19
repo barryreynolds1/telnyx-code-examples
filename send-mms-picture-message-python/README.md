@@ -30,6 +30,8 @@ Send an MMS message with image attachments using the Telnyx Messaging API.
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Deliverability built in** — number reputation, 10DLC registration, and deliverability monitoring included.
 
 ## Environment Variables
@@ -50,13 +52,6 @@ cd telnyx-code-examples/send-mms-picture-message-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t send-mms-picture-message-python .
-docker run --env-file .env -p 5000:5000 send-mms-picture-message-python
 ```
 
 ## API Reference
@@ -84,7 +79,6 @@ curl -X POST http://localhost:5000/mms/send \
   "segments": 1
 }
 ```
-
 
 ## Troubleshooting
 

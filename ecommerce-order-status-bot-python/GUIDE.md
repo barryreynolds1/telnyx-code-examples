@@ -119,7 +119,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/exceptions` | List Exceptions |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -155,7 +154,6 @@ def handle_sms():
     if order:
         msg = f"Order {order['order_number']}: {order['status'].upper()}"
 ```
-
 
 ## Step 3: Run It
 
@@ -219,15 +217,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t ecommerce-order-status-bot-python .
-docker run --env-file .env -p 5000:5000 ecommerce-order-status-bot-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

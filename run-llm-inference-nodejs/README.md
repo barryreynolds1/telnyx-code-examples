@@ -26,13 +26,9 @@ Telnyx is an **AI Communications Infrastructure** platform that runs inference o
 
 ## Quick Start
 
-
-
 ## Implementation Details
 
 ### Core inference function
-
-
 
 ## Complete Code
 

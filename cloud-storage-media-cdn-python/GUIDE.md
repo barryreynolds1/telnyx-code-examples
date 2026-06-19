@@ -186,15 +186,11 @@ curl -X POST "https://api.telnyx.com/v2/calls/{call_control_id}/actions/playback
 - **Monitoring** — add structured logging and health check alerts.
 - **Rate limiting** — protect your endpoints from abuse.
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t cloud-storage-media-cdn-python .
-docker run --env-file .env -p 5000:5000 cloud-storage-media-cdn-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

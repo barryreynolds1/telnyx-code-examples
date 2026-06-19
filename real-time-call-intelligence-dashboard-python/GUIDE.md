@@ -87,7 +87,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/api/calls` | Api Calls |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -125,7 +124,6 @@ def analyze_segment(text):
     ]
     try:
 ```
-
 
 ## Step 3: Run It
 
@@ -173,15 +171,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t real-time-call-intelligence-dashboard-python .
-docker run --env-file .env -p 5000:5000 real-time-call-intelligence-dashboard-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

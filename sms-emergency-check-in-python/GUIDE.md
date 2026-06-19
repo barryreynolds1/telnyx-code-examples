@@ -76,7 +76,6 @@ Everything lives in `app.py` (83 lines). Here's what each piece does.
 | `GET` | `/status` | Get Status |
 | `GET` | `/health` | Health check |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -112,7 +111,6 @@ def add_monitored():
 def send_check_ins():
     results = []
 ```
-
 
 ## Step 3: Run It
 
@@ -170,15 +168,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t sms-emergency-check-in-python .
-docker run --env-file .env -p 5000:5000 sms-emergency-check-in-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

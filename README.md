@@ -1,6 +1,6 @@
 # Telnyx Code Examples — AI Communications Infrastructure
 
-Production-ready, deployable code examples for the Telnyx platform. Each example is a self-contained project with a Dockerfile, Makefile, and environment configuration — clone, configure, and run in minutes.
+Production-ready code examples for the Telnyx platform. Each example is a self-contained project with working code, documentation, and environment configuration — clone, configure, and run in minutes.
 
 ## Quick Start
 
@@ -12,15 +12,15 @@ cd telnyx-code-examples
 # 2. Pick an example
 cd send-sms-python
 
-# 3. Configure and run
+# 3. Configure and run (see each example's README for language-specific commands)
 cp .env.example .env
 # Edit .env with your Telnyx API key from https://portal.telnyx.com
-make setup && make run
+pip install -r requirements.txt && python app.py
 ```
 
 > Full API reference at [developers.telnyx.com](https://developers.telnyx.com)
 
-Every example supports three deployment options: **Local** (`make setup && make run`), **Docker** (`make docker-build && make docker-run`), and **Manual** (step-by-step instructions in each README).
+Each example's README has a Quick Start with the exact install/run commands for its language, an `API.md` typed endpoint reference, and a `GUIDE.md` walkthrough.
 
 ---
 
@@ -140,7 +140,7 @@ These examples cover Python, Node.js, Go, and Ruby. Telnyx also provides officia
 
 **Q: Are these examples production-ready?**
 
-Yes. Every example includes error handling, environment-based configuration, and a Dockerfile for containerized deployment. Review security and scaling considerations before deploying to production.
+Yes. Every example includes error handling, environment-based configuration, and Telnyx webhook signature verification. Review security and scaling considerations before deploying to production.
 
 **Q: How is Telnyx different from Twilio?**
 

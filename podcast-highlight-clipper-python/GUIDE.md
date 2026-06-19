@@ -85,7 +85,6 @@ Everything lives in `app.py` (209 lines). Here's what each piece does.
 | `GET` | `/jobs` | List Jobs |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -116,12 +115,10 @@ def send_sms(to, text):
     except Exception:
         return False
 
-
 def notify_slack(msg):
     if SLACK_WEBHOOK:
         try:
 ```
-
 
 ## Step 3: Run It
 
@@ -184,15 +181,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t podcast-highlight-clipper-python .
-docker run --env-file .env -p 5000:5000 podcast-highlight-clipper-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

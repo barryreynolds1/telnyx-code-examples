@@ -74,13 +74,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t build-ivr-phone-menu-python .
-docker run --env-file .env -p 5000:5000 build-ivr-phone-menu-python
-```
-
 ## Webhook Endpoints
 
 ### `POST /webhooks/call`
@@ -186,3 +179,7 @@ curl http://localhost:5000/health
 ```json
 {"status": "ok"}
 ```
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

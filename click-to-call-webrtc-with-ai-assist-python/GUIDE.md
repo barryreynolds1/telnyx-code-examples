@@ -72,7 +72,6 @@ Everything lives in `app.py` (72 lines). Here's what each piece does.
 | `POST` | `/coaching` | Get Coaching |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -104,7 +103,6 @@ def get_token():
         if resp.ok:
             return jsonify(resp.json().get("data", {})), 200
 ```
-
 
 ## Step 3: Run It
 
@@ -149,15 +147,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t click-to-call-webrtc-with-ai-assist-python .
-docker run --env-file .env -p 5000:5000 click-to-call-webrtc-with-ai-assist-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

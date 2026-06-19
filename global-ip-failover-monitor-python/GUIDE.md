@@ -68,7 +68,6 @@ Everything lives in `app.py` (93 lines). Here's what each piece does.
 | `GET` | `/regions` | Regions |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -100,7 +99,6 @@ def list_endpoints():
                     "region": ep.get("region"), "status": "healthy", "checks": 0, "failures": 0}
         return jsonify({"endpoints": list(endpoints.values())}), 200
 ```
-
 
 ## Step 3: Run It
 
@@ -144,15 +142,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t global-ip-failover-monitor-python .
-docker run --env-file .env -p 5000:5000 global-ip-failover-monitor-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

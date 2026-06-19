@@ -112,7 +112,6 @@ This is the core of the app — a state machine driven by Telnyx webhook events.
 | `GET` | `/waitlist` | List Waitlist |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -148,7 +147,6 @@ def handle_voice():
     if event == "call.initiated" and data.get("direction") == "incoming":
         requests.post(f"{API}/calls/{ccid}/actions/answer", headers=headers, json={}, timeout=10)
 ```
-
 
 ## Step 3: Run It
 
@@ -210,15 +208,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t restaurant-reservation-waitlist-python .
-docker run --env-file .env -p 5000:5000 restaurant-reservation-waitlist-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

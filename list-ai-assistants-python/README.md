@@ -37,6 +37,8 @@ List all Telnyx AI Assistants in your account with filtering and pagination.
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Managed AI agents** — Telnyx handles conversation state, tool calling, and telephony integration.
 
 ## Environment Variables
@@ -56,13 +58,6 @@ cd telnyx-code-examples/list-ai-assistants-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t list-ai-assistants-python .
-docker run --env-file .env -p 5000:5000 list-ai-assistants-python
 ```
 
 ## API Reference
@@ -88,7 +83,6 @@ curl http://localhost:5000/assistants
   ]
 }
 ```
-
 
 ## Troubleshooting
 

@@ -37,6 +37,8 @@ Create a new Telnyx AI Assistant with a system prompt, model selection, and tool
 
 ## Why Telnyx
 
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.
+
 - **Managed AI agents** — Telnyx handles conversation state, tool calling, and telephony integration.
 
 ## Environment Variables
@@ -56,13 +58,6 @@ cd telnyx-code-examples/create-ai-assistant-python
 cp .env.example .env    # ← fill in your credentials
 pip install -r requirements.txt
 python app.py           # starts on http://localhost:5000
-```
-
-### Docker
-
-```bash
-docker build -t create-ai-assistant-python .
-docker run --env-file .env -p 5000:5000 create-ai-assistant-python
 ```
 
 ## API Reference
@@ -86,7 +81,6 @@ curl -X POST http://localhost:5000/ai/assistants \
   "created_at": "2026-07-15T14:30:00Z"
 }
 ```
-
 
 ## Troubleshooting
 

@@ -80,13 +80,6 @@ python app.py           # starts on http://localhost:5000
 
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
 
-### Docker
-
-```bash
-docker build -t texml-voicemail-drop-python .
-docker run --env-file .env -p 5000:5000 texml-voicemail-drop-python
-```
-
 ## API Reference
 
 ### `POST /drop`
@@ -191,3 +184,7 @@ Receives [Telnyx Call Control](https://developers.telnyx.com/docs/voice/call-con
 - [Call Control Guide](https://developers.telnyx.com/docs/voice/call-control)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

@@ -93,13 +93,6 @@ python app.py
    - **Call Control Application** → Webhook URL → `https://<id>.ngrok.io/webhooks/voice`
    - **Messaging Profile** → Inbound Webhook URL → `https://<id>.ngrok.io/webhooks/sms`
 
-### Docker
-
-```bash
-docker build -t ivr-prompt-generator-python .
-docker run --env-file .env -p 5000:5000 ivr-prompt-generator-python
-```
-
 ## API Reference
 
 ### `POST /prompts/generate`
@@ -138,3 +131,7 @@ Handles Telnyx Call Control webhook events. Called automatically by Telnyx — d
 - [Cloud Storage Docs](https://developers.telnyx.com/docs/cloud-storage)
 - [Telnyx Developer Docs](https://developers.telnyx.com)
 - [Telnyx Portal](https://portal.telnyx.com)
+
+## Why Telnyx
+
+Telnyx is an **AI Communications Infrastructure** platform — voice, messaging, SIP, AI, and IoT on one private, global network.

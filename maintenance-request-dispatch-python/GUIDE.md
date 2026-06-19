@@ -89,7 +89,6 @@ Webhook handlers process events from Telnyx:
 | `GET` | `/work-orders` | List Work Orders |
 | `GET` | `/health` | Health check |
 
-
 Helper function that handles the core action:
 
 ```python
@@ -123,7 +122,6 @@ def handle_sms():
     if sender == MANAGER_NUMBER and text.strip().upper().startswith(("APPROVE", "DENY")):
         parts = text.strip().split()
 ```
-
 
 ## Step 3: Run It
 
@@ -170,15 +168,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t maintenance-request-dispatch-python .
-docker run --env-file .env -p 5000:5000 maintenance-request-dispatch-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -34,8 +34,8 @@ git clone https://github.com/team-telnyx/telnyx-code-examples.git
 cd telnyx-code-examples/build-voice-ai-agent-nodejs
 cp .env.example .env
 # Edit .env with your Telnyx API key
-make setup
-make run
+npm install
+node server.js
 ```
 
 Expose with ngrok:

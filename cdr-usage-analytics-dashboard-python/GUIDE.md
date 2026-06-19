@@ -68,7 +68,6 @@ Everything lives in `app.py` (113 lines). Here's what each piece does.
 | `GET` | `/analytics/daily` | Daily Breakdown |
 | `GET` | `/health` | Health check |
 
-
 The main endpoint processes the request:
 
 ```python
@@ -83,7 +82,6 @@ def usage_summary():
     end = request.args.get("end_date", time.strftime("%Y-%m-%d"))
     cdrs = fetch_cdrs(start, end)
 ```
-
 
 ## Step 3: Run It
 
@@ -118,15 +116,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t cdr-usage-analytics-dashboard-python .
-docker run --env-file .env -p 5000:5000 cdr-usage-analytics-dashboard-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -83,7 +83,6 @@ Webhook handlers process events from Telnyx:
 | `POST` | `/sim-cards/<sim_card_id>/activate` | Activate Sim |
 | `POST` | `/webhooks/sim-events` | Telnyx webhook handler |
 
-
 The webhook handler is the core state machine. Each Telnyx event triggers the next action:
 
 ```python
@@ -99,7 +98,6 @@ The webhook handler is the core state machine. Each Telnyx event triggers the ne
     
     # Always return 200 to acknowledge receipt
     return jsonify({"status": "received"}), 200
-
 
 ```
 
@@ -119,7 +117,6 @@ def activate_sim(sim_card_id: str):
         
     except telnyx.AuthenticationError:
 ```
-
 
 ## Step 3: Run It
 
@@ -165,15 +162,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t monitor-iot-data-usage-python .
-docker run --env-file .env -p 5000:5000 monitor-iot-data-usage-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -70,7 +70,6 @@ Everything lives in `app.py` (103 lines). Here's what each piece does.
 | `GET` | `/pipeline` | Pipeline Status |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -102,7 +101,6 @@ def generate_loa():
         phone_numbers=", ".join(data.get("phone_numbers", [])),
         billing_number=data.get("billing_number", ""),
 ```
-
 
 ## Step 3: Run It
 
@@ -147,15 +145,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t porting-loa-automation-python .
-docker run --env-file .env -p 5000:5000 porting-loa-automation-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources

@@ -87,7 +87,6 @@ Everything lives in `app.py` (98 lines). Here's what each piece does.
 | `GET` | `/migration-log` | Get Log |
 | `GET` | `/health` | Health check |
 
-
 The trigger endpoint kicks off the workflow:
 
 ```python
@@ -119,7 +118,6 @@ def audit_elevenlabs():
         for v in voices:
             telnyx_match = VOICE_MAP.get(v.get("name"), {})
 ```
-
 
 ## Step 3: Run It
 
@@ -179,15 +177,11 @@ This example uses in-memory storage for simplicity. For production:
 - **Monitoring** — add structured logging and health check alerts
 - **Rate limiting** — protect your endpoints from abuse
 
-## Deploy
+## Run
 
 ```bash
-# Docker
-docker build -t migrate-from-elevenlabs-python .
-docker run --env-file .env -p 5000:5000 migrate-from-elevenlabs-python
-
-# Or Makefile
-make setup && make run
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Resources
