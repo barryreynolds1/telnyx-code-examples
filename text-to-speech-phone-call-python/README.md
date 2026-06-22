@@ -1,7 +1,7 @@
 ---
 name: text-to-speech-phone-call
-title: "Production-ready Flask application for text-to-speech calls via Telnyx."
-description: "Production-ready Flask application for text-to-speech calls via Telnyx."
+title: "Text to Speech Phone Call"
+description: "Play text-to-speech audio during a phone call."
 language: python
 framework: flask
 telnyx_products: [Voice]

@@ -1,7 +1,7 @@
 ---
 name: inbound-sip-routing
-title: "Flask application for managing inbound SIP routing with Telnyx."
-description: "Application. Built with Telnyx Migration, Number Porting."
+title: "Inbound SIP Routing"
+description: "Route inbound SIP calls to your endpoints."
 language: python
 framework: flask
 telnyx_products: []

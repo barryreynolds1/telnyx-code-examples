@@ -1,6 +1,6 @@
 ---
 name: track-iot-device-location
-title: "Production-ready Flask application for device location"
+title: "Track IoT Device Location"
 description: "Production-ready Flask application for device location tracking via Telnyx IoT API."
 language: python
 framework: flask

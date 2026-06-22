@@ -1,7 +1,7 @@
 ---
 name: texml-voicemail-drop
-title: "TeXML Voicemail Drop — leave pre-recorded voicemails at scale via TeXML."
-description: "TeXML Voicemail Drop — leave pre-recorded voicemails at scale via TeXML."
+title: "TeXML Voicemail Drop"
+description: "Leave pre-recorded voicemails at scale via TeXML."
 language: python
 framework: flask
 telnyx_products: [Voice]

@@ -1,7 +1,7 @@
 ---
 name: transfer-live-phone-calls
-title: "Production-ready Flask application for call transfer via Telnyx Voice API."
-description: "Production-ready Flask application for call transfer via Telnyx Voice API."
+title: "Transfer Live Phone Calls"
+description: "Transfer active calls to another number or agent."
 language: python
 framework: flask
 telnyx_products: [Voice]

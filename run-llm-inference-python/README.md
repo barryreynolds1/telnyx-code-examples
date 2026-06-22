@@ -1,6 +1,6 @@
 ---
 name: run-llm-inference
-title: "Run LLM inference on Telnyx — OpenAI-compatible chat completions API."
+title: "Run LLM Inference"
 description: "Application powered by Telnyx AI Inference. Built with Telnyx AI Inference, Migration, Number Porting, SMS/MMS."
 language: python
 framework: flask

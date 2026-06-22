@@ -1,7 +1,7 @@
 ---
 name: configure-sip-codecs
-title: "Production-ready Flask application for SIP codec configuration via Telnyx."
-description: "Voice application. Built with Telnyx Migration, Number Porting, SIP Trunking."
+title: "Configure SIP Codecs"
+description: "Configure audio codecs for SIP trunks."
 language: python
 framework: flask
 telnyx_products: [SIP Trunking]

@@ -1,7 +1,7 @@
 ---
 name: send-bulk-sms
-title: "Production-ready Flask application for sending bulk SMS via Telnyx."
-description: "Production-ready Flask application for sending bulk SMS via Telnyx."
+title: "Send Bulk SMS"
+description: "Send SMS messages to multiple recipients."
 language: python
 framework: flask
 telnyx_products: [SMS/MMS]

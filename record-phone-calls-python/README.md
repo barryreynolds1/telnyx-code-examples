@@ -1,7 +1,7 @@
 ---
 name: record-phone-calls
-title: "Production-ready Flask application for call recording via Telnyx Voice API."
-description: "Production-ready Flask application for call recording via Telnyx Voice API."
+title: "Record Phone Calls"
+description: "Record calls and receive recording webhooks."
 language: python
 framework: flask
 telnyx_products: [Voice, Call Recording]

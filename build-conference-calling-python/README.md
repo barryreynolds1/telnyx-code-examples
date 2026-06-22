@@ -1,7 +1,7 @@
 ---
 name: build-conference-calling
-title: "Production-ready Flask application for managing conference calls via Telnyx."
-description: "Application. Built with Telnyx Migration, Number Porting, Voice."
+title: "Build Conference Calling"
+description: "Create multi-party conference calls."
 language: python
 framework: flask
 telnyx_products: [Voice, Conferencing]
