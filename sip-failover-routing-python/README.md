@@ -1,7 +1,7 @@
 ---
 name: sip-failover-routing
-title: "Production-ready SIP failover routing system with Flask and Telnyx."
-description: "Voice application. Built with Telnyx Migration, Number Porting."
+title: "SIP Failover Routing"
+description: "Configure failover routing for SIP connections."
 language: python
 framework: flask
 telnyx_products: []

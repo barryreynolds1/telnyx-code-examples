@@ -1,7 +1,7 @@
 ---
 name: sms-two-factor-auth
-title: "Production-ready OTP 2FA system with Flask and Telnyx SMS."
-description: "SMS application. Built with Telnyx Cloud Storage, Migration, Number Porting, SMS/MMS."
+title: "SMS Two Factor Auth"
+description: "Implement SMS-based two-factor authentication."
 language: python
 framework: flask
 telnyx_products: [Cloud Storage, SMS/MMS, Verify]

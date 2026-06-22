@@ -1,7 +1,7 @@
 ---
 name: sms-poll-voting-system
-title: "SMS Poll Voting System — text-to-vote polling with real-time results."
-description: "SMS Poll Voting System — text-to-vote polling with real-time results."
+title: "SMS Poll Voting System"
+description: "Text-to-vote polling with real-time results."
 language: python
 framework: flask
 telnyx_products: [SMS/MMS]

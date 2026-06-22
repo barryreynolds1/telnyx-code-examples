@@ -1,6 +1,6 @@
 ---
 name: sms-keyword-auto-responder
-title: "SMS Keyword Auto-Responder — keyword-triggered responses with match analytics."
+title: "SMS Keyword Auto Responder"
 description: "SMS Keyword Auto-Responder — keyword-triggered responses with match analytics."
 language: python
 framework: flask

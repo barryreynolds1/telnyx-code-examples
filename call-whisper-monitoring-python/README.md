@@ -1,7 +1,7 @@
 ---
 name: call-whisper-monitoring
-title: "Production-ready Flask application for Whisper-based call prompts via Telnyx."
-description: "Voice application. Built with Telnyx AI Assistants, Migration, Number Porting, SMS/MMS."
+title: "Call Whisper Monitoring"
+description: "Monitor calls with whisper prompts for agents."
 language: python
 framework: flask
 telnyx_products: [AI Assistants, SMS/MMS, Voice, Call Recording]

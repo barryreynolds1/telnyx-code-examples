@@ -1,7 +1,7 @@
 ---
 name: call-forwarding
-title: "Production-ready Flask application for call forwarding via Telnyx Voice API."
-description: "Production-ready Flask application for call forwarding via Telnyx Voice API."
+title: "Call Forwarding"
+description: "Forward incoming calls to another destination."
 language: python
 framework: flask
 telnyx_products: [Voice]

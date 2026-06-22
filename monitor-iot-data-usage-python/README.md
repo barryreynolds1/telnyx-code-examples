@@ -1,6 +1,6 @@
 ---
 name: monitor-iot-data-usage
-title: "Production-ready Flask application for monitoring SIM card"
+title: "Monitor IoT Data Usage"
 description: "Production-ready Flask application for monitoring SIM card data usage via Telnyx IoT API."
 language: python
 framework: flask

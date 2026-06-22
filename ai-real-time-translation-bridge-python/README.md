@@ -1,9 +1,7 @@
 ---
 name: ai-real-time-translation-bridge
 title: "AI Real-Time Translation Bridge"
-AI translates each side's speech before playing it to the other party."
 description: "Connect two callers who speak different languages with real-time AI translation on a live phone call. Built with Telnyx Voice Call Control and AI Inference."
-AI translates each side's speech before playing it to the other party."
 language: python
 framework: flask
 telnyx_products: [Voice, AI Inference]
