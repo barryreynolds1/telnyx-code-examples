@@ -21,7 +21,6 @@ import argparse
 import json
 import re
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # A finding: (severity, ecosystem, file, dependency, detail)
@@ -157,39 +156,53 @@ def check_composer_json(path: Path, root: Path) -> list:
 
 
 # --- .NET ------------------------------------------------------------------
+# Regex extraction (no XML parser) — avoids the XXE / billion-laughs risk of
+# feeding untrusted PR .csproj/pom.xml through xml.etree, and needs no extra
+# dependency. We only need attribute/element text, not a full DOM.
+_CSPROJ_PKG_RE = re.compile(r"<PackageReference\b([^>]*?)(?:/>|>(.*?)</PackageReference>)", re.DOTALL | re.IGNORECASE)
+_XML_ATTR_RE = re.compile(r'([\w:.-]+)\s*=\s*"([^"]*)"')
+_CSPROJ_CHILD_VER_RE = re.compile(r"<Version>\s*([^<]*?)\s*</Version>", re.IGNORECASE)
+
+
 def check_csproj(path: Path, root: Path) -> list:
     out = []
     try:
-        tree = ET.parse(path)
-    except (ET.ParseError, OSError) as e:
+        text = path.read_text()
+    except OSError as e:
         return [("warn", "dotnet", _rel(path, root), "-", f"unreadable: {e}")]
-    for ref in tree.iter():
-        if ref.tag.split("}")[-1] != "PackageReference":
-            continue
-        name = ref.get("Include") or ref.get("Update") or "?"
-        ver = ref.get("Version")
-        if ver is None:
+    for m in _CSPROJ_PKG_RE.finditer(text):
+        attrs = dict(_XML_ATTR_RE.findall(m.group(1)))
+        name = attrs.get("Include") or attrs.get("Update") or "?"
+        ver = attrs.get("Version")
+        if not ver:
             # may be a child <Version> element
-            child = next((c for c in ref if c.tag.split("}")[-1] == "Version"), None)
-            ver = child.text if child is not None else None
+            child = _CSPROJ_CHILD_VER_RE.search(m.group(2) or "")
+            ver = child.group(1) if child else None
         if not ver or not ver.strip():
             out.append(("error", "dotnet", _rel(path, root), name, "no Version"))
     return out
 
 
 # --- Maven -----------------------------------------------------------------
+_POM_DEP_RE = re.compile(r"<dependency>(.*?)</dependency>", re.DOTALL | re.IGNORECASE)
+
+
+def _pom_tag(block: str, tag: str):
+    m = re.search(rf"<{tag}>\s*(.*?)\s*</{tag}>", block, re.DOTALL | re.IGNORECASE)
+    return m.group(1).strip() if m else None
+
+
 def check_pom_xml(path: Path, root: Path) -> list:
     out = []
     try:
-        tree = ET.parse(path)
-    except (ET.ParseError, OSError) as e:
+        text = path.read_text()
+    except OSError as e:
         return [("warn", "maven", _rel(path, root), "-", f"unreadable: {e}")]
-    ns = {"m": "http://maven.apache.org/POM/4.0.0"}
-    deps = tree.findall(".//m:dependencies/m:dependency", ns) or tree.findall(".//dependencies/dependency")
-    for d in deps:
-        gid = d.findtext("m:groupId", default=d.findtext("groupId", ""), namespaces=ns)
-        aid = d.findtext("m:artifactId", default=d.findtext("artifactId", "?"), namespaces=ns)
-        ver = d.findtext("m:version", default=d.findtext("version", None), namespaces=ns)
+    for m in _POM_DEP_RE.finditer(text):
+        block = m.group(1)
+        gid = _pom_tag(block, "groupId") or ""
+        aid = _pom_tag(block, "artifactId") or "?"
+        ver = _pom_tag(block, "version")
         if not ver:
             # could be managed by a parent/BOM — warn rather than fail
             out.append(("warn", "maven", _rel(path, root), f"{gid}:{aid}", "no <version> (may be managed by a BOM)"))

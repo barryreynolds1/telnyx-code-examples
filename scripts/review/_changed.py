@@ -6,7 +6,10 @@ failing every PR on pre-existing debt.
 """
 from __future__ import annotations
 
-import subprocess
+# nosemgrep: gitlab.bandit.B404 -- git is invoked list-form (no shell=True) with the
+# ref passed as a discrete argv element, never string-interpolated, so there is no
+# shell-injection surface. We need the local git binary to compute the PR diff.
+import subprocess  # noqa: S404
 from pathlib import Path
 
 LANG_SUFFIXES = ("-python", "-nodejs", "-go", "-ruby", "-php", "-java", "-csharp")
