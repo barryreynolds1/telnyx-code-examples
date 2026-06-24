@@ -43,7 +43,7 @@ class SmsController extends Controller
             $autoresponseText = $this->generateAutoresponse($incomingText);
 
             // Send autoresponse using Telnyx API
-            $response = $this->client->messages->create([
+            $response = $this->client->messages->send([
                 'from_' => $this->fromNumber,
                 'to' => $fromNumber,
                 'text' => $autoresponseText,
@@ -116,7 +116,7 @@ class SmsController extends Controller
         ]);
 
         try {
-            $response = $this->client->messages->create([
+            $response = $this->client->messages->send([
                 'from_' => $this->fromNumber,
                 'to' => $validated['to'],
                 'text' => $validated['message'],

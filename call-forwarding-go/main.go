@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/telnyx/telnyx-go/v2"
-	"github.com/telnyx/telnyx-go/v2/call"
+	"github.com/team-telnyx/telnyx-go/v4"
+	"github.com/team-telnyx/telnyx-go/v4/call"
 )
 
 // CallEvent represents the webhook payload from Telnyx.

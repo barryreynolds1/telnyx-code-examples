@@ -25,8 +25,8 @@ class SmsController < ApplicationController
     end
 
     begin
-      # Use client.messages.create() — NOT Telnyx::Message.create()
-      response = @client.messages.create(
+      # Use client.messages.send_() — NOT Telnyx::Message.create()
+      response = @client.messages.send_(
         from_: from_number,
         to: to_number,
         text: message

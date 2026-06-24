@@ -17,7 +17,7 @@ def send_sms(client, from_number, to_number, message)
   end
 
   # Create message via Telnyx API
-  response = client.messages.create(
+  response = client.messages.send_(
     from_: from_number,
     to: to_number,
     text: message

@@ -25,8 +25,8 @@ def send_mms(to_number, message, media_urls)
     raise "Each media URL must be a string" unless url.is_a?(String)
   end
 
-  # Use client.messages.create() with media_urls parameter for MMS
-  response = client.messages.create(
+  # Use client.messages.send_() with media_urls parameter for MMS
+  response = client.messages.send_(
     from_: from_number,
     to: to_number,
     text: message,

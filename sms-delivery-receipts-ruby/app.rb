@@ -21,7 +21,7 @@ def send_sms_with_tracking(to_number, message_text)
   raise "Phone number must be in E.164 format (e.g., +15551234567)" unless to_number.start_with?("+")
 
   # Create message via Telnyx API
-  response = client.messages.create(
+  response = client.messages.send_(
     from_: from_number,
     to: to_number,
     text: message_text

@@ -45,7 +45,7 @@ async function initiateCallForwarding(toNumber, forwardToNumber) {
   // connection_id is REQUIRED and links to your Call Control Application
   // Do NOT pass call_control_id as input — it is returned in the response
   const response = await client.calls.dial({
-    from_: fromNumber,
+    from: fromNumber,
     to: toNumber,
     connection_id: connectionId,
   });
@@ -138,7 +138,7 @@ app.post("/calls/forward", async (req, res) => {
         .status(429)
         .json({ error: "Rate limit exceeded. Please slow down." });
     }
-    if (error instanceof Telnyx.APIStatusError) {
+    if (error instanceof Telnyx.APIError) {
       return res.status(error.status_code || 500).json({
         error: error.message,
         status_code: error.status_code,

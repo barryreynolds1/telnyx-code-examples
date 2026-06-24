@@ -48,7 +48,7 @@ curl -X POST http://localhost:3000/sms/send \
 
 | Telnyx Endpoint | SDK Call | Purpose |
 |-----------------|----------|---------|
-| `POST /v2/messages` | `client.messages.create(from_:, to:, text:)` | Send an outbound SMS |
+| `POST /v2/messages` | `client.messages.send_(from_:, to:, text:)` | Send an outbound SMS |
 
 The client is created per request with `Telnyx::Client.new(api_key: ENV["TELNYX_API_KEY"])`.
 

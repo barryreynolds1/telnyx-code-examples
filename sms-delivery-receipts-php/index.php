@@ -36,7 +36,7 @@ class SmsController extends Controller
 
         try {
             // Create message via Telnyx API
-            $response = $this->client->messages->create([
+            $response = $this->client->messages->send([
                 'from_' => $fromNumber,
                 'to' => $validated['to'],
                 'text' => $validated['message'],

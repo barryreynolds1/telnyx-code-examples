@@ -41,17 +41,6 @@ make setup
 make run
 ```
 
-### Option 2: Docker
-
-```bash
-git clone https://github.com/team-telnyx/telnyx-code-examples.git
-cd telnyx-code-examples/inbound-sip-routing-go
-cp .env.example .env
-# Edit .env with your credentials
-make docker-build
-make docker-run
-```
-
 ### Option 3: Manual
 
 See the [Implementation Details](#implementation-details) section below for step-by-step instructions.
@@ -110,8 +99,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/telnyx/telnyx-go"
-	"github.com/telnyx/telnyx-go/v2"
+	"github.com/team-telnyx/telnyx-go/v4"
+	"github.com/team-telnyx/telnyx-go/v4"
 	"telnyx-sip-routing/models"
 )
 
@@ -364,8 +353,8 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/telnyx/telnyx-go"
-	"github.com/telnyx/telnyx-go/v2/option"
+	"github.com/team-telnyx/telnyx-go/v4"
+	"github.com/team-telnyx/telnyx-go/v4/option"
 	"telnyx-sip-routing/config"
 	"telnyx-sip-routing/handlers"
 )
@@ -433,7 +422,7 @@ Yes. Sign up at [portal.telnyx.com](https://portal.telnyx.com) to get an API key
 
 **Q: Can I use this SIP example in production?**
 
-Yes. This example includes error handling, environment-based configuration, and a Dockerfile for containerized deployment. Review the security and scaling sections before deploying to production.
+Yes. This example includes error handling and environment-based configuration. Review the security and scaling sections before deploying to production.
 
 **Q: What Go version do I need?**
 

@@ -56,7 +56,7 @@ class TelnyxMmsService
         }
 
         // Create MMS message via Telnyx API
-        $response = $this->client->messages->create([
+        $response = $this->client->messages->send([
             'from_' => $this->fromNumber,
             'to' => $toNumber,
             'text' => $message,

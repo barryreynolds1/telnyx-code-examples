@@ -46,7 +46,7 @@ class OtpService
     {
         $message = "Your verification code is: {$code}. Valid for {$this->otpExpiryMinutes} minutes.";
 
-        $this->client->messages->create([
+        $this->client->messages->send([
             'from' => $this->fromNumber,
             'to' => $toNumber,
             'text' => $message,
