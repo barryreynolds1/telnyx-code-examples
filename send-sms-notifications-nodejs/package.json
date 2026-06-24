@@ -8,9 +8,9 @@
     "test": "node --check server.js"
   },
   "dependencies": {
-    "express": "latest",
-    "telnyx": "latest",
-    "dotenv": "latest",
-    "nodemon": "latest"
+    "express": "^5.2.1",
+    "telnyx": "^6.83.0",
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.9"
   }
 }
