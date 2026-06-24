@@ -1,4 +1,4 @@
-flask
-python-dotenv
-requests
-telnyx
+flask>=3.0
+python-dotenv>=1.0
+requests>=2.31
+telnyx>=4.0.0
