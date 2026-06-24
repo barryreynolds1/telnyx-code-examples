@@ -32,7 +32,7 @@ Telnyx is an **AI Communications Infrastructure** platform - voice, messaging, S
   │  SmsController    │
   │  (Telnyx::Client) │
   └────────┬─────────┘
-           │  client.messages.create
+           │  client.messages.send_
            ▼
   ┌──────────────────┐
   │ Telnyx Messaging  │

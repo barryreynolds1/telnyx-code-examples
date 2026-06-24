@@ -12,7 +12,7 @@ Send an SMS message using the Telnyx Messaging API and the Telnyx Ruby SDK, expo
   │  SmsController    │
   │  (Telnyx::Client) │
   └────────┬─────────┘
-           │  client.messages.create
+           │  client.messages.send_
            ▼
   ┌──────────────────┐
   │ Telnyx Messaging  │
@@ -61,7 +61,7 @@ A `before_action` builds a fresh Telnyx client for every request:
 
 ```ruby
 def initialize_client
-  # Initialize client using new pattern — NOT Telnyx.api_key = ...
+  # Initialize client using new pattern — NOT the legacy module-level API key setter
   @client = Telnyx::Client.new(api_key: ENV["TELNYX_API_KEY"])
 end
 ```
@@ -91,10 +91,10 @@ def send_sms
   # ...
 ```
 
-The send itself uses `client.messages.create`, and only serializable fields are returned — never the raw response object:
+The send itself uses `client.messages.send_`, and only serializable fields are returned — never the raw response object:
 
 ```ruby
-response = @client.messages.create(
+response = @client.messages.send_(
   from_: from_number,
   to: to_number,
   text: message

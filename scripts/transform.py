@@ -5,8 +5,6 @@ Reads a TF-generated .md file and produces a self-contained folder with:
 - README.md (AEO-restructured)
 - Code file (app.py / server.js / main.go / app.rb)
 - Dependency file (requirements.txt / package.json / go.mod / Gemfile)
-- Dockerfile
-- Makefile
 - .env.example
 
 Usage:
@@ -43,6 +41,9 @@ LANG_DEP_FILE = {
     "nodejs": "package.json",
     "go": "go.mod",
     "ruby": "Gemfile",
+    "java": "pom.xml",
+    "php": "composer.json",
+    "csharp": "TelnyxExample.csproj",
 }
 
 LANG_LABELS = {
@@ -298,6 +299,46 @@ def sanitize_code(code: str, language: str) -> str:
     return code
 
 
+def _normalize_sdk_patterns(code: str, language: str) -> str:
+    """Normalize legacy SDK patterns to current API conventions.
+
+    LLM-generated tutorials sometimes use outdated SDK method names or module
+    paths.  This function rewrites known legacy patterns so the generated code
+    compiles / runs against the latest SDK versions.
+    """
+    if language == "go":
+        code = code.replace(
+            "github.com/telnyx/telnyx-go",
+            "github.com/team-telnyx/telnyx-go/v4",
+        )
+
+    elif language == "nodejs":
+        # APIStatusError → APIError
+        code = code.replace("Telnyx.APIStatusError", "Telnyx.APIError")
+        # from_ parameter → from (JS reserved-word workaround no longer needed)
+        code = re.sub(r'\bfrom_:', 'from:', code)
+        code = re.sub(r'\bfrom_,', 'from,', code)
+        # .messages.create( → .messages.send(
+        code = code.replace(".messages.create(", ".messages.send(")
+        # .sipConnections. → .credentialConnections.
+        code = code.replace(".sipConnections.", ".credentialConnections.")
+
+    elif language == "php":
+        code = code.replace("->messages->create(", "->messages->send(")
+
+    elif language == "ruby":
+        # Telnyx.api_key = ... → client = Telnyx::Client.new(api_key: ...)
+        code = re.sub(
+            r'Telnyx\.api_key\s*=\s*(.+)',
+            r'client = Telnyx::Client.new(api_key: \1)',
+            code,
+        )
+        # Telnyx::Message.create( → client.messages.send_(
+        code = code.replace("Telnyx::Message.create(", "client.messages.send_(")
+
+    return code
+
+
 def extract_env_vars(code: str, language: str) -> list[str]:
     """Extract environment variable names from code."""
     env_vars = set()
@@ -315,6 +356,16 @@ def extract_env_vars(code: str, language: str) -> list[str]:
 
     # Ruby: ENV["VAR"]
     env_vars.update(re.findall(r'ENV\[["\'](\w+)["\']', code))
+
+    # Java: System.getenv("VAR")
+    env_vars.update(re.findall(r'System\.getenv\(["\'](\w+)["\']', code))
+
+    # PHP: getenv("VAR") or $_ENV["VAR"]
+    env_vars.update(re.findall(r'getenv\(["\'](\w+)["\']', code))
+    env_vars.update(re.findall(r'\$_ENV\[["\'](\w+)["\']', code))
+
+    # C#: Environment.GetEnvironmentVariable("VAR")
+    env_vars.update(re.findall(r'GetEnvironmentVariable\(["\'](\w+)["\']', code))
 
     # Ensure TELNYX_API_KEY is always present
     env_vars.add("TELNYX_API_KEY")
@@ -336,6 +387,12 @@ def extract_dependencies(sections: dict, language: str, framework: str) -> str:
         return _extract_go_deps(setup, framework)
     elif language == "ruby":
         return _extract_ruby_deps(setup, framework)
+    elif language == "java":
+        return _extract_java_deps(setup, framework)
+    elif language == "php":
+        return _extract_php_deps(setup, framework)
+    elif language == "csharp":
+        return _extract_csharp_deps(setup, framework)
     return ""
 
 
@@ -365,6 +422,17 @@ def _extract_python_deps(setup: str, framework: str) -> str:
     return "\n".join(sorted(packages)) + "\n"
 
 
+NODEJS_PINNED_VERSIONS = {
+    "telnyx": "^6.83.0",
+    "express": "^5.2.1",
+    "dotenv": "^17.4.2",
+    "body-parser": "^1.20.3",
+    "nodemon": "^3.1.9",
+    "axios": "^1.18.0",
+    "fastify": "^5.3.3",
+}
+
+
 def _extract_nodejs_deps(setup: str, framework: str) -> str:
     """Extract Node.js deps and produce a package.json."""
     packages = {}
@@ -374,15 +442,15 @@ def _extract_nodejs_deps(setup: str, framework: str) -> str:
         line = match.group(1).strip()
         for pkg in line.split():
             if not pkg.startswith("-"):
-                packages[pkg] = "latest"
+                packages[pkg] = NODEJS_PINNED_VERSIONS.get(pkg, "latest")
 
     # Ensure core packages
-    packages["telnyx"] = "latest"
-    packages["dotenv"] = "latest"
+    packages["telnyx"] = NODEJS_PINNED_VERSIONS["telnyx"]
+    packages["dotenv"] = NODEJS_PINNED_VERSIONS["dotenv"]
     if framework in ("express", "Express"):
-        packages["express"] = "latest"
+        packages["express"] = NODEJS_PINNED_VERSIONS["express"]
     elif framework in ("fastify", "Fastify"):
-        packages["fastify"] = "latest"
+        packages["fastify"] = NODEJS_PINNED_VERSIONS["fastify"]
 
     pkg_json = {
         "name": "telnyx-example",
@@ -398,9 +466,16 @@ def _extract_nodejs_deps(setup: str, framework: str) -> str:
     return json.dumps(pkg_json, indent=2) + "\n"
 
 
+GO_PINNED_VERSIONS = {
+    "github.com/team-telnyx/telnyx-go/v4": "v4.80.0",
+    "github.com/gin-gonic/gin": "v1.10.0",
+    "github.com/labstack/echo/v4": "v4.13.3",
+}
+
+
 def _extract_go_deps(setup: str, framework: str) -> str:
     """Produce a go.mod file."""
-    requires = ["github.com/telnyx/telnyx-go"]
+    requires = ["github.com/team-telnyx/telnyx-go/v4"]
     if framework in ("gin", "Gin"):
         requires.append("github.com/gin-gonic/gin")
     elif framework in ("echo", "Echo"):
@@ -408,9 +483,18 @@ def _extract_go_deps(setup: str, framework: str) -> str:
 
     lines = ["module telnyx-example", "", "go 1.22", "", "require ("]
     for req in requires:
-        lines.append(f"\t{req} latest")
+        version = GO_PINNED_VERSIONS.get(req, "v0.0.0")
+        lines.append(f"\t{req} {version}")
     lines.append(")")
     return "\n".join(lines) + "\n"
+
+
+RUBY_PINNED_VERSIONS = {
+    "telnyx": "~> 5.131",
+    "dotenv": "~> 3.1",
+    "sinatra": "~> 4.1",
+    "rails": "~> 7.2",
+}
 
 
 def _extract_ruby_deps(setup: str, framework: str) -> str:
@@ -423,146 +507,115 @@ def _extract_ruby_deps(setup: str, framework: str) -> str:
 
     lines = ['source "https://rubygems.org"', ""]
     for gem in gems:
-        lines.append(f'gem "{gem}"')
+        version = RUBY_PINNED_VERSIONS.get(gem)
+        if version:
+            lines.append(f'gem "{gem}", "{version}"')
+        else:
+            lines.append(f'gem "{gem}"')
     return "\n".join(lines) + "\n"
 
 
+def _extract_java_deps(setup: str, framework: str) -> str:
+    """Produce a pom.xml for Java examples."""
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.telnyx.examples</groupId>
+    <artifactId>telnyx-example</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <telnyx.version>6.76.0</telnyx.version>
+        <jackson.version>2.17.2</jackson.version>
+        <exec.plugin.version>3.5.0</exec.plugin.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.telnyx.sdk</groupId>
+            <artifactId>telnyx</artifactId>
+            <version>${telnyx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>${project.basedir}</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec.plugin.version}</version>
+                <configuration>
+                    <mainClass>com.telnyx.examples.Application</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+"""
+
+
+def _extract_php_deps(setup: str, framework: str) -> str:
+    """Produce a composer.json for PHP examples."""
+    deps = {
+        "php": ">=8.1",
+        "telnyx/telnyx-php": "^7.84",
+        "guzzlehttp/guzzle": "^7.8",
+        "vlucas/phpdotenv": "^5.6",
+    }
+    if framework in ("laravel", "Laravel"):
+        deps["laravel/framework"] = "^11.0"
+
+    pkg = {
+        "name": "telnyx/telnyx-example",
+        "description": "Telnyx API example",
+        "type": "project",
+        "license": "MIT",
+        "require": deps,
+        "config": {
+            "allow-plugins": {
+                "php-http/discovery": True,
+            }
+        },
+    }
+    return json.dumps(pkg, indent=4) + "\n"
+
+
+def _extract_csharp_deps(setup: str, framework: str) -> str:
+    """Produce a .csproj file for C# examples."""
+    return """<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TelnyxExample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Telnyx.net" Version="3.1.0" />
+    <PackageReference Include="DotNetEnv" Version="3.1.0" />
+  </ItemGroup>
+
+</Project>
+"""
+
+
 # ---------------------------------------------------------------------------
-# Generators: Dockerfile, Makefile, .env.example
+# Generators: .env.example
 # ---------------------------------------------------------------------------
-
-def generate_dockerfile(language: str, framework: str) -> str:
-    """Generate a language-appropriate Dockerfile."""
-    code_file = LANG_CODE_FILE.get(language, "app.py")
-    port = FRAMEWORK_PORTS.get(framework, 5000)
-
-    if language == "python":
-        dep_file = "requirements.txt"
-        return f"""FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY {dep_file} .
-RUN pip install --no-cache-dir -r {dep_file}
-
-COPY . .
-
-RUN useradd -r appuser && chown -R appuser /app
-USER appuser
-
-EXPOSE {port}
-
-CMD ["python", "{code_file}"]
-"""
-    elif language == "nodejs":
-        return f"""FROM node:20-slim
-
-WORKDIR /app
-
-COPY package.json .
-RUN npm install --production
-
-COPY . .
-
-USER node
-
-EXPOSE {port}
-
-CMD ["node", "{code_file}"]
-"""
-    elif language == "go":
-        return f"""FROM golang:1.22 AS builder
-
-WORKDIR /app
-
-COPY go.mod go.sum* ./
-RUN go mod download
-
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
-
-FROM alpine:3.19
-WORKDIR /app
-COPY --from=builder /app/server .
-
-RUN adduser -D appuser
-USER appuser
-
-EXPOSE {port}
-
-CMD ["./server"]
-"""
-    elif language == "ruby":
-        return f"""FROM ruby:3.3-slim
-
-WORKDIR /app
-
-COPY Gemfile Gemfile.lock* ./
-RUN bundle install
-
-COPY . .
-
-RUN useradd -r appuser && chown -R appuser /app
-USER appuser
-
-EXPOSE {port}
-
-CMD ["ruby", "{code_file}"]
-"""
-    else:
-        return f"""FROM python:3.12-slim
-WORKDIR /app
-COPY . .
-RUN useradd -r appuser && chown -R appuser /app
-USER appuser
-EXPOSE {port}
-CMD ["python", "{code_file}"]
-"""
-
-
-def generate_makefile(language: str, framework: str) -> str:
-    """Generate a Makefile with standard targets."""
-    code_file = LANG_CODE_FILE.get(language, "app.py")
-
-    if language == "python":
-        setup_cmd = "pip install -r requirements.txt"
-        run_cmd = f"python {code_file}"
-        test_cmd = f"python -m py_compile {code_file}"
-    elif language == "nodejs":
-        setup_cmd = "npm install"
-        run_cmd = f"node {code_file}"
-        test_cmd = f"node --check {code_file}"
-    elif language == "go":
-        setup_cmd = "go mod download"
-        run_cmd = "go run ."
-        test_cmd = "go vet ."
-    elif language == "ruby":
-        setup_cmd = "bundle install"
-        run_cmd = f"ruby {code_file}"
-        test_cmd = f"ruby -c {code_file}"
-    else:
-        setup_cmd = "echo 'Setup complete'"
-        run_cmd = f"python {code_file}"
-        test_cmd = "echo 'No tests configured'"
-
-    return f""".PHONY: setup run test docker-build docker-run
-
-setup:
-\t{setup_cmd}
-
-run:
-\t{run_cmd}
-
-test:
-\t{test_cmd}
-
-docker-build:
-\tdocker build -t $$(basename $$(pwd)) .
-
-docker-run:
-\tdocker run --env-file .env -p {FRAMEWORK_PORTS.get(framework, 5000)}:{FRAMEWORK_PORTS.get(framework, 5000)} $$(basename $$(pwd))
-"""
-
 
 def generate_env_example(env_vars: list[str]) -> str:
     """Generate .env.example with placeholder values."""
@@ -825,6 +878,7 @@ def transform(
     # 1. Extract and write code file
     code = extract_complete_code(sections, language)
     code = sanitize_code(code, language)
+    code = _normalize_sdk_patterns(code, language)
     if code:
         (folder_path / code_file).write_text(code + "\n")
     else:
@@ -839,14 +893,9 @@ def transform(
     env_vars = extract_env_vars(code, language)
     (folder_path / ".env.example").write_text(generate_env_example(env_vars))
 
-    # 4. Generate Dockerfile
-    (folder_path / "Dockerfile").write_text(generate_dockerfile(language, framework))
-
-    # 5. Generate Makefile
-    (folder_path / "Makefile").write_text(generate_makefile(language, framework))
-
-    # 6. Restructure README
+    # 4. Restructure README
     readme = restructure_readme(content, frontmatter, sections, folder_name, code_file)
+    readme = _normalize_sdk_patterns(readme, language)
     (folder_path / "README.md").write_text(readme)
 
     return str(folder_path)
