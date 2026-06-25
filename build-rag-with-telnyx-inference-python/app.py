@@ -185,7 +185,8 @@ def rag_ask():
         status = exc.response.status_code if exc.response is not None else 502
         return jsonify({"error": "Telnyx AI Inference request failed.", "status": status}), status
     except RuntimeError as exc:
-        return jsonify({"error": str(exc)}), 500
+        app.logger.exception("Runtime error while processing /rag/ask request")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
 
 @app.route("/documents", methods=["GET"])
