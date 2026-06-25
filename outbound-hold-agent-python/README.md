@@ -181,7 +181,7 @@ POST https://YOUR_PUBLIC_BASE_URL/tools/end-call
 
 ## API Reference
 
-See [`API.md`](API.md) for local endpoints exposed by this example.
+See [`API.md`](https://raw.githubusercontent.com/team-telnyx/telnyx-code-examples/main/outbound-hold-agent-python/API.md) for local endpoints exposed by this example.
 
 ## Going to Production
 
