@@ -3,8 +3,8 @@
   "description": "Production-ready code examples for Telnyx AI Communications Infrastructure.",
   "homepage": "https://developers.telnyx.com",
   "repository": "https://github.com/team-telnyx/telnyx-code-examples",
-  "generated_at": "2026-06-24T20:12:28Z",
-  "example_count": 478,
+  "generated_at": "2026-06-25T14:44:19Z",
+  "example_count": 479,
   "examples": [
     {
       "folder": "route-phone-calls-to-ai-agent-python",
@@ -2120,6 +2120,15 @@
       "language": "python",
       "framework": "flask",
       "url": "https://github.com/team-telnyx/telnyx-code-examples/tree/main/verify-phone-number-otp-flow-python"
+    },
+    {
+      "folder": "whatsapp-verify-otp-python",
+      "title": "WhatsApp Verify OTP",
+      "description": "Send and verify one-time passwords via WhatsApp using the Telnyx Verify API.",
+      "product": "verify",
+      "language": "python",
+      "framework": "flask",
+      "url": "https://github.com/team-telnyx/telnyx-code-examples/tree/main/whatsapp-verify-otp-python"
     },
     {
       "folder": "whatsapp-order-tracking-notifications-python",
