@@ -49,6 +49,7 @@ SUMMARY = (
 PRODUCT_CATEGORY = {
     "voice": "Voice AI",
     "sms": "SMS & MMS",
+    "verify": "SMS & MMS",
     "ai": "AI Assistants",
     "sip": "SIP Trunking",
     "iot": "IoT & SIM Management",
