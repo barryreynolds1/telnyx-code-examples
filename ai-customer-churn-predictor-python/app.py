@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 load_dotenv()
 app = Flask(__name__)
 TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
-AI_MODEL = os.getenv("AI_MODEL", "moonshotai/Kimi-K2.6")
+AI_MODEL = os.getenv("AI_MODEL", "MiniMaxAI/MiniMax-M3-MXFP8")
 INFERENCE_URL = "https://api.telnyx.com/v2/ai/chat/completions"
 predictions = []
 
