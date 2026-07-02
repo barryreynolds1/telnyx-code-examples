@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Number Lookup Lead Enrichment — CNAM and carrier lookup to qualify and enrich sales leads."""
 import os, json, requests
+from urllib.parse import quote
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
@@ -12,12 +13,21 @@ enriched_leads = []
 
 def lookup_number(phone):
     try:
-        resp = requests.get(f"https://api.telnyx.com/v2/number_lookup/{phone}", headers={"Authorization": f"Bearer {TELNYX_API_KEY}"}, timeout=10)
+        encoded_phone = quote(phone, safe="")
+        resp = requests.get(
+            f"https://api.telnyx.com/v2/number_lookup/{encoded_phone}",
+            headers={"Authorization": f"Bearer {TELNYX_API_KEY}"},
+            params=[("type", "carrier"), ("type", "caller-name")],
+            timeout=10,
+        )
         if resp.ok:
             return resp.json().get("data", {})
     except Exception:
         pass
     return {}
+
+def _lookup_object(value):
+    return value if isinstance(value, dict) else {}
 
 def call_inference(messages, max_tokens=200):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
@@ -34,9 +44,10 @@ def enrich_lead():
     if not phone:
         return jsonify({"error": "phone_number required"}), 400
     lookup = lookup_number(phone)
-    carrier = lookup.get("carrier", {})
-    cnam = lookup.get("caller_name", {})
-    enrichment = {"phone": phone, "carrier_name": carrier.get("name"), "carrier_type": carrier.get("type"), "caller_name": cnam.get("caller_name"), "line_type": lookup.get("phone_number", {}).get("type"), "country": lookup.get("country_code")}
+    carrier = _lookup_object(lookup.get("carrier"))
+    cnam = _lookup_object(lookup.get("caller_name"))
+    phone_number = _lookup_object(lookup.get("phone_number"))
+    enrichment = {"phone": phone, "carrier_name": carrier.get("name"), "carrier_type": carrier.get("type"), "caller_name": cnam.get("caller_name"), "line_type": phone_number.get("type"), "country": lookup.get("country_code")}
     msgs = [{"role": "system", "content": "Score this lead based on phone data. Return JSON: lead_quality (hot/warm/cold), reasoning (string), is_mobile (boolean), is_voip (boolean), recommended_channel (sms/voice/email)."},
         {"role": "user", "content": json.dumps(enrichment)}]
     try:
@@ -56,7 +67,9 @@ def enrich_bulk():
     results = []
     for phone in numbers[:50]:
         lookup = lookup_number(phone)
-        results.append({"phone": phone, "carrier": lookup.get("carrier", {}).get("name"), "type": lookup.get("phone_number", {}).get("type")})
+        carrier = _lookup_object(lookup.get("carrier"))
+        phone_number = _lookup_object(lookup.get("phone_number"))
+        results.append({"phone": phone, "carrier": carrier.get("name"), "type": phone_number.get("type")})
     return jsonify({"results": results, "total": len(results)}), 200
 
 @app.route("/health", methods=["GET"])
