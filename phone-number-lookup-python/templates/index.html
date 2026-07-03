@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phone Number Lookup · Telnyx</title>
+<style>
+  /* ============================================================
+     DESIGN SYSTEM
+     - Dark theme, deep navy/charcoal
+     - Telnyx teal accent (#39d0c8)
+     - 8px spacing scale
+     - System font stack (no external fonts)
+     ============================================================ */
+  :root {
+    /* Surfaces */
+    --bg:               #0a0e17;
+    --bg-glow:          #11192a;
+    --surface:          #121826;
+    --surface-2:        #161d2e;
+    --border:           #1f2937;
+    --border-strong:    #2a3548;
+
+    /* Text */
+    --text:             #e6edf3;
+    --text-muted:       #8b95a7;
+    --text-dim:         #5c6678;
+
+    /* Accent (Telnyx teal) */
+    --accent:            #39d0c8;
+    --accent-hover:     #4de0d8;
+    --accent-press:     #2bb5ad;
+    --accent-soft:      rgba(57, 208, 200, 0.12);
+    --accent-ring:     rgba(57, 208, 200, 0.35);
+
+    /* Semantic */
+    --success:          #22c55e;
+    --success-soft:    rgba(34, 197, 94, 0.10);
+    --success-border:  rgba(34, 197, 94, 0.25);
+    --error:            #ef4444;
+    --error-soft:      rgba(239, 68, 68, 0.08);
+    --error-border:   rgba(239, 68, 68, 0.25);
+
+    /* Radii */
+    --r-sm:  6px;
+    --r-md:  8px;
+    --r-lg:  12px;
+    --r-pill: 999px;
+
+    /* Shadows */
+    --shadow-card:  0 1px 0 0 rgba(255,255,255,0.02) inset, 0 8px 24px -12px rgba(0,0,0,0.6);
+    --shadow-btn:    0 1px 2px rgba(0,0,0,0.3), 0 4px 12px -2px rgba(57, 208, 200, 0.25);
+
+    /* Type */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    padding: 48px 20px 64px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Ambient top glow — gives the page depth on camera */
+  body::before {
+    content: "";
+    position: fixed;
+    top: -240px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 720px;
+    height: 480px;
+    background: radial-gradient(ellipse at center, var(--bg-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============================================================
+     HEADER
+     ============================================================ */
+  header {
+    margin-bottom: 32px;
+    text-align: center;
+    animation: fadeDown 0.5s ease both;
+  }
+  .brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+  }
+  .brand-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  /* ============================================================
+     CARD PRIMITIVE
+     ============================================================ */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* ============================================================
+     INPUT CARD
+     ============================================================ */
+  .input-card {
+    padding: 24px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.5s ease 0.05s both;
+  }
+  .label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.01em;
+  }
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+  }
+  input[type="text"]::placeholder {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+  input[type="text"]:hover {
+    border-color: var(--border-strong);
+  }
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-ring);
+  }
+
+  .btn-lookup {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 22px;
+    height: 50px;
+    background: var(--accent);
+    color: #06121a;
+    border: none;
+    border-radius: var(--r-md);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+    box-shadow: var(--shadow-btn);
+    white-space: nowrap;
+    min-width: 140px;
+  }
+  .btn-lookup:hover { background: var(--accent-hover); }
+  .btn-lookup:active { background: var(--accent-press); transform: translateY(1px); }
+  .btn-lookup:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-ring), var(--shadow-btn);
+  }
+  .btn-lookup:disabled {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .btn-lookup.loading .spinner { display: inline-block; }
+  .btn-lookup.loading .btn-label { opacity: 0.85; }
+
+  .hint {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .hint code {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ============================================================
+     RESULTS CARD
+     ============================================================ */
+  .results {
+    padding: 24px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .results.show {
+    display: block;
+    animation: fadeUp 0.35s ease both;
+  }
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .badge-cache {
+    background: var(--success-soft);
+    border: 1px solid var(--success-border);
+    color: var(--success);
+  }
+  .badge-cache .dot {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+  .badge-fresh {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-ring);
+    color: var(--accent);
+  }
+  .badge-fresh .dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn-reset:hover {
+    color: var(--accent);
+    border-color: var(--accent-ring);
+    background: var(--accent-soft);
+  }
+  .btn-reset:active {
+    transform: translateY(1px);
+  }
+  .btn-reset:focus-visible {
+    outline: 2px solid var(--accent-ring);
+    outline-offset: 2px;
+  }
+  .results-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .field {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .field-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .field-value.mono {
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+  }
+  .field-value .sub {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Date format helper */
+  .date-row {
+    display: flex;
+    flex-direction: column;
+  }
+  .date-relative {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ============================================================
+     ERROR CARD
+     ============================================================ */
+  .error-card {
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    background: var(--error-soft);
+    border: 1px solid var(--error-border);
+    border-radius: var(--r-lg);
+    display: none;
+  }
+  .error-card.show {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .error-icon {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    color: var(--error);
+    margin-top: 1px;
+  }
+  .error-content { min-width: 0; }
+  .error-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--error);
+    margin-bottom: 2px;
+  }
+  .error-msg {
+    font-size: 14px;
+    color: var(--text);
+    word-break: break-word;
+  }
+
+  /* ============================================================
+     ANIMATIONS
+     ============================================================ */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 600px) {
+    body { padding: 32px 16px 48px; }
+    h1 { font-size: 26px; }
+    .input-card, .results, .cache-card { padding: 20px; }
+    .input-row { flex-direction: column; }
+    .btn-lookup { width: 100%; height: 48px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand-pill">
+        <span class="dot"></span>
+        Powered by Telnyx
+      </div>
+      <h1>Phone Number Lookup</h1>
+      <p class="subtitle">Carrier, line type, and portability — in one call.</p>
+    </header>
+
+    <!-- INPUT CARD -->
+    <section class="card input-card" aria-label="Look up a phone number">
+      <label class="label" for="phone">Phone number</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="phone"
+          name="phone"
+          inputmode="tel"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="+15551234567"
+          aria-describedby="phone-hint"
+        />
+        <button class="btn-lookup" id="lookupBtn" type="button">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Look Up</span>
+        </button>
+      </div>
+      <p class="hint" id="phone-hint">
+        Enter number in E.164 format (e.g., <code>+15551234567</code>)
+      </p>
+    </section>
+
+    <!-- ERROR CARD -->
+    <div class="error-card" id="errorCard" role="alert" aria-live="assertive">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="error-content">
+        <div class="error-title">Lookup failed</div>
+        <div class="error-msg" id="errorMsg">Something went wrong.</div>
+      </div>
+    </div>
+
+    <!-- RESULTS CARD -->
+    <section class="card results" id="resultsCard" aria-live="polite">
+      <div class="results-header">
+        <span class="results-title">Lookup Results</span>
+        <div class="header-right">
+          <span class="badge badge-fresh" id="cacheBadge">
+            <span class="dot"></span>
+            <span id="cacheBadgeText">Fresh lookup</span>
+          </span>
+          <button class="btn-reset" id="resetBtn" type="button" aria-label="Clear results and start a new lookup">
+            New Lookup
+          </button>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <span class="field-label">Phone Number</span>
+          <span class="field-value mono" id="r-phone">—</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Country Code</span>
+          <span class="field-value mono" id="r-country">—</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Carrier</span>
+          <span class="field-value" id="r-carrier">—</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Line Type</span>
+          <span class="field-value" id="r-linetype">—</span>
+        </div>
+        <div class="field">
+          <span class="field-label">National Format</span>
+          <span class="field-value mono" id="r-nationalformat">—</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Portability</span>
+          <span class="field-value" id="r-portability">—</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ----- Element refs -----
+  const phoneInput   = document.getElementById("phone");
+  const lookupBtn    = document.getElementById("lookupBtn");
+  const btnLabel     = lookupBtn.querySelector(".btn-label");
+  const errorCard    = document.getElementById("errorCard");
+  const errorMsg     = document.getElementById("errorMsg");
+  const resultsCard  = document.getElementById("resultsCard");
+  const cacheBadge   = document.getElementById("cacheBadge");
+  const cacheBadgeText = document.getElementById("cacheBadgeText");
+  const resetBtn     = document.getElementById("resetBtn");
+  const rPhone       = document.getElementById("r-phone");
+  const rCountry     = document.getElementById("r-country");
+  const rCarrier     = document.getElementById("r-carrier");
+  const rLineType    = document.getElementById("r-linetype");
+  const rNationalFmt = document.getElementById("r-nationalformat");
+  const rPortability = document.getElementById("r-portability");
+
+  // ----- Helpers -----
+  function setLoading(isLoading) {
+    if (isLoading) {
+      lookupBtn.classList.add("loading");
+      lookupBtn.disabled = true;
+      btnLabel.textContent = "Looking up...";
+    } else {
+      lookupBtn.classList.remove("loading");
+      lookupBtn.disabled = false;
+      btnLabel.textContent = "Look Up";
+    }
+  }
+
+  function hideError() {
+    errorCard.classList.remove("show");
+  }
+
+  function showError(message) {
+    errorMsg.textContent = message || "Something went wrong.";
+    errorCard.classList.add("show");
+    resultsCard.classList.remove("show");
+  }
+
+  function fmtCarrier(carrier) {
+    if (!carrier) return "—";
+    const name = carrier.name || "Unknown";
+    const type = carrier.type;
+    if (type) {
+      return name + '<span class="sub">' + type + "</span>";
+    }
+    return name;
+  }
+
+  function fmtPortability(p) {
+    if (!p) return "—";
+    var parts = [];
+    if (p.spid_carrier_name) parts.push(p.spid_carrier_name);
+    if (p.city && p.state) parts.push(p.city + ", " + p.state);
+    else if (p.state) parts.push(p.state);
+    if (p.ported_status) parts.push('<span class="sub">ported: ' + escapeHtml(p.ported_status) + "</span>");
+    if (p.ocn) parts.push('<span class="sub">OCN: ' + escapeHtml(p.ocn) + "</span>");
+    return parts.length ? parts.join('<br>') : "—";
+  }
+
+  function formatDate(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString(undefined, {
+        year: "numeric", month: "short", day: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function renderResults(data) {
+    hideError();
+    rPhone.textContent       = data.phone_number || "—";
+    rCountry.textContent     = data.country_code || "—";
+    rCarrier.innerHTML       = fmtCarrier(data.carrier);
+    rLineType.textContent    = data.line_type || "—";
+    rNationalFmt.textContent = data.national_format || "—";
+    rPortability.innerHTML   = fmtPortability(data.portability);
+
+    // Cache badge
+    if (data.from_cache) {
+      cacheBadge.className = "badge badge-cache";
+      cacheBadgeText.textContent = "From Cache";
+    } else {
+      cacheBadge.className = "badge badge-fresh";
+      cacheBadgeText.textContent = "Fresh lookup";
+    }
+
+    resultsCard.classList.add("show");
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function resetView() {
+    hideError();
+    resultsCard.classList.remove("show");
+    phoneInput.value = "";
+    phoneInput.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ----- Main lookup action -----
+  async function doLookup() {
+    const phone = (phoneInput.value || "").trim();
+    if (!phone) {
+      showError("Please enter a phone number.");
+      phoneInput.focus();
+      return;
+    }
+    if (!phone.startsWith("+")) {
+      showError("Phone number must be in E.164 format — it should start with \"+\" (e.g., +15551234567).");
+      phoneInput.focus();
+      return;
+    }
+
+    // Clear previous state
+    hideError();
+    resultsCard.classList.remove("show");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: phone })
+      });
+
+      let data = null;
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
+      }
+
+      if (!res.ok) {
+        const msg = (data && data.error) ? data.error
+                  : ("HTTP " + res.status);
+        showError(msg);
+        return;
+      }
+
+      renderResults(data);
+    } catch (err) {
+      showError("Network error — could not reach the server.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ----- Event wiring -----
+  lookupBtn.addEventListener("click", doLookup);
+  resetBtn.addEventListener("click", resetView);
+  phoneInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doLookup();
+    }
+  });
+
+  // Prefill with a friendly example for the demo
+  phoneInput.value = "+15551234567";
+})();
+</script>
+</body>
+</html>

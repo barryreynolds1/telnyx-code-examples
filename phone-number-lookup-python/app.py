@@ -5,7 +5,7 @@ import os
 import telnyx
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 load_dotenv()
 
@@ -90,6 +90,12 @@ def lookup_phone_number(phone_number: str) -> dict:
     cache_lookup_result(phone_number, lookup_data)
     
     return lookup_data
+
+
+@app.route("/", methods=["GET"])
+def index():
+    """Serve the demo UI for the phone number lookup example."""
+    return render_template("index.html")
 
 
 @app.route("/lookup", methods=["POST"])
