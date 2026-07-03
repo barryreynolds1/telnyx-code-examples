@@ -65,18 +65,23 @@ def lookup_phone_number(phone_number: str) -> dict:
     response = client.number_lookup.retrieve(phone_number)
     
     # Extract serializable data from SDK response
+    portability = response.data.portability
     lookup_data = {
         "phone_number": response.data.phone_number,
         "country_code": response.data.country_code,
+        "national_format": response.data.national_format,
+        "valid_number": response.data.valid_number,
         "carrier": {
             "name": response.data.carrier.name if response.data.carrier else None,
             "type": response.data.carrier.type if response.data.carrier else None,
         },
-        "line_type": response.data.line_type,
-        "number_type": response.data.number_type,
+        "line_type": portability.line_type if portability else None,
         "portability": {
-            "status": response.data.portability.status if response.data.portability else None,
-            "last_checked_at": response.data.portability.last_checked_at if response.data.portability else None,
+            "ported_status": portability.ported_status if portability else None,
+            "spid_carrier_name": portability.spid_carrier_name if portability else None,
+            "city": portability.city if portability else None,
+            "state": portability.state if portability else None,
+            "ocn": portability.ocn if portability else None,
         },
         "from_cache": False,
     }
