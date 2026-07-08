@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fax-to-Structured-Data Pipeline — receive faxes, AI extracts structured data (invoices, orders, prescriptions) into JSON."""
-import os, json, time, requests, telnyx
+import os, json, time, requests, telnyx, io
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 load_dotenv()
@@ -37,9 +37,59 @@ def parse_json_response(result):
 
 def call_inference(messages, max_tokens=1500):
     resp = requests.post(INFERENCE_URL, headers={"Authorization": f"Bearer {TELNYX_API_KEY}", "Content-Type": "application/json"},
-        json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.1}, timeout=20)
+        json={"model": AI_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.1}, timeout=120)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
+
+def fetch_fax_media(fax_id):
+    """Download the fax PDF from Telnyx and return raw bytes."""
+    url = f"https://api.telnyx.com/v2/faxes/{fax_id}/media"
+    resp = requests.get(url, headers={"Authorization": f"Bearer {TELNYX_API_KEY}"}, timeout=30)
+    resp.raise_for_status()
+    return resp.content
+
+def extract_text_from_pdf(pdf_bytes):
+    """Extract text from a PDF using pdfplumber. Returns empty string on failure."""
+    try:
+        import pdfplumber
+        text_parts = []
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                text_parts.append(page.extract_text() or "")
+        return "\n".join(text_parts).strip()
+    except Exception as e:
+        app.logger.exception("pdf text extraction failed: %s", e)
+        return ""
+
+DOC_PROMPTS = {
+    "invoice": "Extract invoice data. Return JSON: vendor (string), invoice_number (string), date (string), due_date (string), line_items (list of {description, quantity, unit_price, total}), subtotal (number), tax (number), total (number), payment_terms (string).",
+    "order": "Extract purchase order data. Return JSON: po_number (string), vendor (string), ship_to (string), items (list of {sku, description, quantity, unit_price}), total (number), delivery_date (string).",
+    "prescription": "Extract prescription data. Return JSON: patient_name (string), prescriber (string), medication (string), dosage (string), frequency (string), quantity (number), refills (number), date (string).",
+    "auto": "Identify this document type and extract all structured data. Return JSON: document_type (string), confidence (float), extracted_fields (object with all relevant key-value pairs).",
+}
+
+def run_extraction(text, doc_type="auto", fax_id=None):
+    """Run AI extraction on text. Returns parsed JSON dict."""
+    prompt = DOC_PROMPTS.get(doc_type, DOC_PROMPTS["auto"]) + " Return only JSON, no prose, no markdown fences."
+    result = call_inference([{"role": "system", "content": prompt}, {"role": "user", "content": text}])
+    parsed = parse_json_response(result)
+    if parsed is None:
+        return {"raw": result, "fax_id": fax_id, "text_preview": text[:500]}
+    if fax_id:
+        parsed["fax_id"] = fax_id
+    parsed["extracted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    parsed["text_preview"] = text[:500]
+    extracted_data.append(parsed)
+    return parsed
+
+def process_fax(fax_id, doc_type="auto"):
+    """Fetch fax media from Telnyx, extract text from PDF, run AI extraction."""
+    pdf_bytes = fetch_fax_media(fax_id)
+    text = extract_text_from_pdf(pdf_bytes)
+    if not text:
+        app.logger.warning("no text extracted from fax %s (image-only? needs OCR)", fax_id)
+        return None
+    return run_extraction(text, doc_type, fax_id)
 
 @app.route("/webhooks/fax", methods=["POST"])
 def receive_fax():
@@ -63,8 +113,32 @@ def receive_fax():
             "pages": p.get("page_count"), "media_url": p.get("media_url"), "status": "received",
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         fax_queue.append(fax_entry)
-        return jsonify({"status": "queued", "fax_id": fax_entry["fax_id"]}), 200
+        # Auto-process: fetch the fax PDF, extract text, run AI extraction.
+        try:
+            result = process_fax(p.get("fax_id"))
+            if result:
+                fax_entry["status"] = "extracted"
+                fax_entry["extraction"] = result
+            else:
+                fax_entry["status"] = "no_text"
+        except Exception as e:
+            app.logger.exception("auto-process fax %s failed: %s", p.get("fax_id"), e)
+            fax_entry["status"] = "extraction_failed"
+        return jsonify({"status": fax_entry["status"], "fax_id": fax_entry["fax_id"]}), 200
     return jsonify({"status": "ok"}), 200
+
+@app.route("/process/<fax_id>", methods=["POST"])
+def process_fax_endpoint(fax_id):
+    """Manually trigger extraction for a queued fax."""
+    doc_type = (request.get_json(silent=True) or {}).get("type", "auto")
+    try:
+        result = process_fax(fax_id, doc_type)
+        if result is None:
+            return jsonify({"fax_id": fax_id, "error": "no text extracted (image-only fax needs OCR)"}), 422
+        return jsonify(result), 200
+    except Exception:
+        app.logger.exception("manual process fax %s failed", fax_id)
+        return jsonify({"fax_id": fax_id, "error": "processing failed"}), 500
 
 @app.route("/extract", methods=["POST"])
 def extract_data():
@@ -74,21 +148,8 @@ def extract_data():
     text = data.get("text", "")
     doc_type = data.get("type", "auto")
     if not text: return jsonify({"error": "text required"}), 400
-    prompts = {
-        "invoice": "Extract invoice data. Return JSON: vendor (string), invoice_number (string), date (string), due_date (string), line_items (list of {description, quantity, unit_price, total}), subtotal (number), tax (number), total (number), payment_terms (string).",
-        "order": "Extract purchase order data. Return JSON: po_number (string), vendor (string), ship_to (string), items (list of {sku, description, quantity, unit_price}), total (number), delivery_date (string).",
-        "prescription": "Extract prescription data. Return JSON: patient_name (string), prescriber (string), medication (string), dosage (string), frequency (string), quantity (number), refills (number), date (string).",
-        "auto": "Identify this document type and extract all structured data. Return JSON: document_type (string), confidence (float), extracted_fields (object with all relevant key-value pairs).",
-    }
-    prompt = prompts.get(doc_type, prompts["auto"])
     try:
-        result = call_inference([{"role": "system", "content": prompt + " Return only JSON, no prose, no markdown fences."}, {"role": "user", "content": text}])
-        parsed = parse_json_response(result)
-        if parsed is None:
-            return jsonify({"raw": result}), 200
-        parsed["extracted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        extracted_data.append(parsed)
-        return jsonify(parsed), 200
+        return jsonify(run_extraction(text, doc_type)), 200
     except Exception:
         app.logger.exception("extraction failed")
         return jsonify({"error": "extraction failed"}), 500
